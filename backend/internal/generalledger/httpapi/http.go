@@ -511,7 +511,7 @@ func (h *Http) list(request microservice.IContext) error {
 		return h.vatCalc(ctx, request, scope)
 	}
 	screen := resourceScreens[resource]
-	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status")}
+	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status"), DateFrom: request.QueryParam("from"), DateTo: request.QueryParam("to")}
 	permitted := allowed(scope.Permissions, screen, "")
 	if resource == "journals" {
 		permitted = canListJournals(scope.Permissions, filters.Kind, filters.Status)

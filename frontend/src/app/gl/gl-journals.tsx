@@ -45,6 +45,36 @@ export function pasteIssueText(issue: ClipboardJournalIssue, tr: (key: string, f
 }
 
 /**
+ * Champ search box date (QList.cpp 1719-1758): when the whole text is d/m/yyyy (separator / . or -) the list is
+ * filtered by document date instead of text. Day 0 = the whole month. A year of 2400 or more is Buddhist (minus 543),
+ * 1900-2399 is Gregorian. A day or month out of range, or a day that does not exist (31/02), is not a date: null.
+ */
+export function parseChampDateSearch(text: string): { from: string; to: string } | null {
+  const parts = text.trim().split(/[/.-]/);
+  if (parts.length !== 3 || !/^[0-9]{1,2}$/.test(parts[0]) || !/^[0-9]{1,2}$/.test(parts[1]) || !/^[0-9]{4}$/.test(parts[2])) return null;
+  const day = Number(parts[0]), month = Number(parts[1]);
+  let year = Number(parts[2]);
+  if (year < 1900 || year > 4000 || month < 1 || month > 12) return null;
+  if (year >= 2400) year -= 543;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (day > lastDay) return null;
+  const prefix = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-`;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return day === 0 ? { from: `${prefix}01`, to: `${prefix}${pad(lastDay)}` } : { from: `${prefix}${pad(day)}`, to: `${prefix}${pad(day)}` };
+}
+
+/** Query string of the journal document list: book tab, kind, status and the inclusive document-date range (YYYY-MM-DD) from a date typed in the search box. */
+export function journalListFilters(input: { bookcode?: string; kind?: string; status?: string; from?: string; to?: string }): string {
+  return new URLSearchParams({
+    ...(input.bookcode ? { bookcode: input.bookcode } : {}),
+    ...(input.kind ? { kind: input.kind } : {}),
+    ...(input.status ? { status: input.status } : {}),
+    ...(input.from ? { from: input.from } : {}),
+    ...(input.to ? { to: input.to } : {}),
+  }).toString();
+}
+
+/**
  * Intelligent helper to create the next journal row with automatic debit/credit balance.
  * If debit > credit, pre-fills remaining credit.
  * If credit > debit, pre-fills remaining debit.
@@ -114,8 +144,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const [search, setSearch] = useState("");
   // reverse = ยกเลิกการผ่านรายการ (กลับรายการทีละใบ): แสดงเฉพาะใบที่ผ่านรายการแล้ว; ผ่านรายการทำเป็นชุดที่ gl-post-batch แบบ Champ 5512
   const activeStatus = mode === "reverse" ? "posted" : "";
-  const filters = new URLSearchParams({ ...(activeBook ? { bookcode: activeBook } : {}), ...(kind ? { kind } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString();
-  const list = useGLList<GLJournal>("journals", search, filters), refs = useReferences();
+  const dateSearch = parseChampDateSearch(search);
+  const filters = journalListFilters({ bookcode: activeBook, kind, status: activeStatus, from: dateSearch?.from, to: dateSearch?.to });
+  const list = useGLList<GLJournal>("journals", dateSearch ? "" : search, filters), refs = useReferences();
   const language = useGLLanguage();
   const voucherPrint = useGLPrint();
   const books = useMemo(() => refs.books ?? [], [refs.books]);
@@ -494,11 +525,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
           <div className="flex flex-col flex-1 min-h-0 gap-2">
             <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
               <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
-                <div data-gl-journal-search className="contents">
+                <div data-gl-journal-search className="contents" title={tr("gl_journal_search_date_hint", "เลขที่ คำอธิบาย หรือวันที่ เช่น 15/10/2569 (00/10/2569 = ทั้งเดือน)")}>
                 <SearchInput
                   className="min-w-36 flex-1 basis-44"
                   ariaLabel={tr("gl_search_number_or_desc", "ค้นหาเลขที่หรือคำอธิบาย")}
-                  placeholder={tr("gl_number_or_desc", "เลขที่หรือคำอธิบาย")}
+                  placeholder={tr("gl_journal_search_date_hint", "เลขที่ คำอธิบาย หรือวันที่ เช่น 15/10/2569 (00/10/2569 = ทั้งเดือน)")}
                   value={searchDebounce.query}
                   onChange={searchDebounce.setQuery}
                   onClear={searchDebounce.clear}

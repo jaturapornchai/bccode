@@ -103,4 +103,7 @@ type ListFilter struct {
 	BookCode string
 	Kind     string
 	Status   string
+	// DateFrom and DateTo (YYYY-MM-DD, both inclusive) bound the journal document date; empty = open end.
+	DateFrom string
+	DateTo   string
 }

@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 535e40d4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 84211c77 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -973,6 +973,33 @@ Files indexed: 29
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
 
+## frontend/src/app/gl/gl-journals.tsx (1221 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 27 | function | `journalBookBadgeClass` |
+| 39 | function | `pasteIssueText` |
+| 52 | function | `parseChampDateSearch` |
+| 67 | function | `journalListFilters` |
+| 82 | function | `createSmartNextLine` |
+| 105 | function | `focusDetailField` |
+| 122 | function | `openDetailsSection` |
+| 136 | function | `focusJournalSearch` |
+| 140 | function | `GLJournals` |
+| 271 | const-arrow | `handlePasteClick` |
+| 286 | function | `closeView` |
+| 292 | function | `openView` |
+| 311 | function | `openEdit` |
+| 329 | function | `openCreate` |
+| 342 | function | `cancelEdit` |
+| 357 | function | `save` |
+| 398 | function | `changeTaxType` |
+| 407 | function | `calcTax` |
+| 434 | const-arrow | `onKeyDown` |
+| 445 | function | `saveReconciliation` |
+| 476 | function | `act` |
+| 493 | function | `deleteDraftDirect` |
+
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 
 | Line | Kind | Name |
@@ -1014,31 +1041,6 @@ Files indexed: 29
 | 1136 | function | `UnlinkLine` |
 | 1161 | function | `DisableUser` |
 | 1205 | function | `authRequestLanguage` |
-
-## frontend/src/app/gl/gl-journals.tsx (1190 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 27 | function | `journalBookBadgeClass` |
-| 39 | function | `pasteIssueText` |
-| 52 | function | `createSmartNextLine` |
-| 75 | function | `focusDetailField` |
-| 92 | function | `openDetailsSection` |
-| 106 | function | `focusJournalSearch` |
-| 110 | function | `GLJournals` |
-| 240 | const-arrow | `handlePasteClick` |
-| 255 | function | `closeView` |
-| 261 | function | `openView` |
-| 280 | function | `openEdit` |
-| 298 | function | `openCreate` |
-| 311 | function | `cancelEdit` |
-| 326 | function | `save` |
-| 367 | function | `changeTaxType` |
-| 376 | function | `calcTax` |
-| 403 | const-arrow | `onKeyDown` |
-| 414 | function | `saveReconciliation` |
-| 445 | function | `act` |
-| 462 | function | `deleteDraftDirect` |
 
 ## frontend/src/app/asset/fixed-assets-screen.tsx (1186 lines)
 

@@ -303,6 +303,19 @@ func pageBounds(page, limit int) (int, int) {
 	return page, limit
 }
 
+// validateDateFilter checks the optional journal document-date range of a list request.
+func validateDateFilter(filter ListFilter) error {
+	switch {
+	case filter.DateFrom != "" && !validDate(filter.DateFrom):
+		return fieldError("journal_filter_date_invalid", "from", "วันที่ของตัวกรองไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
+	case filter.DateTo != "" && !validDate(filter.DateTo):
+		return fieldError("journal_filter_date_invalid", "to", "วันที่ของตัวกรองไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
+	case filter.DateFrom != "" && filter.DateTo != "" && filter.DateFrom > filter.DateTo:
+		return fieldError("journal_filter_date_range_invalid", "to", "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น")
+	}
+	return nil
+}
+
 func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, page, limit int, filter ListFilter) (Page, error) {
 	page, limit = pageBounds(page, limit)
 	result := Page{Items: []json.RawMessage{}, Page: page, Limit: limit}
@@ -317,6 +330,9 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if filter.BookCode != "" && checkCode(filter.BookCode, "bookcode", "สมุดรายวัน", BookCodeMaxRunes) != nil {
 		return result, fieldError("journal_filter_book_invalid", "bookcode", "ตัวกรองสมุดรายวันไม่ถูกต้อง กรุณาเลือกสมุดรายวันจากรายการ")
 	}
+	if err := validateDateFilter(filter); err != nil {
+		return result, err
+	}
 	if filter.Kind != "" && !contains([]string{"manual", "opening", "closing", "reversal", "mapping"}, filter.Kind) || filter.Status != "" && !contains([]string{"draft", "posted", "reversed", "void"}, filter.Status) {
 		return result, fmt.Errorf("ตัวกรองรายการบัญชีไม่ถูกต้อง")
 	}
@@ -325,11 +341,11 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 		return result, err
 	}
 	// Search is a literal substring on code, names, description, and reference (never matching JSON keys or boolean flags).
-	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7)))`
-	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status).Scan(&result.Total); err != nil {
+	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7) AND ($8='' OR payload->>'date'>=$8) AND ($9='' OR payload->>'date'<=$9)))`
+	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo).Scan(&result.Total); err != nil {
 		return result, err
 	}
-	rows, err := db.QueryContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $8 OFFSET $9`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, limit, (page-1)*limit)
+	rows, err := db.QueryContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $10 OFFSET $11`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo, limit, (page-1)*limit)
 	if err != nil {
 		return result, err
 	}

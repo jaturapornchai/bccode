@@ -146,3 +146,88 @@ func TestPostgresListFiltersMasterCRUDAndTenantIsolation(t *testing.T) {
 		t.Fatalf("master delete changed journal: %v", err)
 	}
 }
+
+func TestPostgresListFiltersJournalDocumentDateRange(t *testing.T) {
+	p, _ := glpgTestDB(t)
+	ctx := context.Background()
+	glpgSeed(t, p, "A")
+	scope := Scope{Holding: "H", Company: "A", Branch: "B1"}
+	for i, day := range []string{"2026-01-31", "2026-02-01", "2026-02-28", "2026-03-01"} {
+		j := glpgJournal("A", "DR-"+day, day, "manual", "draft", "1000", "4000", "1")
+		glpgSendJournal(t, p, int64(2+i), j)
+	}
+	posted := glpgJournal("A", "DR-POSTED", "2026-02-15", "manual", "posted", "1000", "4000", "2")
+	glpgSendJournal(t, p, 6, posted)
+
+	docnos := func(filter ListFilter, search string) []string {
+		t.Helper()
+		page, err := p.List(ctx, scope, "journals", search, 1, 100, filter)
+		if err != nil {
+			t.Fatalf("list %+v: %v", filter, err)
+		}
+		var out []string
+		for _, raw := range page.Items {
+			var j Journal
+			if err = json.Unmarshal(raw, &j); err != nil {
+				t.Fatal(err)
+			}
+			out = append(out, j.DocNo)
+		}
+		if int(page.Total) != len(out) {
+			t.Fatalf("total %d differs from items %d for %+v", page.Total, len(out), filter)
+		}
+		return out
+	}
+	want := func(name string, got []string, expected ...string) {
+		t.Helper()
+		if len(got) != len(expected) {
+			t.Fatalf("%s: got %v want %v", name, got, expected)
+		}
+		seen := map[string]bool{}
+		for _, docno := range got {
+			seen[docno] = true
+		}
+		for _, docno := range expected {
+			if !seen[docno] {
+				t.Fatalf("%s: got %v want %v", name, got, expected)
+			}
+		}
+	}
+	want("no range", docnos(ListFilter{}, ""), "DR-2026-01-31", "DR-2026-02-01", "DR-2026-02-28", "DR-2026-03-01", "DR-POSTED")
+	want("from only is inclusive", docnos(ListFilter{DateFrom: "2026-02-01"}, ""), "DR-2026-02-01", "DR-2026-02-28", "DR-2026-03-01", "DR-POSTED")
+	want("to only is inclusive", docnos(ListFilter{DateTo: "2026-02-28"}, ""), "DR-2026-01-31", "DR-2026-02-01", "DR-2026-02-28", "DR-POSTED")
+	want("whole month", docnos(ListFilter{DateFrom: "2026-02-01", DateTo: "2026-02-28"}, ""), "DR-2026-02-01", "DR-2026-02-28", "DR-POSTED")
+	want("one day", docnos(ListFilter{DateFrom: "2026-02-28", DateTo: "2026-02-28"}, ""), "DR-2026-02-28")
+	want("no match", docnos(ListFilter{DateFrom: "2027-01-01"}, ""))
+	want("with status", docnos(ListFilter{Status: "draft", DateFrom: "2026-02-01", DateTo: "2026-02-28"}, ""), "DR-2026-02-01", "DR-2026-02-28")
+	want("with search", docnos(ListFilter{DateFrom: "2026-02-01", DateTo: "2026-02-28"}, "posted"), "DR-POSTED")
+
+	page, err := p.List(ctx, scope, "journals", "", 2, 1, ListFilter{DateFrom: "2026-02-01", DateTo: "2026-02-28"})
+	if err != nil || page.Total != 3 || len(page.Items) != 1 {
+		t.Fatalf("range filter must apply before pagination: %#v %v", page, err)
+	}
+
+	for name, filter := range map[string]ListFilter{
+		"from not a date":  {DateFrom: "2026-2-1"},
+		"to not a date":    {DateTo: "' OR true --"},
+		"impossible day":   {DateFrom: "2026-02-30"},
+		"reversed range":   {DateFrom: "2026-03-01", DateTo: "2026-02-01"},
+		"timestamp format": {DateTo: "2026-02-01T00:00:00Z"},
+	} {
+		_, err = p.List(ctx, scope, "journals", "", 1, 10, filter)
+		var user *UserError
+		if !errors.As(err, &user) || user.Status != 400 || user.Code != "journal_filter_date_invalid" && user.Code != "journal_filter_date_range_invalid" {
+			t.Fatalf("%s: want a 400 journal_filter_date_* error, got %v", name, err)
+		}
+	}
+
+	// The range is only a journal document-date filter; it must not hide other records.
+	all, err := p.List(ctx, scope, "accounts", "", 1, 1000, ListFilter{})
+	if err != nil || all.Total == 0 {
+		t.Fatalf("accounts: %#v %v", all, err)
+	}
+	filtered, err := p.List(ctx, scope, "accounts", "", 1, 1000, ListFilter{DateFrom: "2099-01-01"})
+	if err != nil || filtered.Total != all.Total {
+		t.Fatalf("date range changed non-journal list: %d vs %d (%v)", filtered.Total, all.Total, err)
+	}
+}

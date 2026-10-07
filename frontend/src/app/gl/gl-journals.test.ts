@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLJournal, GLLine } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { GLJournals, createSmartNextLine, journalBookBadgeClass, pasteIssueText } from "./gl-journals";
+import { GLJournals, createSmartNextLine, journalBookBadgeClass, journalListFilters, parseChampDateSearch, pasteIssueText } from "./gl-journals";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -222,6 +222,59 @@ describe("journal book badge colours", () => {
     }
     expect(journalBookBadgeClass(4)).not.toBe(journalBookBadgeClass(5));
     expect(journalBookBadgeClass(undefined)).toBe(journalBookBadgeClass(1));
+  });
+});
+
+describe("journal list date typed in the search box (Champ QList 1719-1758)", () => {
+  it("a single day in Buddhist or Gregorian year filters that day only", () => {
+    expect(parseChampDateSearch("15/10/2569")).toEqual({ from: "2026-10-15", to: "2026-10-15" });
+    expect(parseChampDateSearch("15/10/2026")).toEqual({ from: "2026-10-15", to: "2026-10-15" });
+    expect(parseChampDateSearch("5.1.2569")).toEqual({ from: "2026-01-05", to: "2026-01-05" });
+    expect(parseChampDateSearch(" 05-01-2026 ")).toEqual({ from: "2026-01-05", to: "2026-01-05" });
+  });
+
+  it("day 0 means the whole month, with the right last day in leap and normal years", () => {
+    expect(parseChampDateSearch("00/10/2569")).toEqual({ from: "2026-10-01", to: "2026-10-31" });
+    expect(parseChampDateSearch("0/11/2026")).toEqual({ from: "2026-11-01", to: "2026-11-30" });
+    expect(parseChampDateSearch("00/02/2567")).toEqual({ from: "2024-02-01", to: "2024-02-29" });
+    expect(parseChampDateSearch("00/02/2569")).toEqual({ from: "2026-02-01", to: "2026-02-28" });
+    expect(parseChampDateSearch("00/02/2100")).toEqual({ from: "2100-02-01", to: "2100-02-28" });
+    expect(parseChampDateSearch("00/02/2000")).toEqual({ from: "2000-02-01", to: "2000-02-29" });
+  });
+
+  it("anything that is not a real date stays a text search", () => {
+    for (const text of ["31/02/2569", "30/02/2024", "32/01/2026", "15/13/2026", "15/00/2026", "JV001", "JV-2026-001", "15/10/26", "15/10/20269", "15/10/1899", "15/10/4001", "15/10", "1/2/3/2026", "", "  "]) {
+      expect(parseChampDateSearch(text), text).toBeNull();
+    }
+    expect(parseChampDateSearch("29/02/2567")).toEqual({ from: "2024-02-29", to: "2024-02-29" });
+    expect(parseChampDateSearch("29/02/2569")).toBeNull();
+  });
+
+  it("sends the range as from/to next to the book, kind and status filters", () => {
+    const query = new URLSearchParams(journalListFilters({ bookcode: "JV", kind: "manual", status: "posted", from: "2026-10-01", to: "2026-10-31" }));
+    expect(query.get("bookcode")).toBe("JV");
+    expect(query.get("kind")).toBe("manual");
+    expect(query.get("status")).toBe("posted");
+    expect(query.get("from")).toBe("2026-10-01");
+    expect(query.get("to")).toBe("2026-10-31");
+    expect(journalListFilters({ bookcode: "JV" })).toBe("bookcode=JV");
+    expect(journalListFilters({})).toBe("");
+  });
+
+  it("has no date boxes: the search box carries the hint and the list starts without a date filter", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: { items: [], total: 0, page: 1, limit: 30, sequence: 0 },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+    const html = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/journals" }));
+    expect(html).not.toContain('type="date"');
+    expect(html).toContain("00/10/2569");
+    expect(vi.mocked(glCommon.useGLList).mock.lastCall?.[1]).toBe("");
+    expect(vi.mocked(glCommon.useGLList).mock.lastCall?.[2]).toBe("");
   });
 });
 
