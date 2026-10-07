@@ -46,14 +46,21 @@ type ReportQuery struct {
 	To             string
 	FiscalYear     string
 	AccountCode    string
+	AccountFrom    string // Champ "จากรหัสบัญชี" (รวมค่านี้) — ว่าง = ไม่จำกัดต้นช่วง
+	AccountTo      string // Champ "ถึงรหัสบัญชี" (รวมค่านี้) — ว่าง = ไม่จำกัดท้ายช่วง
 	BranchCode     string
 	DepartmentCode string
 	ProjectCode    string
 	BookCode       string
 	BudgetCode     string
 	Template       string // statement: รหัสรูปแบบงบการเงิน
-	Page           int
-	Limit          int
+	// ตัวเลือกรายงานแบบ Champ (docs/kms/champ/09-gl.md §5.3-5.6) — รายงานที่ไม่รู้จักตัวเลือกนั้นไม่สนใจค่า
+	HideOpening   bool // ledger: ไม่แสดงยอดยกมา — ยอดคงเหลือสะสมเริ่มจากรายการในช่วง (Champ 5534)
+	HideZero      bool // trialbalance/workingpaper: ไม่แสดงรายการผังบัญชีที่ยอดทุกช่องเป็นศูนย์ (Champ 5506/5499)
+	ControlTotals bool // trialbalance/workingpaper/ledger summary: เพิ่มแถวผลรวมบัญชีคุมตามต้นไม้บัญชีแม่
+	Summary       bool // gljournal: แถวละเอกสาร (Champ 5533); ledger: ยอดสะสมสุทธิ ณ วันที่ต่อบัญชี (Champ 5535)
+	Page          int
+	Limit         int
 }
 
 type ReportColumn struct {

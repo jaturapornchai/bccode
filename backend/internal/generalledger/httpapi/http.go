@@ -463,6 +463,10 @@ func pageNumber(value string, fallback, max int) int {
 	}
 	return n
 }
+
+// queryFlag reads a report option checkbox (?hidezero=true); anything else is off.
+func queryFlag(value string) bool { return value == "true" || value == "1" }
+
 func (h *Http) startRead(ctx context.Context, scope gl.Scope, request microservice.IContext) (int64, error) {
 	if err := h.store.Ready(ctx, scope); err != nil {
 		return 0, err
@@ -585,7 +589,7 @@ func (h *Http) report(request microservice.IContext) error {
 	if err != nil {
 		return failure(request, err)
 	}
-	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
+	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), AccountFrom: request.QueryParam("accountfrom"), AccountTo: request.QueryParam("accountto"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), HideOpening: queryFlag(request.QueryParam("hideopening")), HideZero: queryFlag(request.QueryParam("hidezero")), ControlTotals: queryFlag(request.QueryParam("controltotals")), Summary: queryFlag(request.QueryParam("summary")), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
 	if name == statementSetReport {
 		return h.statementSet(ctx, request, scope.Scope, q, version)
 	}
