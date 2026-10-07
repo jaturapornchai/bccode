@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit c212311b - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit b06657bc - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 30
 
@@ -892,6 +892,37 @@ Files indexed: 30
 | 522 | const-arrow | `updateGlobalStyle` |
 | 531 | function | `statementView` |
 
+## frontend/src/app/gl/gl-journals.tsx (1353 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 35 | function | `journalBookBadgeClass` |
+| 47 | function | `pasteIssueText` |
+| 60 | function | `parseChampDateSearch` |
+| 75 | function | `journalListFilters` |
+| 90 | function | `createSmartNextLine` |
+| 113 | function | `focusDetailField` |
+| 130 | function | `openDetailsSection` |
+| 144 | function | `focusJournalSearch` |
+| 148 | function | `GLJournals` |
+| 285 | const-arrow | `onKeyDown` |
+| 319 | const-arrow | `handlePasteClick` |
+| 334 | function | `closeView` |
+| 340 | function | `openView` |
+| 359 | function | `openEdit` |
+| 377 | function | `openCreate` |
+| 392 | function | `applyTemplate` |
+| 422 | function | `expandDescription` |
+| 452 | function | `cancelEdit` |
+| 467 | function | `save` |
+| 482 | const-arrow | `run` |
+| 522 | function | `changeTaxType` |
+| 531 | function | `calcTax` |
+| 558 | const-arrow | `onKeyDown` |
+| 569 | function | `saveReconciliation` |
+| 600 | function | `act` |
+| 617 | function | `deleteDraftDirect` |
+
 ## backend/internal/authentication/services/authentication_service_test.go (1342 lines)
 
 | Line | Kind | Name |
@@ -972,36 +1003,6 @@ Files indexed: 30
 | 1318 | function | `MockRandomString` |
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
-
-## frontend/src/app/gl/gl-journals.tsx (1260 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 30 | function | `journalBookBadgeClass` |
-| 42 | function | `pasteIssueText` |
-| 55 | function | `parseChampDateSearch` |
-| 70 | function | `journalListFilters` |
-| 85 | function | `createSmartNextLine` |
-| 108 | function | `focusDetailField` |
-| 125 | function | `openDetailsSection` |
-| 139 | function | `focusJournalSearch` |
-| 143 | function | `GLJournals` |
-| 264 | const-arrow | `onKeyDown` |
-| 298 | const-arrow | `handlePasteClick` |
-| 313 | function | `closeView` |
-| 319 | function | `openView` |
-| 338 | function | `openEdit` |
-| 356 | function | `openCreate` |
-| 371 | function | `applyTemplate` |
-| 398 | function | `cancelEdit` |
-| 413 | function | `save` |
-| 428 | const-arrow | `run` |
-| 468 | function | `changeTaxType` |
-| 477 | function | `calcTax` |
-| 504 | const-arrow | `onKeyDown` |
-| 515 | function | `saveReconciliation` |
-| 546 | function | `act` |
-| 563 | function | `deleteDraftDirect` |
 
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 

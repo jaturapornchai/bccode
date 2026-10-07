@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
+import { postBatchSignatories, type GLPostBatchInfo } from "@/lib/gl-journal-voucher";
 import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLDimension, type GLDimensionResource, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { getAuthSession } from "@/lib/client-auth-session";
@@ -125,13 +126,15 @@ function whtFormLabel(form: string, tr: GLTextFn) {
 }
 
 /** ใบสำคัญรายวัน (ข้อ 9 + ข้อ 11): ผู้จัดทำ ชื่อเอกสาร เลขที่ วันที่ ยอดรวม คำอธิบาย วิธีคำนวณภาษี และช่องลายมือชื่อ */
-export function GLVoucherPrint({ journal, books, company, tr, language, scale = 2 }: { journal: GLJournal; books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode; scale?: number }) {
+export function GLVoucherPrint({ journal, books, company, tr, language, scale = 2, postBatch }: { journal: GLJournal; books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode; scale?: number; postBatch?: GLPostBatchInfo | null }) {
   const book = books.find((item) => item.code === journal.bookcode);
   const totals = journalTotals(journal.lines);
   const showDepartment = journal.lines.some((line) => line.departmentcode?.trim());
   const showProject = journal.lines.some((line) => line.projectcode?.trim());
   const vats = journal.details?.vats ?? [];
   const withholdings = journal.details?.withholdings ?? [];
+  const signatories = postBatchSignatories(postBatch);
+  const signNames: Record<string, string> = { gl_print_checked_by: signatories.checkedBy, gl_print_approved_by: signatories.approvedBy };
   const mark = journal.status === "draft" ? tr("gl_print_draft_mark", "ฉบับร่าง — ยังไม่ผ่านรายการ") : journal.status === "reversed" ? tr("gl_reversed", "กลับรายการแล้ว") : "";
   const money = (value: string | undefined) => formatAmount(value ?? "", scale);
   const fields: [string, string][] = [
@@ -187,6 +190,7 @@ export function GLVoucherPrint({ journal, books, company, tr, language, scale = 
     <div className="gl-print-sign">
       {([["gl_print_prepared_by", "ผู้จัดทำ"], ["gl_print_checked_by", "ผู้ตรวจสอบ"], ["gl_print_approved_by", "ผู้อนุมัติ"]] as const).map(([key, fallback]) => <div key={key}>
         <div className="gl-print-sign-line" />
+        {signNames[key] && <div>({signNames[key]})</div>}
         <div>{tr(key, fallback)}</div>
         <div className="gl-print-sign-date">{tr("gl_print_sign_date", "วันที่ ........../........../..........")}</div>
       </div>)}

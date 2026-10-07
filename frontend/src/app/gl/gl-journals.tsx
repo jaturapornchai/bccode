@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Table2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, FileText, Maximize2, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Table2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { accountDimensionCodes, accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, lineDimensionsAfterAccountChange, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine } from "@/lib/general-ledger";
+import { Textarea } from "@/components/ui/textarea";
+import { accountDimensionCodes, accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, lineDimensionsAfterAccountChange, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine, type GLPage } from "@/lib/general-ledger";
+import { adjacentJournal, countJournalEntries, pickPostBatch, postBatchDate, postBatchLookupPath, type GLPostBatchInfo } from "@/lib/gl-journal-voucher";
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 import { formatAppDate } from "@/lib/date-time";
@@ -23,6 +25,9 @@ import { getAuthSession } from "@/lib/client-auth-session";
 import { journalFromTemplate, journalJumpKey, jumpRowIndex, type JournalJumpSide } from "@/lib/gl-journal-templates";
 import { JournalTemplateTools } from "./gl-journal-templates";
 import { DimensionSelect, useDimensionRegisters } from "./gl-dimension-select";
+
+/** journal_entries.description VARCHAR(500) (backend JournalDescriptionMaxRunes) */
+const DESCRIPTION_MAX_LENGTH = 500;
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -186,12 +191,28 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const dirty = reviewDirty || detailsDirty || (isEditing && journal !== null && (isJournalDirty || isReasonDirty));
 
   useDirtyGuard(route, dirty);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const descriptionDraft = useRef("");
+  // Champ BCPostTrans of a voucher posted in a batch (read-only box): one list GET by batch number, kept only while that voucher is open
+  const [postBatch, setPostBatch] = useState<{ batchno: string; info: GLPostBatchInfo | null; failed: boolean } | null>(null);
+  const postBatchNo = journal?.postbatchno ?? "";
+  useEffect(() => {
+    if (!postBatchNo) { setPostBatch(null); return; }
+    const controller = new AbortController();
+    setPostBatch({ batchno: postBatchNo, info: null, failed: false });
+    glRequest<GLPage<GLPostBatchInfo>>(postBatchLookupPath(postBatchNo), { signal: controller.signal })
+      .then((page) => { const info = pickPostBatch(page?.items, postBatchNo); setPostBatch({ batchno: postBatchNo, info, failed: info === null }); })
+      .catch(() => { if (!controller.signal.aborted) setPostBatch({ batchno: postBatchNo, info: null, failed: true }); });
+    return () => controller.abort();
+  }, [postBatchNo]);
+  const postBatchView = postBatch?.batchno === postBatchNo ? postBatch : null;
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
   const accountNames = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, accountName(account)])), [refs.accounts]);
   // Champ OnCheckSeparate: แผนก/โครงการใส่ได้เฉพาะบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" — ช่องที่มีค่าอยู่แล้วยังแก้/ล้างได้
   const accountsByCode = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, account])), [refs.accounts]);
   const departLocked = (line: { accountcode: string; departmentcode?: string }) => !accountsByCode.get(line.accountcode)?.departseparate && !line.departmentcode;
   const projectLocked = (line: { accountcode: string; projectcode?: string }) => !accountsByCode.get(line.accountcode)?.projectseparate && !line.projectcode;
+  const entryCount = journal ? countJournalEntries(journal.lines) : 0;
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const smartGuard = useMemo(() => {
     try {
@@ -384,6 +405,39 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     requestAnimationFrame(() => headerRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]):not([type=\"hidden\"]), select:not([disabled]), button:not([disabled])")?.focus());
   }
 
+  // Champ toolbar Prev/Next record: the voucher before/after this one in the loaded list (same dirty guard as opening any voucher)
+  const prevJournal = adjacentJournal(list.data.items, journal?.id, -1), nextJournal = adjacentJournal(list.data.items, journal?.id, 1);
+  const navButtons = journal?.id ? (
+    <div className="flex items-center gap-1" role="group" aria-label={tr("gl_journal_navigate_docs", "เลื่อนดูเอกสาร")}>
+      <Button type="button" variant="outline" className={actionClass} disabled={busy || !prevJournal} onClick={() => prevJournal && void openView(prevJournal)} aria-label={tr("gl_journal_prev_doc", "เอกสารก่อนหน้า")} title={tr("gl_journal_prev_doc", "เอกสารก่อนหน้า")}>
+        <ChevronLeft className="size-4 mr-1" />{tr("gl_prev", "ก่อนหน้า")}
+      </Button>
+      <Button type="button" variant="outline" className={actionClass} disabled={busy || !nextJournal} onClick={() => nextJournal && void openView(nextJournal)} aria-label={tr("gl_journal_next_doc", "เอกสารถัดไป")} title={tr("gl_journal_next_doc", "เอกสารถัดไป")}>
+        {tr("gl_next", "ถัดไป")}<ChevronRight className="size-4 ml-1" />
+      </Button>
+    </div>
+  ) : null;
+
+  // Champ OnExpandDesc: multi-line editor for the long header description; Cancel/Esc keeps the old text, form shortcuts stay off while it is open
+  async function expandDescription() {
+    if (!journal || busy) return;
+    descriptionDraft.current = journal.description;
+    setDescriptionOpen(true);
+    try {
+      const ok = await confirm({
+        title: tr("gl_journal_desc_dialog_title", "บันทึกคำอธิบาย"),
+        description: tr("gl_journal_desc_dialog_hint", "พิมพ์ได้หลายบรรทัด ไม่เกิน {0} ตัวอักษร").replace("{0}", String(DESCRIPTION_MAX_LENGTH)),
+        details: <Textarea autoFocus rows={8} className="min-h-40 text-[0.95rem] leading-normal text-foreground" maxLength={DESCRIPTION_MAX_LENGTH} defaultValue={journal.description} aria-label={tr("gl_description", "คำอธิบาย")} onChange={(e) => { descriptionDraft.current = e.target.value; }} />,
+        tone: "info",
+        confirmLabel: tr("gl_save", "บันทึก"),
+        cancelLabel: tr("common_cancel", "ยกเลิก"),
+      });
+      if (ok) patch({ description: descriptionDraft.current });
+    } finally {
+      setDescriptionOpen(false);
+    }
+  }
+
   // Daily-entry templates belong to the editable voucher screens only (not opening balances, not reverse/unpost)
   const templateTools = mode === "edit" && kind !== "opening" ? (
     <JournalTemplateTools
@@ -540,7 +594,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     onNew: mode === "edit" ? () => void openCreate() : undefined,
     onCancel: isEditing || detailsEditing ? () => void cancelEdit() : undefined,
     canSave: (isEditing || detailsDirty) && dirty && !busy,
-    disabled: busy,
+    disabled: busy || descriptionOpen,
   });
 
   async function act(action: "reverse" | "delete") {
@@ -802,7 +856,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Button type="button" variant="outline" className={actionClass} disabled={busy} onClick={() => voucherPrint.print(<GLVoucherPrint journal={journal} books={refs.books ?? []} company={printCompanyName()} tr={tr} language={language} scale={year?.scale} />)} title={tr("gl_print_voucher_title_hint", "พิมพ์ใบสำคัญรายวันพร้อมช่องลายมือชื่อผู้จัดทำ ผู้ตรวจสอบ และผู้อนุมัติ")}>
+                    {navButtons}
+                    <Button type="button" variant="outline" className={actionClass} disabled={busy} onClick={() => voucherPrint.print(<GLVoucherPrint journal={journal} books={refs.books ?? []} company={printCompanyName()} tr={tr} language={language} scale={year?.scale} postBatch={postBatchView?.info} />)} title={tr("gl_print_voucher_title_hint", "พิมพ์ใบสำคัญรายวันพร้อมช่องลายมือชื่อผู้จัดทำ ผู้ตรวจสอบ และผู้อนุมัติ")}>
                       <Printer className="size-4 mr-1.5" />{tr("gl_print_voucher", "พิมพ์ใบสำคัญ")}
                     </Button>
                     {journal.status === "draft" && mode === "edit" && (
@@ -846,7 +901,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <ChampField label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} aria-label={tr("gl_document_date", "วันที่เอกสาร")} type="date" value={journal.date} readOnly /></ChampField>
                       <ChampField label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} aria-label={tr("gl_reference_document", "เอกสารอ้างอิง")} value={journal.reference || "-"} readOnly /></ChampField>
                       <ChampField label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} aria-label={tr("gl_ref_date", "วันที่อ้างอิง")} type="date" value={journal.refdate ?? ""} readOnly /></ChampField>
-                      <ChampField label={tr("gl_description", "คำอธิบาย")} wide><input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description || "-"} readOnly /></ChampField>
+                      <ChampField label={tr("gl_description", "คำอธิบาย")} wide><input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description ? journal.description.replace(/\r?\n/g, " ") : "-"} readOnly /></ChampField>
                       <ChampField label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} aria-label={tr("gl_branch_code", "รหัสสาขา")} value={journal.branchcode || "-"} readOnly /></ChampField>
                     </ChampGroupBox>
                   </fieldset>
@@ -887,7 +942,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </table>
                   </div>
                   {(journal.source_system || journal.source_record_id) && <p className="rounded-lg border border-border p-3">{tr("gl_details_ui_34","แหล่งข้อมูล:")}{journal.source_system || "—"}{tr("gl_details_ui_35","· อ้างอิง:")}{journal.source_record_id || "—"}</p>}
-                  <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
+                  <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-4" aria-live="polite">
+                    <div>
+                      <div className="text-[0.9rem] text-muted-foreground">{tr("gl_entry_count", "จำนวนรายการ")}</div>
+                      <strong className="text-lg tabular-nums">{entryCount}</strong>
+                    </div>
                     {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
                       <div key={label}>
                         <div className="text-[0.9rem] text-muted-foreground">{label}</div>
@@ -895,6 +954,30 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       </div>
                     ))}
                   </div>
+                  {postBatchNo && (
+                    <section className="rounded-xl border border-border p-3" aria-label={tr("gl_journal_postbatch_title", "ข้อมูลชุดผ่านรายการ")}>
+                      <h3 className="mb-2 text-[0.95rem] font-semibold">{tr("gl_journal_postbatch_title", "ข้อมูลชุดผ่านรายการ")}</h3>
+                      <dl className="grid gap-x-4 gap-y-2 text-[0.95rem] sm:grid-cols-2 xl:grid-cols-3">
+                        {([
+                          [tr("gl_journal_postbatch_no", "เลขที่ผ่านรายการ"), postBatchNo],
+                          [tr("gl_journal_postbatch_date", "วันที่ผ่านรายการ"), postBatchView?.info?.postedat ? formatAppDate(postBatchDate(postBatchView.info.postedat), language) : ""],
+                          [tr("gl_journal_postbatch_count", "จำนวนรายการในชุด"), postBatchView?.info?.count === undefined ? "" : String(postBatchView.info.count)],
+                          [tr("gl_journal_postbatch_by", "ผู้ผ่านรายการ"), postBatchView?.info?.postedby ?? ""],
+                          [tr("gl_post_batch_approver", "ผู้อนุมัติ"), postBatchView?.info?.approver ?? ""],
+                          [tr("gl_post_batch_check1", "ผู้ตรวจสอบ 1"), postBatchView?.info?.check1 ?? ""],
+                          [tr("gl_post_batch_check2", "ผู้ตรวจสอบ 2"), postBatchView?.info?.check2 ?? ""],
+                          [tr("gl_post_batch_remark", "หมายเหตุชุดผ่านรายการ"), postBatchView?.info?.remark ?? ""],
+                        ] as const).map(([label, value]) => (
+                          <div key={label} className="min-w-0">
+                            <dt className="text-[0.9rem] text-muted-foreground">{label}</dt>
+                            <dd className="[overflow-wrap:anywhere]">{value || "—"}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {postBatchView?.failed && <p className="mt-2 text-[0.9rem] text-muted-foreground">{tr("gl_journal_postbatch_unavailable", "โหลดรายละเอียดชุดผ่านรายการไม่ได้ (อาจไม่มีสิทธิ์เข้าจอผ่านรายการ)")}</p>}
+                      {postBatchView && !postBatchView.info && !postBatchView.failed && <p className="mt-2 text-[0.9rem] text-muted-foreground">{tr("gl_journal_postbatch_loading", "กำลังโหลดข้อมูลชุดผ่านรายการ…")}</p>}
+                    </section>
+                  )}
                   <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
                     onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} booktype={findJournalBook(books, journal.bookcode)?.booktype} journalId={journal.id}
                     editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
@@ -971,6 +1054,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </h2>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    {navButtons}
                     <UnsavedBadge dirty={dirty} />
                     <Button
                       type="button"
@@ -1051,7 +1135,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           <ChampField label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} aria-label={tr("gl_reference_document", "เอกสารอ้างอิง")} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></ChampField>
                           <ChampField label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} aria-label={tr("gl_ref_date", "วันที่อ้างอิง")} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></ChampField>
                           <ChampField label={tr("gl_description", "คำอธิบาย")} wide>
-                            <input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
+                            <div className="flex min-w-0 items-start gap-2">
+                              <input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description.replace(/\r?\n/g, " ")} onChange={(e) => patch({ description: e.target.value })} maxLength={DESCRIPTION_MAX_LENGTH} />
+                              <Button type="button" variant="outline" className={`${actionClass} px-2.5`} onClick={() => void expandDescription()} aria-label={tr("gl_journal_expand_desc", "ขยายคำอธิบาย (เขียนหลายบรรทัด)")} title={tr("gl_journal_expand_desc", "ขยายคำอธิบาย (เขียนหลายบรรทัด)")}>
+                                <Maximize2 className="size-4" />
+                              </Button>
+                            </div>
                           </ChampField>
                           <ChampField label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} aria-label={tr("gl_branch_code", "รหัสสาขา")} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></ChampField>
                         </ChampGroupBox>
@@ -1177,13 +1266,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
                   {/* Totals & Balance Guard Card */}
                   <div
-                    className={`grid gap-2 rounded-xl border p-3 sm:grid-cols-3 transition-colors ${
+                    className={`grid gap-2 rounded-xl border p-3 sm:grid-cols-4 transition-colors ${
                       smartGuard?.isBalanced
                         ? "border-primary/30 bg-primary/5"
                         : "border-destructive/30 bg-destructive/5"
                     }`}
                     aria-live="polite"
                   >
+                    <div>
+                      <div className="text-[0.9rem] text-muted-foreground">{tr("gl_entry_count", "จำนวนรายการ")}</div>
+                      <strong className="text-lg tabular-nums">{entryCount}</strong>
+                    </div>
                     <div>
                       <div className="text-[0.9rem] text-muted-foreground">{tr("gl_total_debit", "รวมเดบิต")}</div>
                       <strong className="text-lg tabular-nums">

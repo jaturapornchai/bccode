@@ -98,6 +98,13 @@ describe("GLVoucherPrint", () => {
     // เจ้าหนี้ไม่มีเดบิต: ช่องว่าง ไม่ใช่ 0.00
     expect(html).not.toContain(">0.00<");
   });
+  it("fills the checker and approver signature boxes from the posting batch and leaves them blank otherwise", () => {
+    const books = [{ code: "UV", name: "สมุดรายวันซื้อ", booktype: 5, isactive: true }];
+    const posted = renderToStaticMarkup(createElement(GLVoucherPrint, { journal, books, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", tr, language: "th", postBatch: { batchno: "7", check1: "สมชาย ใจดี", check2: "สมหญิง รักงาน", approver: "สมศักดิ์ มั่นคง" } }));
+    expect(posted).toContain("(สมชาย ใจดี / สมหญิง รักงาน)");
+    expect(posted).toContain("(สมศักดิ์ มั่นคง)");
+    expect(html).not.toContain("(สม");
+  });
 });
 
 // หัวงบตาม TFRS for NPAEs ย่อหน้า 4.7 (ชื่อกิจการ ชื่องบ วันที่/งวด หน่วยเงิน) + คอลัมน์ปีก่อน ย่อหน้า 4.3 — ตัวเลขมาจาก backend
