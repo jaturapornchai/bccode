@@ -72,10 +72,16 @@ async function runUat() {
   console.log('   └─ ถ่ายภาพหน้าจอ Sale Order สำเร็จ: uat-datacrud-saleorder.png');
 
   // Test 3: Purchase
-  console.log('👉 [6/6] เปิดหน้าจอซื้อสินค้า,บริการ (/transaction/purchase)...');
+  console.log('👉 [6/7] เปิดหน้าจอซื้อสินค้า,บริการ (/transaction/purchase)...');
   await openBySearch('บันทึกซื้อสินค้า,บริการ', 'บันทึกซื้อสินค้า,บริการ');
   await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-purchase.png') });
   console.log('   └─ ถ่ายภาพหน้าจอ Purchase สำเร็จ: uat-datacrud-purchase.png');
+
+  // Test 4: Sale Invoice
+  console.log('👉 [7/7] เปิดหน้าจอบันทึกขายสินค้า,บริการ (/transaction/sale)...');
+  await openBySearch('บันทึกขายสินค้า,บริการ', 'บันทึกขายสินค้า,บริการ');
+  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-sale.png') });
+  console.log('   └─ ถ่ายภาพหน้าจอ Sale Invoice สำเร็จ: uat-datacrud-sale.png');
 
   await browser.close();
   console.log('\n🎉 ผลการทดสอบ Browser UAT สำเร็จสมบูรณ์ 100%!');
