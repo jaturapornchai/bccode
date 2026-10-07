@@ -22,6 +22,8 @@ const (
 	PostBatchKind           = "post-batches"
 	PostBatchMaxJournals    = 200
 	PostBatchRemarkMaxRunes = 500
+	// PostBatchPersonMaxRunes = Champ BCPostTrans.BatchCheck1/BatchCheck2/BatchApprove VARCHAR(50).
+	PostBatchPersonMaxRunes = 50
 )
 
 // PostBatchInput: filters for "check" (all optional; blank = no bound) and the journals for "create".
@@ -33,6 +35,10 @@ type PostBatchInput struct {
 	DocNoTo   string          `json:"docnoto,omitempty"`
 	Items     []PostBatchItem `json:"items,omitempty"`
 	Remark    string          `json:"remark,omitempty"`
+	// Signatories of the batch (Champ posting dialog): the approver is required, the two reviewers are not.
+	Check1   string `json:"check1,omitempty"`
+	Check2   string `json:"check2,omitempty"`
+	Approver string `json:"approver,omitempty"`
 }
 
 // PostBatchItem is one draft to post at the version the user checked (stale = whole batch refused).
@@ -50,6 +56,9 @@ type PostBatch struct {
 	PostedBy   string             `json:"postedby"`
 	Count      int                `json:"count"`
 	Remark     string             `json:"remark"`
+	Check1     string             `json:"check1,omitempty"`
+	Check2     string             `json:"check2,omitempty"`
+	Approver   string             `json:"approver"`
 	BranchCode string             `json:"branchcode,omitempty"`
 	Journals   []PostBatchJournal `json:"journals"`
 }
@@ -213,6 +222,10 @@ func (s *PostgresStore) postBatch(ctx context.Context, tx *sql.Tx, scope Scope, 
 		return Event{}, &UserError{Code: "post_batch_remark_too_long", Field: "remark", Status: http.StatusBadRequest, Args: []string{strconv.Itoa(PostBatchRemarkMaxRunes)},
 			Message: fmt.Sprintf("หมายเหตุชุดผ่านรายการต้องไม่เกิน %d ตัวอักษร", PostBatchRemarkMaxRunes)}
 	}
+	check1, check2, approver, err := postBatchSignatories(*in)
+	if err != nil {
+		return Event{}, err
+	}
 	seen := map[string]bool{}
 	for _, item := range in.Items {
 		if item.ID == "" || item.Version < 1 || seen[item.ID] {
@@ -224,7 +237,7 @@ func (s *PostgresStore) postBatch(ctx context.Context, tx *sql.Tx, scope Scope, 
 	if err != nil {
 		return Event{}, err
 	}
-	batch := PostBatch{BatchNo: batchNo, PostedAt: now, PostedBy: scope.Actor, Remark: remark, BranchCode: scope.Branch, Journals: []PostBatchJournal{}}
+	batch := PostBatch{BatchNo: batchNo, PostedAt: now, PostedBy: scope.Actor, Remark: remark, Check1: check1, Check2: check2, Approver: approver, BranchCode: scope.Branch, Journals: []PostBatchJournal{}}
 	for index, item := range in.Items {
 		post := Command{Resource: "journals", Action: "post", ID: item.ID, Version: item.Version, RequestID: fmt.Sprintf("%s#%d", cmd.RequestID, index+1), Reason: cmd.Reason, postBatchNo: batchNo}
 		changes, err := s.mutateJournal(ctx, tx, scope, post, now)
@@ -246,6 +259,22 @@ func (s *PostgresStore) postBatch(ctx context.Context, tx *sql.Tx, scope Scope, 
 		return Event{}, err
 	}
 	return s.appendEvent(ctx, tx, scope, cmd, hash, changes, now)
+}
+
+// postBatchSignatories trims the reviewer/approver names. Champ refuses to post without an approver
+// (GLDlgPosttransDetail.cpp OnConfirm); the reviewers may stay blank. Each name is at most 50 characters.
+func postBatchSignatories(in PostBatchInput) (check1, check2, approver string, err error) {
+	check1, check2, approver = strings.TrimSpace(in.Check1), strings.TrimSpace(in.Check2), strings.TrimSpace(in.Approver)
+	if approver == "" {
+		return "", "", "", fieldError("post_batch_approver_required", "approver", "กรุณาระบุชื่อผู้อนุมัติก่อนผ่านรายการ")
+	}
+	for _, person := range []struct{ field, name string }{{"check1", check1}, {"check2", check2}, {"approver", approver}} {
+		if utf8.RuneCountInString(person.name) > PostBatchPersonMaxRunes {
+			return "", "", "", &UserError{Code: "post_batch_person_too_long", Field: person.field, Status: http.StatusBadRequest, Args: []string{strconv.Itoa(PostBatchPersonMaxRunes)},
+				Message: fmt.Sprintf("ชื่อผู้ตรวจสอบหรือผู้อนุมัติต้องไม่เกิน %d ตัวอักษร", PostBatchPersonMaxRunes)}
+		}
+	}
+	return check1, check2, approver, nil
 }
 
 // nextPostBatchNo: running number per company (000001, 000002, …); the company lock of the

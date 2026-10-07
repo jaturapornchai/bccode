@@ -59,6 +59,13 @@ func (f *pgIntegrityFixture) failWith(cmd Command, code string) *UserError {
 	return user
 }
 
+const testApprover = "นายสมชาย ใจดี"
+
+// batchInput = the journals to post plus the approver Champ requires on every batch.
+func batchInput(journals ...Journal) *PostBatchInput {
+	return &PostBatchInput{Items: batchItems(journals...), Approver: testApprover}
+}
+
 func batchItems(journals ...Journal) []PostBatchItem {
 	items := []PostBatchItem{}
 	for _, j := range journals {
@@ -107,7 +114,7 @@ func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 	}
 
 	events := f.countRows(`SELECT count(*) FROM gl_events`)
-	user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(a, b, bad)}}, "post_batch_item_failed")
+	user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(a, b, bad)}, "post_batch_item_failed")
 	if len(user.Args) != 2 || user.Args[0] != "JV003" {
 		t.Fatalf("failure must name the journal: %+v", user)
 	}
@@ -116,7 +123,7 @@ func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 		t.Fatal("a failed batch left something behind")
 	}
 
-	cmd := Command{Resource: PostBatchKind, Action: "create", RequestID: uuid.NewString(), Reason: "ผ่านรายการประจำเดือนมกราคม 2569", PostBatch: &PostBatchInput{Items: batchItems(a, b), Remark: "ผ่านรายการประจำเดือนมกราคม 2569"}}
+	cmd := Command{Resource: PostBatchKind, Action: "create", RequestID: uuid.NewString(), Reason: "ผ่านรายการประจำเดือนมกราคม 2569", PostBatch: &PostBatchInput{Items: batchItems(a, b), Remark: "ผ่านรายการประจำเดือนมกราคม 2569", Check1: "  นางสาวสุดา มั่นคง ", Approver: " " + testApprover + " "}}
 	r := f.run(cmd)
 	if r.BatchNo != "000001" || r.PostedJournals != 2 || r.ID == "" || r.Version != 1 {
 		t.Fatalf("batch result wrong: %+v", r)
@@ -135,7 +142,8 @@ func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	var batch PostBatch
-	if err := json.Unmarshal(raw, &batch); err != nil || batch.Count != 2 || len(batch.Journals) != 2 || batch.Journals[0].DocNo != "JV001" || batch.PostedBy != "tester" || batch.Remark != "ผ่านรายการประจำเดือนมกราคม 2569" {
+	if err := json.Unmarshal(raw, &batch); err != nil || batch.Count != 2 || len(batch.Journals) != 2 || batch.Journals[0].DocNo != "JV001" || batch.PostedBy != "tester" || batch.Remark != "ผ่านรายการประจำเดือนมกราคม 2569" ||
+		batch.Check1 != "นางสาวสุดา มั่นคง" || batch.Check2 != "" || batch.Approver != testApprover {
 		t.Fatalf("batch record wrong: %v %+v", err, batch)
 	}
 
@@ -146,14 +154,54 @@ func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 	if rest := f.postCheck(PostBatchInput{DateTo: "2026-12-31"}); len(rest.Rows) != 1 || rest.Rows[0].DocNo != "JV003" {
 		t.Fatalf("posted journals must leave the list: %+v", rest.Rows)
 	}
-	f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(a)}}, "post_batch_item_failed") // already posted
+	f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(a)}, "post_batch_item_failed") // already posted
 	next := f.draftOn("JV004", "2026-01-08")
-	if r2 := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(next)}}); r2.BatchNo != "000002" {
+	if r2 := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(next)}); r2.BatchNo != "000002" {
 		t.Fatalf("batch no must run: %+v", r2)
 	}
 	f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{}}, "post_batch_empty")
-	f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: []PostBatchItem{{ID: bad.ID, Version: bad.Version}, {ID: bad.ID, Version: bad.Version}}}}, "post_batch_item_invalid")
+	f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: []PostBatchItem{{ID: bad.ID, Version: bad.Version}, {ID: bad.ID, Version: bad.Version}}, Approver: testApprover}}, "post_batch_item_invalid")
 	f.deny(f.scope, Command{Resource: PostBatchKind, Action: "delete", ID: r.ID, Version: r.Version})
+}
+
+// Champ GLDlgPosttransDetail: the approver is required (blank = refused, nothing posted), the reviewers
+// are optional, and each name fits BCPostTrans VARCHAR(50) counted in characters, not bytes.
+func TestPostBatchSignatories(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	a := f.draftOn("JV201", "2026-01-05")
+	items := batchItems(a)
+	events := f.countRows(`SELECT count(*) FROM gl_events`)
+	for _, blank := range []string{"", "   "} {
+		user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: items, Approver: blank, Check1: "นางสาวสุดา มั่นคง"}}, "post_batch_approver_required")
+		if user.Field != "approver" {
+			t.Fatalf("approver error must point at the field: %+v", user)
+		}
+	}
+	long := strings.Repeat("ก", PostBatchPersonMaxRunes+1) // 51 characters, 153 bytes
+	for field, input := range map[string]PostBatchInput{
+		"check1":   {Items: items, Approver: testApprover, Check1: long},
+		"check2":   {Items: items, Approver: testApprover, Check2: long},
+		"approver": {Items: items, Approver: long},
+	} {
+		input := input
+		if user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &input}, "post_batch_person_too_long"); user.Field != field || len(user.Args) != 1 || user.Args[0] != "50" {
+			t.Fatalf("%s: wrong error %+v", field, user)
+		}
+	}
+	if f.countRows(`SELECT count(*) FROM gl_events`) != events || f.journal(a.ID).Status != "draft" || f.countRows(`SELECT count(*) FROM gl_records WHERE kind=$1`, PostBatchKind) != 0 {
+		t.Fatal("a refused batch left something behind")
+	}
+
+	fifty := strings.Repeat("ก", PostBatchPersonMaxRunes) // exactly 50 characters is allowed
+	r := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: items, Approver: fifty, Check1: fifty, Check2: " นายวิชัย รักดี "}})
+	var raw []byte
+	if err := f.db.QueryRow(`SELECT payload FROM gl_records WHERE company='C' AND kind=$1 AND code=$2`, PostBatchKind, r.BatchNo).Scan(&raw); err != nil {
+		t.Fatal(err)
+	}
+	var batch PostBatch
+	if err := json.Unmarshal(raw, &batch); err != nil || batch.Approver != fifty || batch.Check1 != fifty || batch.Check2 != "นายวิชัย รักดี" {
+		t.Fatalf("batch signatories wrong: %v %+v", err, batch)
+	}
 }
 
 func TestPostBatchRejectsLockedPeriodAndStaleVersion(t *testing.T) {
@@ -168,7 +216,7 @@ func TestPostBatchRejectsLockedPeriodAndStaleVersion(t *testing.T) {
 	if len(check.Rows) != 2 || !check.Rows[0].OK || check.Rows[1].OK || !strings.Contains(check.Rows[1].Message, "ถูกล็อก") {
 		t.Fatalf("locked-period row not flagged: %+v", check.Rows)
 	}
-	user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(jan, feb)}}, "post_batch_item_failed")
+	user := f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(jan, feb)}, "post_batch_item_failed")
 	if user.Args[0] != "JV102" || f.journal(jan.ID).Status != "draft" {
 		t.Fatalf("locked period must stop the whole batch: %+v", user)
 	}
@@ -179,11 +227,11 @@ func TestPostBatchRejectsLockedPeriodAndStaleVersion(t *testing.T) {
 	edited := f.journal(jan.ID)
 	edited.Description = "ขายวัสดุก่อสร้าง ให้ลูกค้าโครงการก่อสร้าง A เป็นเงินเชื่อ"
 	f.run(Command{Resource: "journals", Action: "update", ID: edited.ID, Version: edited.Version, Journal: &edited})
-	user = f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(feb, jan)}}, "post_batch_item_failed")
+	user = f.failWith(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(feb, jan)}, "post_batch_item_failed")
 	if user.Args[0] != "JV101" || f.journal(feb.ID).Status != "draft" || f.countRows(`SELECT count(*) FROM gl_lines`) != 0 {
 		t.Fatalf("stale version must stop the whole batch: %+v", user)
 	}
-	if r := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: &PostBatchInput{Items: batchItems(feb, f.journal(jan.ID))}}); r.PostedJournals != 2 {
+	if r := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(feb, f.journal(jan.ID))}); r.PostedJournals != 2 {
 		t.Fatalf("fresh versions must post: %+v", r)
 	}
 }

@@ -1,6 +1,7 @@
 package generalledger
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -85,7 +86,7 @@ func TestPlanMonthlyPeriodsSkipsExistingMonths(t *testing.T) {
 func TestPlanMonthlyPeriodsRejectsOverlap(t *testing.T) {
 	year := FiscalYear{Code: "2569", StartDate: "2026-01-01", EndDate: "2026-12-31"}
 	for _, existing := range []Master{
-		{Code: "Q1", StartDate: "2026-01-01", EndDate: "2026-03-31"},  // quarter spans three months
+		{Code: "Q1", StartDate: "2026-01-01", EndDate: "2026-03-31"},   // quarter spans three months
 		{Code: "HALF", StartDate: "2026-04-10", EndDate: "2026-04-30"}, // part of a month
 		{Code: "PREV", StartDate: "2025-12-01", EndDate: "2026-01-15"}, // reaches in from outside
 	} {
@@ -127,6 +128,33 @@ func TestValidatePostBatchFilter(t *testing.T) {
 		}
 		if user, ok := AsUserError(err); !ok || user.Code != c.code {
 			t.Fatalf("%+v: want %s, got %v", c.filter, c.code, err)
+		}
+	}
+}
+
+func TestPostBatchSignatoriesRules(t *testing.T) {
+	c1, c2, ap, err := postBatchSignatories(PostBatchInput{Check1: "  นางสาวสุดา มั่นคง ", Approver: "	นายสมชาย ใจดี "})
+	if err != nil || c1 != "นางสาวสุดา มั่นคง" || c2 != "" || ap != "นายสมชาย ใจดี" {
+		t.Fatalf("names must be trimmed and reviewers optional: %q %q %q %v", c1, c2, ap, err)
+	}
+	fifty := strings.Repeat("ก", PostBatchPersonMaxRunes)
+	if _, _, _, err := postBatchSignatories(PostBatchInput{Check1: fifty, Check2: fifty, Approver: fifty}); err != nil {
+		t.Fatalf("50 characters (150 bytes) must be allowed: %v", err)
+	}
+	for _, c := range []struct {
+		input PostBatchInput
+		code  string
+		field string
+	}{
+		{PostBatchInput{}, "post_batch_approver_required", "approver"},
+		{PostBatchInput{Approver: " 	 ", Check1: "นางสาวสุดา มั่นคง"}, "post_batch_approver_required", "approver"},
+		{PostBatchInput{Approver: "นายสมชาย ใจดี", Check1: fifty + "ข"}, "post_batch_person_too_long", "check1"},
+		{PostBatchInput{Approver: "นายสมชาย ใจดี", Check2: fifty + "ข"}, "post_batch_person_too_long", "check2"},
+		{PostBatchInput{Approver: fifty + "ข"}, "post_batch_person_too_long", "approver"},
+	} {
+		_, _, _, err := postBatchSignatories(c.input)
+		if user, ok := AsUserError(err); !ok || user.Code != c.code || user.Field != c.field {
+			t.Fatalf("%+v: want %s on %s, got %v", c.input, c.code, c.field, err)
 		}
 	}
 }

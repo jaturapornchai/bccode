@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { GLPostCheckRow } from "@/lib/general-ledger";
-import { EMPTY_POST_BATCH_FILTER, GLPostBatch, postBatchFilterPayload, postBatchItems, postBatchShortcut, postBatchSummary, readyRowIds, toggleAllReady } from "./gl-post-batch";
+import { EMPTY_POST_BATCH_FILTER, EMPTY_POST_BATCH_SIGNATORIES, GLPostBatch, POST_BATCH_PERSON_MAX_LENGTH, postBatchCreatePayload, postBatchFilterPayload, postBatchItems, postBatchShortcut, postBatchSummary, readyRowIds, toggleAllReady } from "./gl-post-batch";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -24,6 +24,14 @@ describe("batch posting helpers (Champ 5512)", () => {
     expect(postBatchFilterPayload(EMPTY_POST_BATCH_FILTER)).toEqual({});
     expect(postBatchFilterPayload({ bookcode: " JV ", datefrom: "2026-01-01", dateto: "", docnofrom: "  ", docnoto: "JV0099 " }))
       .toEqual({ bookcode: "JV", datefrom: "2026-01-01", docnoto: "JV0099" });
+  });
+
+  it("sends the trimmed signatories with the batch; blank reviewers are left out, the approver is always sent", () => {
+    const items = [{ id: "1", version: 2 }];
+    expect(postBatchCreatePayload(items, { remark: "  ผ่านรายการประจำเดือนมกราคม 2569 ", check1: " นางสาวสุดา มั่นคง ", check2: "   ", approver: "  นายสมชาย ใจดี " }))
+      .toEqual({ items, remark: "ผ่านรายการประจำเดือนมกราคม 2569", check1: "นางสาวสุดา มั่นคง", approver: "นายสมชาย ใจดี" });
+    expect(postBatchCreatePayload(items, { remark: "", ...EMPTY_POST_BATCH_SIGNATORIES })).toEqual({ items, remark: "", approver: "" });
+    expect(POST_BATCH_PERSON_MAX_LENGTH).toBe(50);
   });
 
   it("selects only rows that passed the check, and F2 toggles between all ready and none", () => {
@@ -61,7 +69,9 @@ describe("batch posting helpers (Champ 5512)", () => {
 
   it("renders Thai labels with keyboard hints and the reverse tab", () => {
     const html = renderToStaticMarkup(createElement(GLPostBatch, { route: "/gl/posting" }));
-    for (const text of ["ผ่านรายการทีละชุด", "กลับรายการที่ผ่านแล้ว", "ทุกสมุดรายวัน", "จากวันที่", "ถึงวันที่", "จากเลขที่เอกสาร", "ถึงเลขที่เอกสาร", "ประมวลผล", "บันทึกรายการ", "(F7)", "(F2)", "(F11)"]) expect(html).toContain(text);
+    for (const text of ["ผ่านรายการทีละชุด", "กลับรายการที่ผ่านแล้ว", "ทุกสมุดรายวัน", "จากวันที่", "ถึงวันที่", "จากเลขที่เอกสาร", "ถึงเลขที่เอกสาร", "ประมวลผล", "บันทึกรายการ", "ผู้ตรวจสอบ 1", "ผู้ตรวจสอบ 2", "ผู้อนุมัติ *", "หมายเหตุชุดผ่านรายการ", "(F7)", "(F2)", "(F11)"]) expect(html).toContain(text);
+    expect(html).toContain("aria-required=\"true\"");
+    expect(html.match(/maxLength="50"/gi)?.length ?? 0).toBeGreaterThanOrEqual(5); // doc no x2 + check1 + check2 + approver
     expect(html).toContain("role=\"tablist\"");
   });
 

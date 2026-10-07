@@ -86,8 +86,8 @@ export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number;
 export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
 export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "post-batches"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
-/** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark */
-export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string };
+/** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark + ผู้ตรวจสอบ 1/2 (ไม่บังคับ) + ผู้อนุมัติ (บังคับ) */
+export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string; check1?: string; check2?: string; approver?: string };
 /** ผลตรวจหนึ่งใบจาก backend: ok = ผ่านกฎเดียวกับการผ่านรายการ; debit/credit = สตริงทศนิยมยอดรวมของใบ */
 export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string };
 export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };

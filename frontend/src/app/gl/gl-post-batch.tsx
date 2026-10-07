@@ -26,6 +26,20 @@ export function postBatchFilterPayload(filter: PostBatchFilter): GLPostBatchInpu
   }
   return payload;
 }
+/** ผู้ตรวจสอบ 1/2 (ไม่บังคับ) และผู้อนุมัติ (บังคับ) ของชุดผ่านรายการ ตามกล่องรายละเอียดชุดของ Champ — ชื่อยาวสุด 50 ตัวอักษร (BatchCheck1/2/Approve VARCHAR(50)) */
+export type PostBatchSignatories = { check1: string; check2: string; approver: string };
+export const EMPTY_POST_BATCH_SIGNATORIES: PostBatchSignatories = { check1: "", check2: "", approver: "" };
+export const POST_BATCH_PERSON_MAX_LENGTH = 50;
+
+/** คำสั่งผ่านรายการ (post_batches.go action "create"): ตัดช่องว่างหัวท้ายทุกช่อง ไม่ส่งผู้ตรวจสอบที่ว่าง */
+export function postBatchCreatePayload(items: { id: string; version: number }[], header: { remark: string } & PostBatchSignatories): GLPostBatchInput {
+  const payload: GLPostBatchInput = { items, remark: header.remark.trim(), approver: header.approver.trim() };
+  const check1 = header.check1.trim(), check2 = header.check2.trim();
+  if (check1) payload.check1 = check1;
+  if (check2) payload.check2 = check2;
+  return payload;
+}
+
 /** ใบที่ผ่านการตรวจ (เลือกได้) ตามลำดับในตาราง */
 export function readyRowIds(rows: readonly GLPostCheckRow[]): string[] {
   return rows.filter((row) => row.ok).map((row) => row.id);
@@ -84,6 +98,8 @@ function PostBatchPanel() {
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const [filter, setFilter] = useState<PostBatchFilter>(EMPTY_POST_BATCH_FILTER);
   const [remark, setRemark] = useState("");
+  const [signatories, setSignatories] = useState<PostBatchSignatories>(EMPTY_POST_BATCH_SIGNATORIES);
+  const approverRef = useRef<HTMLInputElement>(null);
   const [check, setCheck] = useState<GLPostCheck | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [checking, setChecking] = useState(false);
@@ -118,6 +134,7 @@ function PostBatchPanel() {
     if (working) return;
     const items = postBatchItems(rows, selected);
     if (!items.length) { setError(tr("gl_post_batch_select_first", "กรุณาเลือกใบที่พร้อมผ่านรายการอย่างน้อย 1 ใบ")); return; }
+    if (!signatories.approver.trim()) { setError(tr("gl_err_post_batch_approver_required", "กรุณาระบุชื่อผู้อนุมัติก่อนผ่านรายการ")); approverRef.current?.focus(); return; }
     if (!await confirm({
       title: fillText(tr("gl_post_batch_confirm_title", "ผ่านรายการ {0} ใบ?"), items.length.toLocaleString("th-TH")),
       description: tr("gl_post_batch_confirm_detail", "ระบบจะผ่านรายการทุกใบที่เลือกพร้อมกันเป็นชุดเดียว ถ้ามีใบใดผ่านไม่ได้ จะไม่ผ่านเลยสักใบ หลังผ่านรายการแล้วแก้ไขได้ด้วยการกลับรายการเท่านั้น"),
@@ -126,15 +143,15 @@ function PostBatchPanel() {
     })) return;
     try {
       setError("");
-      const result = await execute({ resource: "post-batches", action: "create", postbatch: { items, remark: remark.trim() } });
+      const result = await execute({ resource: "post-batches", action: "create", postbatch: postBatchCreatePayload(items, { remark, ...signatories }) });
       toast.success(fillText(tr("gl_post_batch_done", "ผ่านรายการชุดที่ {0} แล้ว {1} ใบ"), result?.batchno ?? "", (result?.postedjournals ?? items.length).toLocaleString("th-TH")));
-      setRemark("");
+      setRemark(""); setSignatories(EMPTY_POST_BATCH_SIGNATORIES);
     } catch (e) {
       setError(commandFailure(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")).message);
     }
     // ทั้งสำเร็จและไม่สำเร็จ: ตรวจใหม่ให้ตารางตรงกับข้อมูลจริง (ใบที่ผ่านแล้วหายไป / ใบที่มีปัญหาขึ้นเหตุผล)
     await runCheck();
-  }, [working, rows, selected, confirm, execute, remark, runCheck, tr]);
+  }, [working, rows, selected, confirm, execute, remark, signatories, runCheck, tr]);
 
   // ปุ่มลัด F7/F2/F11 ทำงานเฉพาะเมื่อจอนี้มองเห็นอยู่ (แท็บเมนูอื่นที่ซ่อนอยู่ไม่รับ) และไม่มีกล่องยืนยันเปิดอยู่
   const dialogOpen = confirmationDialog !== null;
@@ -157,7 +174,7 @@ function PostBatchPanel() {
   const allReadySelected = summary.ready > 0 && summary.selected === summary.ready;
 
   return <section ref={rootRef} className={cn(panel, "flex min-h-0 flex-1 flex-col gap-3")} aria-busy={working}>
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <Field label={tr("gl_journal", "สมุดรายวัน")}>
         <Combobox aria-label={tr("gl_journal", "สมุดรายวัน")} value={filter.bookcode} disabled={working} onChange={(value) => changeFilter({ bookcode: String(value) })}
           options={[{ value: "", label: tr("gl_post_batch_all_books", "ทุกสมุดรายวัน") }, ...books.map((book) => ({ value: book.code, label: `${book.code} · ${journalBookName(book, book.code, language)}` }))]} />
@@ -166,6 +183,11 @@ function PostBatchPanel() {
       <Field label={tr("gl_to_date", "ถึงวันที่")}><input className={control} type="date" value={filter.dateto} disabled={working} onChange={(event) => changeFilter({ dateto: event.target.value })} /></Field>
       <Field label={tr("gl_post_batch_docno_from", "จากเลขที่เอกสาร")}><input className={control} value={filter.docnofrom} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnofrom: event.target.value })} /></Field>
       <Field label={tr("gl_post_batch_docno_to", "ถึงเลขที่เอกสาร")}><input className={control} value={filter.docnoto} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnoto: event.target.value })} /></Field>
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Field label={tr("gl_post_batch_check1", "ผู้ตรวจสอบ 1")}><input className={control} value={signatories.check1} disabled={working} maxLength={POST_BATCH_PERSON_MAX_LENGTH} onChange={(event) => setSignatories((value) => ({ ...value, check1: event.target.value }))} /></Field>
+      <Field label={tr("gl_post_batch_check2", "ผู้ตรวจสอบ 2")}><input className={control} value={signatories.check2} disabled={working} maxLength={POST_BATCH_PERSON_MAX_LENGTH} onChange={(event) => setSignatories((value) => ({ ...value, check2: event.target.value }))} /></Field>
+      <Field label={`${tr("gl_post_batch_approver", "ผู้อนุมัติ")} *`}><input ref={approverRef} className={control} value={signatories.approver} disabled={working} maxLength={POST_BATCH_PERSON_MAX_LENGTH} aria-required="true" onChange={(event) => setSignatories((value) => ({ ...value, approver: event.target.value }))} /></Field>
       <Field label={tr("gl_post_batch_remark", "หมายเหตุชุดผ่านรายการ")}><input className={control} value={remark} disabled={working} maxLength={500} onChange={(event) => setRemark(event.target.value)} /></Field>
     </div>
     <div className="flex flex-wrap items-center gap-2">
