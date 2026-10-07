@@ -35,7 +35,12 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		return empty, err
 	}
 	defer tx.Rollback()
-	rc, err := newReportContext(ctx, tx, scope, q)
+	var rc reportContext
+	if name == "budgetdetail" {
+		rc, err = newBudgetDetailContext(tx, scope, q)
+	} else {
+		rc, err = newReportContext(ctx, tx, scope, q)
+	}
 	if err != nil {
 		return empty, err
 	}
@@ -67,6 +72,8 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.glJournal(ctx)
 	case "budgetcomparison":
 		report, err = rc.budgetComparison(ctx)
+	case "budgetdetail":
+		report, err = rc.budgetDetail(ctx)
 	case "statement":
 		report, err = rc.statement(ctx)
 	default:
@@ -674,7 +681,7 @@ func (r reportContext) glJournalSummary(ctx context.Context) (Report, error) {
 
 // budgetComparison (Champ 5530 รายงานเปรียบเทียบงบประมาณ, GLRepBudgetCompView) compares each
 // budget line (budget × account) with the actual movement of that account on posted ledger
-// lines inside the budget's own dimensions ('' = any), excluding opening and closing entries.
+// lines inside the budget's own dimensions (empty = any), excluding opening and closing entries.
 // Actual follows the account's normal balance recorded on the line (credit-normal accounts
 // count credit - debit), so income and expense budgets both read as positive amounts.
 // Budget = the periods of the fiscal year whose start date falls inside the report range
@@ -739,6 +746,84 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 	}
 	// Champ orders the comparison by account, then budget code.
 	return r.runWithTotals(ctx, cte, "accountcode,__sort,budgetcode", cols, []reportTotal{lineOnly("budgetamount"), lineOnly("actualamount"), lineOnly("variance")}, "rowtype", "__sort")
+}
+
+// newBudgetDetailContext builds the context of the budget detail report. Champ 5525 lists the budget table whatever the fiscal
+// year, so no year is resolved: fiscalyear, branch, department, project, budgetcode and the account range only narrow the budgets.
+// A branch session sees only its own branch's budgets, as in listBudgets.
+func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportContext, error) {
+	r := reportContext{tx: tx, scope: scope, query: q}
+	if scope.Company == "" {
+		return r, fmt.Errorf("กรุณาเลือกบริษัท")
+	}
+	if scope.Branch != "" {
+		if q.BranchCode != "" && q.BranchCode != scope.Branch {
+			return r, fmt.Errorf("ไม่มีสิทธิ์รายงานของสาขานี้")
+		}
+		q.BranchCode = scope.Branch
+	}
+	q.AccountFrom, q.AccountTo = NormalizeCode(q.AccountFrom), NormalizeCode(q.AccountTo)
+	if q.AccountFrom != "" && q.AccountTo != "" && q.AccountFrom > q.AccountTo {
+		return r, fieldError("report_account_range_invalid", "accountfrom", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")
+	}
+	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
+	r.query = q
+	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, q.DepartmentCode, q.ProjectCode, NormalizeCode(q.BudgetCode), q.AccountFrom, q.AccountTo}
+	return r, nil
+}
+
+// budgetDetail (Champ 5525 รายงานรายละเอียดงบประมาณ, GLRepBudgetView) prints one row per budget × account, grouped by account:
+// heading (budgetaccount) → rows (budgetline, amount = sum of the account's period amounts) → account total (budgettotal,
+// linecount = rows of the account). Report totals (amount, linecount) count budgetline rows only: they are the grand total
+// "รวมทั้งสิ้น n รายการ". Champ's start/end date is the budget's fiscal year here (a BC budget is the periods of a year, not a
+// date range per row). Order = account code then budget code (GLRepBudgetDlg.cpp:429).
+func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
+	cte := `WITH budget_rows AS (
+		SELECT b.code AS budget_code, b.name AS budget_name, b.fiscal_year, b.branch_code, b.department_code, b.project_code,
+			l.account_code, SUM(l.amount) AS amount
+		FROM gl_budgets b
+		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
+		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3) AND ($4='' OR b.department_code=$4)
+			AND ($5='' OR b.project_code=$5) AND ($6='' OR b.code=$6)
+			AND ($7='' OR l.account_code COLLATE "C">=$7) AND ($8='' OR l.account_code COLLATE "C"<=$8)
+		GROUP BY b.code, b.name, b.fiscal_year, b.branch_code, b.department_code, b.project_code, l.account_code
+	), budget_lines AS (
+		SELECT br.*,
+			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(acc.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
+			COALESCE(fy.payload->>'startdate','') AS start_date, COALESCE(fy.payload->>'enddate','') AS end_date
+		FROM budget_rows br
+		LEFT JOIN gl_records acc ON acc.company=$1 AND acc.kind='accounts' AND acc.code=br.account_code AND NOT COALESCE((acc.payload->>'isdeleted')::boolean, false)
+		LEFT JOIN gl_records fy ON fy.company=$1 AND fy.kind='fiscal-years' AND fy.code=br.fiscal_year AND NOT COALESCE((fy.payload->>'isdeleted')::boolean, false)
+	), result AS (
+		SELECT account_code AS accountcode, MIN(account_name) AS accountname, ''::text AS budgetcode, ''::text AS budgetname,
+			''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode, ''::text AS startdate, ''::text AS enddate,
+			NULL::text AS amount, ''::text AS linecount, 'budgetaccount'::text AS rowtype, '0'::text AS __sort
+		FROM budget_lines GROUP BY account_code
+		UNION ALL
+		SELECT account_code, account_name, budget_code, budget_name, branch_code, department_code, project_code, start_date, end_date,
+			amount::text, '', 'budgetline', '1'
+		FROM budget_lines
+		UNION ALL
+		SELECT account_code, MIN(account_name), '', '', '', '', '', '', '', SUM(amount)::text, COUNT(*)::text, 'budgettotal', '2'
+		FROM budget_lines GROUP BY account_code
+	)`
+	cols := []ReportColumn{
+		textColumn("accountcode", "รหัสผังบัญชี"),
+		textColumn("accountname", "ชื่อผังบัญชี"),
+		textColumn("budgetcode", "รหัส"),
+		textColumn("budgetname", "ชื่อ/รายละเอียด"),
+		textColumn("branchcode", "สาขา"),
+		textColumn("departmentcode", "แผนก"),
+		textColumn("projectcode", "โครงการ"),
+		textColumn("startdate", "วันที่เริ่ม"),
+		textColumn("enddate", "วันที่สิ้นสุด"),
+		amountColumn("amount", "จำนวนเงิน"),
+	}
+	totals := []reportTotal{
+		{key: "amount", expr: "CASE WHEN rowtype='budgetline' THEN amount::numeric ELSE 0 END"},
+		{key: "linecount", expr: "CASE WHEN rowtype='budgetline' THEN 1 ELSE 0 END"},
+	}
+	return r.runWithTotals(ctx, cte, "accountcode,__sort,budgetcode", cols, totals, "rowtype", "linecount", "__sort")
 }
 
 // budgetPeriodsInRange lists the period numbers of the fiscal year whose start date is

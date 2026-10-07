@@ -34,6 +34,10 @@ func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 	if reportScreens["budgetcomparison"] != "budget-comparison-report" {
 		t.Fatalf("expected reportScreens[budgetcomparison] to be budget-comparison-report, got %s", reportScreens["budgetcomparison"])
 	}
+	// Champ 5525 budget detail = print button of the budget screen: same permission as that screen
+	if reportScreens["budgetdetail"] != "gl-budget" || !canReadReport(map[string]bool{"gl-budget": true}, "budgetdetail") || canReadReport(map[string]bool{"budget-comparison-report": true}, "budgetdetail") {
+		t.Fatalf("budgetdetail screen = %q", reportScreens["budgetdetail"])
+	}
 }
 
 func TestJournalSupportReadPermissions(t *testing.T) {

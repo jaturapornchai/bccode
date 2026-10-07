@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { ReportPrintConditions, ReportPrintHeading, GLChartOfAccountsPrint, GLJournalBooksPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { ReportPrintConditions, ReportPrintHeading, GLBudgetsPrint, GLChartOfAccountsPrint, GLJournalBooksPrint, budgetPrintColumnCount, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -326,6 +326,50 @@ describe("GLJournalBooksPrint", () => {
     expect(html.indexOf(">JV<")).toBeLessThan(html.indexOf(">PV<"));
     expect(html).not.toContain("สมุดที่ลบแล้ว");
     expect(html).toContain("รวมทั้งสิ้น 2 รายการ");
+  });
+});
+
+describe("GLBudgetsPrint", () => {
+  const row = (rowtype: string, patch: Record<string, string>) => ({ accountcode: "", accountname: "", budgetcode: "", budgetname: "", branchcode: "", departmentcode: "", projectcode: "", startdate: "", enddate: "", amount: "", linecount: "", rowtype, ...patch });
+  // totals deliberately differ from any sum of the rows: the print must show what the backend returned, not add up itself
+  const report = {
+    rows: [
+      row("budgetaccount", { accountcode: "501101", accountname: "ค่าเช่า" }),
+      row("budgetline", { accountcode: "501101", budgetcode: "B2", budgetname: "งบสำนักงาน", departmentcode: "01", startdate: "2026-01-01", enddate: "2026-12-31", amount: "5000.00" }),
+      row("budgettotal", { accountcode: "501101", amount: "5001.10", linecount: "1" }),
+      row("budgetaccount", { accountcode: "503203", accountname: "ค่าใช้จ่ายเดินทางและที่พัก" }),
+      row("budgetline", { accountcode: "503203", budgetcode: "B1", budgetname: "งบขายและบริหาร", departmentcode: "02", startdate: "2026-01-01", enddate: "2026-12-31", amount: "1234567.80" }),
+      row("budgettotal", { accountcode: "503203", amount: "7.70", linecount: "1" }),
+    ],
+    totals: { amount: "9999.99", linecount: "42" },
+  };
+
+  it("counts the columns: code, name, start, end, amount plus the dimensions in use (landscape from 3 dimensions)", () => {
+    expect(budgetPrintColumnCount([row("budgetline", {})])).toBe(5);
+    expect(budgetPrintColumnCount(report.rows)).toBe(6);
+    expect(budgetPrintColumnCount([row("budgetline", { branchcode: "B1", departmentcode: "01", projectcode: "P1" })])).toBe(8);
+    expect(printOrientation(budgetPrintColumnCount([row("budgetline", { departmentcode: "01", projectcode: "P1" })]))).toBe("portrait");
+    expect(printOrientation(budgetPrintColumnCount([row("budgetline", { branchcode: "B1", departmentcode: "01", projectcode: "P1" })]))).toBe("landscape");
+  });
+
+  it("renders the backend rows as account heading, budget rows and account total, then the backend grand total", () => {
+    const html = renderToStaticMarkup(createElement(GLBudgetsPrint, { report, company: "บริษัท บีซี จำกัด", tr, language: "th" }));
+    expect(html).toContain("รายงานรายละเอียดงบประมาณ");
+    expect(html).toContain("รหัสผังบัญชี");
+    expect(html).toContain("แผนก");
+    expect(html).not.toContain("โครงการ");
+    expect(html.indexOf("501101")).toBeLessThan(html.indexOf("503203"));
+    expect(html).toContain(">1,234,567.80<");
+    expect(html).toContain(">5,001.10<");
+    expect(html).toContain("รวม 1 รายการ");
+    expect(html).toContain("รวมทั้งสิ้น 42 รายการ");
+    expect(html).toContain(">9,999.99<");
+  });
+
+  it("prints the no-records row instead of a total when the report has no rows", () => {
+    const html = renderToStaticMarkup(createElement(GLBudgetsPrint, { report: { rows: [], totals: {} }, company: "", tr, language: "th" }));
+    expect(html).toContain("ไม่พบรายการตามเงื่อนไขที่เลือก");
+    expect(html).not.toContain("รวมทั้งสิ้น");
   });
 });
 

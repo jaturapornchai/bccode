@@ -4,15 +4,18 @@
 // ADR docs/kms/decisions/2026-09-25-gl-monthly-budget.md — เงินเป็นข้อความทศนิยม, ยอดรวมคำนวณด้วย BigInt,
 // การแบ่งยอดทั้งปีเป็นงวดทำที่ backend (action "spread") ไม่คำนวณเองในเบราว์เซอร์
 import { useEffect, useMemo, useState } from "react";
-import { Columns3, Plus, RefreshCw, Save, Search, Trash2, Undo2, X } from "lucide-react";
+import { Columns3, Plus, Printer, RefreshCw, Save, Search, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BUDGET_PERIODS, amountString, blankAmountAsZero, budgetPeriodStarts, budgetPeriodsTotal, formatAmount, type GLBudget, type GLBudgetLine, type GLPage } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLLanguage, useGLText, useReferences } from "./gl-common";
+import { GLBudgetsPrint, budgetPrintColumnCount, printCompanyName, printOrientation, useGLPrint } from "./gl-print";
+import { emptyReportFilters, fetchReport } from "./gl-reports";
 
 type BudgetDraft = Omit<GLBudget, "total">;
 const LIST_LIMIT = 30;
+const PRINT_PAGE_ROWS = 1000;
 const emptyPeriods = () => Array.from({ length: BUDGET_PERIODS }, () => "");
 const newLine = (): GLBudgetLine => ({ accountcode: "", periods: emptyPeriods() });
 function newBudget(fiscalyear: string): BudgetDraft {
@@ -49,6 +52,7 @@ export function GLBudgets({ route }: { route: string }) {
   const [annual, setAnnual] = useState<string[]>([]);
   const [message, setMessage] = useState(""), [error, setError] = useState("");
   const { busy, execute } = useGLCommand();
+  const { print: printJob, portal: printPortal } = useGLPrint();
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const searchDebounce = useDebouncedSearch({ onSearch: (value) => { setPage(1); setSearch(value); }, debounceMs: 2000 });
   const dirty = draft !== null && JSON.stringify(draft) !== original;
@@ -151,6 +155,21 @@ export function GLBudgets({ route }: { route: string }) {
       setRevision((value) => value + 1);
     } catch (e) { setError((e as Error).message); }
   }
+  // Champ 5525 budget detail report = print button on the budget screen; the backend report "budgetdetail" returns the rows and totals
+  async function printBudgets() {
+    if (busy) return;
+    setError("");
+    try {
+      const first = await fetchReport("budgetdetail", emptyReportFilters, 1, PRINT_PAGE_ROWS);
+      const rows = [...(first.rows ?? [])];
+      for (let next = 2; rows.length < first.totalrows; next++) {
+        const chunk = await fetchReport("budgetdetail", emptyReportFilters, next, PRINT_PAGE_ROWS, first.sequence);
+        if (chunk.totalrows !== first.totalrows || chunk.sequence !== first.sequence || !chunk.rows?.length) throw new Error(tr("gl_data_changed_during_export_retry", "ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่"));
+        rows.push(...chunk.rows);
+      }
+      printJob(<GLBudgetsPrint report={{ rows, totals: first.totals }} company={printCompanyName()} tr={tr} language={language} />, printOrientation(budgetPrintColumnCount(rows)));
+    } catch (e) { setError((e as Error).message); }
+  }
   function revert() {
     if (!original) return;
     load(JSON.parse(original) as BudgetDraft);
@@ -162,6 +181,7 @@ export function GLBudgets({ route }: { route: string }) {
       <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
       <Button type="button" variant="outline" className={actionClass} disabled={loading} onClick={() => { setRevision((value) => value + 1); refs.reload(); }}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
       <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()} data-field="budget-add"><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
+      <Button type="button" variant="outline" className={actionClass} disabled={busy || loading || (!list.total && !search)} onClick={() => void printBudgets()} title={tr("gl_budget_report_title", "รายงานรายละเอียดงบประมาณ")} data-field="budget-print"><Printer className="size-4 mr-1.5" />{tr("gl_print", "พิมพ์")}</Button>
     </form>
     <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
       <table className="w-full text-[0.95rem]" data-field="budget-list">
@@ -242,6 +262,7 @@ export function GLBudgets({ route }: { route: string }) {
     </form>;
 
   return <>
+    {printPortal}
     {!draft && <Notice text={message} />}
     {!draft && <Notice error text={error || refs.error} />}
     <SplitWorkbench list={listPane} editor={editorPane} />

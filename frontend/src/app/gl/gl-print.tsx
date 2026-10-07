@@ -440,6 +440,91 @@ export function GLJournalBooksPrint({ books, company, tr, language }: { books: G
   );
 }
 
+const BUDGET_PRINT_DIMENSIONS = ["branchcode", "departmentcode", "projectcode"] as const;
+/** Dimension columns of the budget detail report (Champ 5525): shown only when some budget row uses them. */
+function budgetPrintDimensions(rows: Record<string, string>[]) {
+  return BUDGET_PRINT_DIMENSIONS.filter((key) => rows.some((row) => (row[key] ?? "").trim() !== ""));
+}
+/** Code, name, start, end, amount + the dimensions in use; Champ prints landscape from 3 dimensions, which printOrientation gives at 8 columns. */
+export function budgetPrintColumnCount(rows: Record<string, string>[]) {
+  return 5 + budgetPrintDimensions(rows).length;
+}
+
+/** Budget detail report like Champ 5525 (GLRepBudgetView), rendering the rows of the backend report "budgetdetail" as they come:
+ *  budgetaccount heading → budgetline rows → budgettotal (linecount, amount); report totals = grand total. */
+export function GLBudgetsPrint({ report, company, tr, language }: { report: Pick<GLReport, "rows" | "totals">; company: string; tr: GLTextFn; language: LanguageCode }) {
+  const rows = report.rows ?? [];
+  const dimensions = budgetPrintDimensions(rows);
+  const columnCount = budgetPrintColumnCount(rows);
+  const dimensionLabels = { branchcode: tr("gl_budget_col_branch", "สาขา"), departmentcode: tr("gl_department", "แผนก"), projectcode: tr("gl_project", "โครงการ") };
+  const date = (value: string) => (value ? formatAppDate(value, language) : "");
+  return (
+    <article className="gl-print-chart-of-accounts">
+      <table>
+        <thead>
+          <tr className="gl-print-head">
+            <th colSpan={columnCount}>
+              <ReportPrintHeading company={company} title={tr("gl_budget_report_title", "รายงานรายละเอียดงบประมาณ")} printedBy={printUserName()} printedAt={printedAtText(language)} description={[]} tr={tr} />
+            </th>
+          </tr>
+          <tr>
+            <th>{tr("gl_coa_col_code", "รหัสผังบัญชี")}</th>
+            <th colSpan={columnCount - 1}>{tr("gl_coa_col_name", "ชื่อผังบัญชี")}</th>
+          </tr>
+          <tr>
+            <th>{tr("gl_code", "รหัส")}</th>
+            <th>{tr("gl_budget_list_name", "ชื่อ/รายละเอียด")}</th>
+            {dimensions.map((key) => <th key={key}>{dimensionLabels[key]}</th>)}
+            <th>{tr("gl_budget_col_start", "วันที่เริ่ม")}</th>
+            <th>{tr("gl_budget_col_end", "วันที่สิ้นสุด")}</th>
+            <th className="gl-print-num">{tr("gl_amount", "จำนวนเงิน")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const key = `${row.rowtype}-${row.accountcode}-${row.budgetcode}`;
+            if (row.rowtype === "budgetaccount") {
+              return (
+                <tr key={key}>
+                  <td className="font-mono font-semibold">{row.accountcode}</td>
+                  <td colSpan={columnCount - 1} className="font-semibold">{row.accountname}</td>
+                </tr>
+              );
+            }
+            if (row.rowtype === "budgettotal") {
+              return (
+                <tr key={key} className="gl-print-total">
+                  <td />
+                  <td colSpan={columnCount - 2}>{fillText(tr("gl_budget_account_total", "รวม {0} รายการ"), row.linecount ?? "")}</td>
+                  <td className="gl-print-num">{formatAmount(row.amount ?? "")}</td>
+                </tr>
+              );
+            }
+            return (
+              <tr key={key}>
+                <td className="font-mono">{row.budgetcode}</td>
+                <td>{row.budgetname}</td>
+                {dimensions.map((dimension) => <td key={dimension}>{row[dimension]}</td>)}
+                <td>{date(row.startdate ?? "")}</td>
+                <td>{date(row.enddate ?? "")}</td>
+                <td className="gl-print-num">{formatAmount(row.amount ?? "")}</td>
+              </tr>
+            );
+          })}
+          {rows.length > 0 && (
+            <tr className="gl-print-total">
+              <td />
+              <td colSpan={columnCount - 2}>{fillText(tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ"), report.totals?.linecount ?? "0")}</td>
+              <td className="gl-print-num">{formatAmount(report.totals?.amount ?? "0")}</td>
+            </tr>
+          )}
+          {!rows.length && <tr><td colSpan={columnCount} style={{ textAlign: "center", padding: "2rem" }}>{tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}</td></tr>}
+        </tbody>
+      </table>
+    </article>
+  );
+}
+
 /** รายงานรายละเอียดผังบัญชีแบบ Champ 5520 (GLRepChartOfAccountView): หมวด · รหัสผังบัญชี · ชื่อผังบัญชี (ไทย / อังกฤษ) · ระดับ
  *  เรียงตามต้นไม้ในแต่ละหมวด, ชื่อหมวดพิมพ์แถวแรกของหมวด, "รวม<หมวด> n รายการ" ท้ายหมวด แล้วจำนวนบัญชีคุม/บัญชีย่อยท้ายรายงาน */
 export function GLChartOfAccountsPrint({
@@ -456,12 +541,13 @@ export function GLChartOfAccountsPrint({
   const sorted = sortAccountsHierarchically(accounts);
   const codes = new Set(sorted.map((acc) => acc.accountcode));
   // หมวดของแถว = หมวดของบัญชีรากในต้นไม้ (sortAccountsHierarchically จัดรากตามหมวดอยู่แล้ว ลูกตามพ่อ)
+  const rows: { acc: (typeof sorted)[number]; category: string }[] = [];
   let current = "";
-  const rows = sorted.map((acc) => {
+  for (const acc of sorted) {
     const parent = acc.parentaccountcode?.trim();
     if (!parent || !codes.has(parent) || parent === acc.accountcode) current = acc.accounttype;
-    return { acc, category: current };
-  });
+    rows.push({ acc, category: current });
+  }
   const categoryName = (category: string) => labelText(accountTypeLabels, category, tr);
   const controlCount = sorted.filter((acc) => !acc.allowposting).length;
   const count = (value: number) => value.toLocaleString("th-TH");
