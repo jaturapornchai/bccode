@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"smlcloudplatform/internal/generalledger"
@@ -94,5 +96,102 @@ func TestVatReportsReadRecordedVat(t *testing.T) {
 	// บริษัทอื่น/งวดอื่นต้องว่าง (holding ใหม่ที่ยังไม่มีรายการภาษีเห็นรายงานว่าง ไม่ใช่ error)
 	if other, err := generalledger.VatRecordsForPeriod(ctx, db, "NOPE", 2026, 9, 2); err != nil || len(other) != 0 {
 		t.Fatalf("other company = %+v err=%v", other, err)
+	}
+}
+
+// TestVatRegisterDateBasis - Champ 5536/5537 "พิมพ์ตาม": เดือนเดียวกันเลือกแถวต่างกันตามฐานวันที่ (งวดภาษี / วันที่ใบกำกับ / วันที่เอกสาร)
+// กรองที่ SQL ของ backend; ภาษีซื้อที่ไม่ใช้สิทธิไม่เข้าทะเบียนทุกฐาน; ฐานงวดภาษีต้องได้ชุดเดียวกับ VatRecordsForPeriod (ภ.พ.30)
+func TestVatRegisterDateBasis(t *testing.T) {
+	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_GL_TEST_POSTGRES_DSN")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+	ctx := context.Background()
+	if err := generalledger.EnsureSchema(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	const company = "VATBASIS"
+	cleanup := func() {
+		if _, err := db.Exec(`DELETE FROM gl_records WHERE company=$1`, company); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cleanup()
+	t.Cleanup(cleanup)
+	const party = `"partner_name":"บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด","partner_tax_id":"0105558012349","partner_branch_no":"00000"`
+	row := func(id string, taxType int, invoiceNo, invoiceDate string, periodMonth, claim int) string {
+		r := `{"id":"` + id + `","tax_type":` + strconv.Itoa(taxType) + `,"document_type":1,"tax_invoice_no":"` + invoiceNo + `","tax_invoice_date":"` + invoiceDate + `",` + party +
+			`,"base_amount":"1000","zero_rate_amount":"0","exempt_amount":"0","vat_rate":"7","vat_amount":"70"`
+		if periodMonth > 0 {
+			r += `,"tax_period_year":2026,"tax_period_month":` + strconv.Itoa(periodMonth)
+		}
+		if claim > 0 {
+			r += `,"claim_status":` + strconv.Itoa(claim)
+		}
+		return r + `}`
+	}
+	insert := func(id, docNo, date string, vats ...string) {
+		t.Helper()
+		payload := `{"docno":"` + docNo + `","date":"` + date + `","status":"posted","details":{"vats":[` + strings.Join(vats, ",") + `]}}`
+		if _, err := db.Exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals',$2,$3,1,$4::jsonb)`, company, id, docNo, payload); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// ภาษีซื้อ: PI-1 ปกติ ก.ย.; PI-2 ใบกำกับ ก.ย. ใช้สิทธิ ต.ค.; PI-3 ต้องห้าม (ไม่เข้าทะเบียน);
+	// PI-4 ใบกำกับ ส.ค. บันทึก ก.ย. ใช้สิทธิ ก.ย.; PI-5 ใบกำกับ ก.ย. บันทึก ต.ค. ใช้สิทธิ ก.ย.
+	insert("J1", "SV1", "2026-09-30", row("P1", 1, "PI-1", "2026-09-10", 9, 1), row("P2", 1, "PI-2", "2026-09-12", 10, 1), row("P3", 1, "PI-3", "2026-09-15", 0, 2))
+	insert("J2", "SV2", "2026-09-03", row("P4", 1, "PI-4", "2026-08-28", 9, 1))
+	insert("J3", "SV3", "2026-10-05", row("P5", 1, "PI-5", "2026-09-20", 9, 1))
+	// ภาษีขาย: IV-1 ปกติ ก.ย.; IV-2 ใบกำกับ ก.ย. บันทึก ต.ค. งวด ก.ย.; IV-3 บันทึก ก.ย. ใบกำกับ ต.ค. งวด ต.ค.
+	insert("J4", "UV1", "2026-09-05", row("S1", 2, "IV-1", "2026-09-05", 9, 0))
+	insert("J5", "UV2", "2026-10-02", row("S2", 2, "IV-2", "2026-09-28", 9, 0))
+	insert("J6", "UV3", "2026-09-29", row("S3", 2, "IV-3", "2026-10-01", 10, 0))
+
+	invoiceNos := func(taxType int, basis string) string {
+		t.Helper()
+		records, err := generalledger.VatRecordsForBasis(ctx, db, company, 2026, 9, taxType, basis)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rows, _ := buildVatRegister(records)
+		nos := make([]string, 0, len(rows))
+		for _, r := range rows {
+			nos = append(nos, r.TaxInvoiceNo)
+		}
+		return strings.Join(nos, ",")
+	}
+	for _, tc := range []struct {
+		name     string
+		taxType  int
+		basis    string
+		expected string
+	}{
+		{"purchase default = period", 1, "", "PI-4,PI-1,PI-5"},
+		{"purchase period", 1, generalledger.VatBasisPeriod, "PI-4,PI-1,PI-5"},
+		{"purchase invoice date", 1, generalledger.VatBasisInvoiceDate, "PI-1,PI-2,PI-5"},
+		{"purchase document date", 1, generalledger.VatBasisDocumentDate, "PI-4,PI-1,PI-2"},
+		{"sale period", 2, generalledger.VatBasisPeriod, "IV-1,IV-2"},
+		{"sale invoice date", 2, generalledger.VatBasisInvoiceDate, "IV-1,IV-2"},
+		{"sale document date", 2, generalledger.VatBasisDocumentDate, "IV-1,IV-3"},
+	} {
+		if got := invoiceNos(tc.taxType, tc.basis); got != tc.expected {
+			t.Errorf("%s: invoices = %s, want %s", tc.name, got, tc.expected)
+		}
+	}
+	// ฐานงวดภาษีต้องเป็นชุดเดียวกับที่ ภ.พ.30 ใช้ (VatRecordsForPeriod)
+	period, err := generalledger.VatRecordsForPeriod(ctx, db, company, 2026, 9, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rows, _ := buildVatRegister(period); len(rows) != 3 {
+		t.Errorf("period register = %+v", rows)
+	}
+	if _, err := generalledger.VatRecordsForBasis(ctx, db, company, 2026, 9, 1, "claim"); err == nil {
+		t.Error("unknown basis must be rejected")
 	}
 }

@@ -17,6 +17,7 @@ import {
   type CompanyHeader,
   type TaxEstablishment,
   type ThaiTaxRecord,
+  type VatRegisterDateBasis,
   type VatRegisterDay,
   type VatRegisterGroup,
   type VatRegisterSummary,
@@ -91,6 +92,8 @@ export function TaxFilingWorkbench({
   // ภาษีซื้อ/ขาย: ทะเบียนตามงวดภาษี หรือใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (ยุบ Champ 5522/5523 เป็นแท็บของจอเดิม)
   const [vatView, setVatView] = useState<"register" | "reversed_later">("register");
   // Champ 5537 ตัวเลือก "แยกรับคืน/ลดหนี้": แถวยังเรียงตามวันที่ แยกเฉพาะบรรทัดรวมท้ายรายงาน
+  // Champ 5536/5537 ตัวเลือก "พิมพ์ตาม" (GLRepInputTaxCHMDlg.cpp:108-110): เลือกว่าเดือนที่เลือกกรองด้วยวันที่ใดของแถว — กรองที่ backend (datebasis)
+  const [vatDateBasis, setVatDateBasis] = useState<VatRegisterDateBasis>("period");
   const [separateCreditNotes, setSeparateCreditNotes] = useState(false);
   // Champ 5536/5537 ตัวเลือก "รวมรายวัน": แทรกแถวรวมหลังแถวสุดท้ายของแต่ละวันที่ใบกำกับ (ยอดจาก backend)
   const [dailyTotals, setDailyTotals] = useState(false);
@@ -148,6 +151,7 @@ export function TaxFilingWorkbench({
           ...period,
           type: registerType,
           view: vatView === "reversed_later" ? "reversed_later" : undefined,
+          datebasis: vatView === "register" && vatDateBasis !== "period" ? vatDateBasis : undefined,
           branchcode: vatBranch || undefined,
           language: languageRef.current,
         });
@@ -198,7 +202,7 @@ export function TaxFilingWorkbench({
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatBranch, partnerFrom, partnerTo]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatDateBasis, vatBranch, partnerFrom, partnerTo]);
 
   useEffect(() => {
     void loadData();
@@ -552,6 +556,21 @@ export function TaxFilingWorkbench({
               radioClassName="w-auto px-3 min-h-[2.2em] text-xs font-semibold"
               options={yearOptions.map((y) => ({ value: y, label: yearLabel(y) }))}
             />
+            {isVatType && vatView === "register" && (
+              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <span>{tr("tax_vat_print_by", "พิมพ์ตาม")}</span>
+                <select
+                  value={vatDateBasis}
+                  onChange={(e) => setVatDateBasis(e.target.value as VatRegisterDateBasis)}
+                  data-field="datebasis"
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                >
+                  <option value="period">{tr("gl_detail_vats_tax_period", "งวดภาษี (เดือนที่ยื่น ภ.พ.30)")}</option>
+                  <option value="invoice_date">{tr("tax_vat_summary_sort_date", "วันที่ใบกำกับ")}</option>
+                  <option value="document_date">{tr("document_date", "วันที่เอกสาร")}</option>
+                </select>
+              </label>
+            )}
             {config.formType === "vat_sale" && vatView === "register" && (
               <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
                 <input

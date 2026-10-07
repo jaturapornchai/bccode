@@ -675,6 +675,8 @@ export async function fetchVatRegister(params: {
   type: "sale" | "purchase";
   /** "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ รายงานภาษีซื้อ/ขายที่ยกเลิกข้ามงวด) */
   view?: VatRegisterView;
+  /** Champ 5536 "พิมพ์ตาม": วันที่ที่ใช้เลือกแถวของเดือน — ไม่ส่ง = งวดภาษีที่บันทึก (ใช้กับทะเบียนปกติเท่านั้น) */
+  datebasis?: VatRegisterDateBasis;
   /** สถานประกอบการ (เลขสาขา 5 หลัก); ว่าง = ทุกสถานประกอบการรวมกัน */
   branchcode?: string;
   limit?: number;
@@ -730,6 +732,9 @@ export interface VatRegisterResult {
 }
 
 export type VatRegisterView = "reversed_later";
+
+/** period = งวดภาษี (ค่าเริ่มต้น), invoice_date = วันที่ใบกำกับ, document_date = วันที่เอกสาร — กรองที่ backend */
+export type VatRegisterDateBasis = "period" | "invoice_date" | "document_date";
 
 /** รายงานสรุปยอดภาษี (Champ 5539): ยอดทุกช่องเป็น string ทศนิยมจาก backend — ช่องภาษีซื้อ/ขายว่าง = แถวของอีกฝั่ง */
 export interface VatSummaryRow {

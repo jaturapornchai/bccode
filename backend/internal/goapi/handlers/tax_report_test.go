@@ -341,6 +341,21 @@ func TestTaxVatRegisterHandler_InvalidType(t *testing.T) {
 	}
 }
 
+// ฐานวันที่ (Champ 5536 "พิมพ์ตาม"): รับเฉพาะ period/invoice_date/document_date (ว่าง = period) — ค่าอื่นถูกปฏิเสธก่อนแตะฐานข้อมูล
+func TestTaxVatRegisterHandler_InvalidDateBasis(t *testing.T) {
+	for _, basis := range []string{"tax_date2", "Invoice_Date", " period"} {
+		rec := callTaxReportHandler(t, TaxVatRegisterHandler, `{"year":2026,"month":9,"type":"purchase","datebasis":"`+basis+`"}`, &taxReportTestUser)
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "INVALID_BASIS") {
+			t.Errorf("basis %q: expected 400 INVALID_BASIS, got %d body=%s", basis, rec.Code, rec.Body.String())
+		}
+	}
+	for basis, want := range map[string]bool{"": true, "period": true, "invoice_date": true, "document_date": true, "claim": false} {
+		if got := generalledger.ValidVatBasis(basis); got != want {
+			t.Errorf("ValidVatBasis(%q) = %v, want %v", basis, got, want)
+		}
+	}
+}
+
 func TestTaxVatRegisterHandler_InvalidPeriod(t *testing.T) {
 	rec := callTaxReportHandler(t, TaxVatRegisterHandler, `{"year":2026,"month":13,"type":"sale"}`, &taxReportTestUser)
 	if rec.Code != http.StatusBadRequest {

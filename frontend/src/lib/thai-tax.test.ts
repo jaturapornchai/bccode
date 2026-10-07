@@ -176,6 +176,20 @@ describe("fetchVatRegister", () => {
     expect(result.note).toBe("");
   });
 
+  // Champ 5536 "พิมพ์ตาม": ฐานวันที่ส่งไป backend กรองเดือน (ไม่กรองบน browser); ไม่ส่ง = งวดภาษีเดิม
+  it("ส่ง datebasis เมื่อเลือกวันที่ใบกำกับ/วันที่เอกสาร และไม่ส่งคีย์เมื่อใช้งวดภาษี", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { data: [], total: 0, summary: {} }));
+    vi.stubGlobal("fetch", fetchMock);
+    const base = { holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "purchase" as const };
+    await fetchVatRegister({ ...base, datebasis: "invoice_date" });
+    await fetchVatRegister({ ...base, datebasis: "document_date" });
+    await fetchVatRegister(base);
+    const bodies = fetchMock.mock.calls.map((call) => JSON.parse(String((call as [string, RequestInit])[1].body)) as Record<string, unknown>);
+    expect(bodies[0]).toMatchObject({ datebasis: "invoice_date", type: "purchase" });
+    expect(bodies[1]).toMatchObject({ datebasis: "document_date" });
+    expect(bodies[2]).not.toHaveProperty("datebasis");
+  });
+
   it("401 → unauthorized และ records ว่าง", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401, { status: "error" }));
     vi.stubGlobal("fetch", fetchMock);

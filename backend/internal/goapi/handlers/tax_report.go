@@ -43,6 +43,9 @@ type TaxVatRegisterRequest struct {
 	Type         string `json:"type"` // "sale" หรือ "purchase"
 	// View - "" = ทะเบียนตามงวดภาษี, "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ 5522/5523 ยกเลิกข้ามงวด)
 	View string `json:"view,omitempty"`
+	// DateBasis - วันที่ที่ใช้เลือกแถวของเดือน (Champ 5536 "พิมพ์ตาม", 5537): "" หรือ "period" = งวดภาษีที่บันทึก (ค่าเริ่มต้น), "invoice_date" = วันที่ใบกำกับ,
+	// "document_date" = วันที่เอกสาร (ใบสำคัญ); ใช้กับทะเบียนปกติเท่านั้น — มุมมองยกเลิกข้ามงวดอิงงวดภาษีเสมอ
+	DateBasis string `json:"datebasis,omitempty"`
 	// BranchCode - สถานประกอบการ (เลขสาขา 5 หลักตาม ภ.พ.20 = สาขาของใบสำคัญ); ว่าง = ทุกสถานประกอบการรวมกัน
 	// ม.87 วรรคสาม + ประกาศฯ VAT ฉบับที่ 89 ข้อ 5: รายงานภาษีซื้อ/ขายต้องจัดทำเป็นรายสถานประกอบการ
 	BranchCode string `json:"branchcode,omitempty"`
@@ -145,7 +148,7 @@ func (t vatTotals) group() TaxVatRegisterGroup {
 
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
 // รายงานภาษีซื้อ/ขายรายใบกำกับ อ่านจากรายละเอียดภาษีมูลค่าเพิ่มของใบสำคัญ GL ที่ผ่านรายการแล้ว (details.vats)
-// ของบริษัทที่ผู้ใช้เลือก ตามงวดภาษีที่บันทึก (ไม่ใช่วันที่ใบสำคัญ) — ภาษีซื้อนับเฉพาะรายการที่ใช้สิทธิในงวดนี้
+// ของบริษัทที่ผู้ใช้เลือก ตามงวดภาษีที่บันทึกเป็นค่าเริ่มต้น (หรือวันที่ใบกำกับ/วันที่เอกสารตาม datebasis) — ภาษีซื้อนับเฉพาะรายการที่ใช้สิทธิ
 func TaxVatRegisterHandler(c echo.Context) error {
 	var req TaxVatRegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -163,6 +166,10 @@ func TaxVatRegisterHandler(c echo.Context) error {
 
 	if req.View != "" && req.View != vatViewReversedLater {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_VIEW", "tax_report_view_invalid")
+	}
+
+	if !generalledger.ValidVatBasis(req.DateBasis) {
+		return taxReportFail(c, http.StatusBadRequest, "INVALID_BASIS", "tax_report_basis_invalid")
 	}
 
 	if !isValidReportPeriod(req.Year, req.Month) {
@@ -208,7 +215,7 @@ func TaxVatRegisterHandler(c echo.Context) error {
 	if req.View == vatViewReversedLater {
 		records, err = generalledger.VatCrossPeriodCancellations(ctx, db, businessCode, req.Year, req.Month, taxType)
 	} else {
-		records, err = generalledger.VatRecordsForPeriod(ctx, db, businessCode, req.Year, req.Month, taxType)
+		records, err = generalledger.VatRecordsForBasis(ctx, db, businessCode, req.Year, req.Month, taxType, req.DateBasis)
 	}
 	if err != nil {
 		logger.Error("TaxVatRegister: %v", err)

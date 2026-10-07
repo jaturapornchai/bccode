@@ -343,6 +343,13 @@ const vatTaxMonthSQL = `CASE WHEN jsonb_typeof(v.item->'tax_period_year') = 'num
 // พร้อมเลขที่ใบสำคัญอื่นที่บันทึกใบกำกับฉบับเดียวกัน (DuplicateDocNos) เทียบทุกงวดของบริษัท และเลขที่ของตัวเองเมื่อใบเดียวกันบันทึกซ้ำในใบสำคัญนี้ — ใบที่ยังมีผลคือ ไม่ถูกลบ, สถานะร่างหรือผ่านบัญชี
 // หรือกลับรายการหลังสิ้นงวดของแถว, ไม่ใช่ใบกลับรายการ (ต้นฉบับที่กลับภายในงวดจึงไม่เตือนเมื่อบันทึกใหม่) — ทั้งหมดใน SQL เดียวแบบ GROUP BY ไม่ query ทีละรายการ
 func VatRecordsForPeriod(ctx context.Context, db *sql.DB, company string, year, month, taxType int) ([]VatRecord, error) {
+	return VatRecordsForBasis(ctx, db, company, year, month, taxType, VatBasisPeriod)
+}
+
+// VatRecordsForBasis - เหมือน VatRecordsForPeriod แต่เลือกแถวของเดือน year/month ตามฐานวันที่ (Champ 5536/5537 "พิมพ์ตาม"):
+// VatBasisPeriod = งวดภาษีที่บันทึก, VatBasisInvoiceDate = วันที่ใบกำกับ, VatBasisDocumentDate = วันที่ใบสำคัญ;
+// ภาษีซื้อเฉพาะที่ใช้สิทธิ (claim_status 1) ทุกฐาน
+func VatRecordsForBasis(ctx context.Context, db *sql.DB, company string, year, month, taxType int, basis string) ([]VatRecord, error) {
 	if taxType != 1 && taxType != 2 {
 		return nil, fmt.Errorf("invalid vat tax type %d", taxType)
 	}
@@ -350,13 +357,28 @@ func VatRecordsForPeriod(ctx context.Context, db *sql.DB, company string, year, 
 		return nil, fmt.Errorf("invalid vat tax period %d-%d", year, month)
 	}
 	// jsonb containment เทียบตัวเลขตรง ๆ — แถวที่ไม่มีงวดหรือชนิดไม่ตรงจะไม่ถูกเลือก โดยไม่ต้อง cast ข้อความ
-	filter := map[string]int{"tax_type": taxType, "tax_period_year": year, "tax_period_month": month}
+	filter := map[string]int{"tax_type": taxType}
 	if taxType == 1 {
 		filter["claim_status"] = 1
+	}
+	monthCond := ""
+	switch basis {
+	case "", VatBasisPeriod:
+		filter["tax_period_year"], filter["tax_period_month"] = year, month
+	case VatBasisInvoiceDate:
+		monthCond = " AND LEFT(COALESCE(item->>'tax_invoice_date', ''), 7) = $3"
+	case VatBasisDocumentDate:
+		monthCond = " AND LEFT(doc_date, 7) = $3"
+	default:
+		return nil, fmt.Errorf("invalid vat date basis %q", basis)
 	}
 	rawFilter, err := json.Marshal(filter)
 	if err != nil {
 		return nil, err
+	}
+	args := []any{company, string(rawFilter)}
+	if monthCond != "" {
+		args = append(args, fmt.Sprintf("%04d-%02d", year, month))
 	}
 	rows, err := db.QueryContext(ctx, `
 WITH reversals AS (
@@ -386,7 +408,7 @@ WITH reversals AS (
   WHERE status IN ('draft', 'posted')
      OR (status = 'reversed' AND tax_month <> '' AND LEFT(reversal_date, 7) > tax_month)
 ), period AS (
-  SELECT * FROM live WHERE status IN ('posted', 'reversed') AND item @> $2::jsonb
+  SELECT * FROM live WHERE status IN ('posted', 'reversed') AND item @> $2::jsonb`+monthCond+`
 ), shared AS (
   SELECT invoice_key, array_agg(DISTINCT doc_no ORDER BY doc_no) AS doc_nos
   FROM live
@@ -411,7 +433,7 @@ FROM period p
 LEFT JOIN shared s ON s.invoice_key = p.invoice_key
 LEFT JOIN repeated rp ON rp.journal_id = p.journal_id AND rp.invoice_key = p.invoice_key
   AND rp.claim_status = COALESCE(p.item->>'claim_status', '')
-ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, company, string(rawFilter))
+ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("read vat records: %w", err)
 	}
