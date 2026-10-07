@@ -38,6 +38,7 @@ const CHAMP_LABELS: Record<string, string> = {
   "withholding-tax-deduction": "พิมพ์ภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3,ภ.ง.ด. 53)",
   "product-set-assemble": "บันทึกการจัดชุดสินค้า",
   "product-set-disassemble": "บันทึกการแยกสินค้าออกจากชุด",
+  "product-promotion": "กำหนดโปรโมชั่น",
   "ar-credit-limit": "ตรวจสอบวงเงินเครดิต",
 };
 

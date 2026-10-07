@@ -1337,7 +1337,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "gift",
       "/product/promotion",
       "/product/promotion/list",
-      "กำหนดราคาขาย/โปรโมชั่นสินค้า",
+      "กำหนดโปรโมชั่น",
       "Promotion",
       "รหัสโปรโมชั่น",
       "Promotion code",
