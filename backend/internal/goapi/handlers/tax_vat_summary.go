@@ -85,6 +85,9 @@ func TaxVatSummaryHandler(c echo.Context) error {
 	if !isValidReportPeriod(req.Year, req.Month) {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_PERIOD", "tax_form_period_invalid")
 	}
+	if ok, resp := taxCallerAllowed(c, businessCode); !ok {
+		return resp
+	}
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("TaxVatSummary: db: %v", err)

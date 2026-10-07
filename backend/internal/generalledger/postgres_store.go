@@ -482,6 +482,10 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if j.PostedAt != nil || j.PostedBy != "" || j.ReversalOf != "" || j.IsDeleted || (j.Status != "" && j.Status != "draft") {
 			return nil, fmt.Errorf("สถานะผ่านรายการและข้อมูลกลับรายการกำหนดโดยระบบเท่านั้น")
 		}
+		// closing/reversal are written only by year-end/reverse; reports skip or cancel them, so a forged one hides amounts.
+		if contains([]string{"closing", "reversal", "mapping"}, j.Kind) {
+			return nil, errJournalKindNotAllowed
+		}
 		j.Lines = append([]Line(nil), j.Lines...)
 		// The new-journal form starts with no branch; it belongs to the branch the session works in.
 		// Without this a branch-scoped session rejected every new journal as "not found" (UAT 2026-09-24).

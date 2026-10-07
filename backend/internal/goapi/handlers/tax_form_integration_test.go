@@ -96,21 +96,33 @@ func TestTaxFilingStorage(t *testing.T) {
 	}
 
 	// ลบ: id ที่ไม่มี (หรือของบริษัทอื่น) = not found (404) ไม่ใช่ "มีผู้อื่นแก้" (409); version เก่า = conflict; ถูกต้อง = หายจริงใน PG
-	if err := deleteTaxFiling(ctx, db, company, f.ID+100000, 1); !errors.Is(err, errTaxFilingNotFound) {
+	if err := deleteTaxFiling(ctx, db, company, "deleter", f.ID+100000, 1); !errors.Is(err, errTaxFilingNotFound) {
 		t.Fatalf("delete missing id err = %v, want not found", err)
 	}
-	if err := deleteTaxFiling(ctx, db, "OTHER", f.ID, f.Version); !errors.Is(err, errTaxFilingNotFound) {
+	if err := deleteTaxFiling(ctx, db, "OTHER", "deleter", f.ID, f.Version); !errors.Is(err, errTaxFilingNotFound) {
 		t.Fatalf("delete other company err = %v, want not found", err)
 	}
-	if err := deleteTaxFiling(ctx, db, company, f.ID, 1); !errors.Is(err, errTaxFilingConflict) {
+	if err := deleteTaxFiling(ctx, db, company, "deleter", f.ID, 1); !errors.Is(err, errTaxFilingConflict) {
 		t.Fatalf("delete stale version err = %v, want conflict", err)
 	}
-	if err := deleteTaxFiling(ctx, db, company, f.ID, f.Version); err != nil {
+	var deleteRows int
+	db.QueryRowContext(ctx, `SELECT count(*) FROM tax_filing_history WHERE filing_id=$1 AND action='delete'`, f.ID).Scan(&deleteRows)
+	if deleteRows != 0 {
+		t.Fatalf("failed deletes must not leave audit rows, got %d", deleteRows)
+	}
+	if err := deleteTaxFiling(ctx, db, company, "deleter", f.ID, f.Version); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
 	db.QueryRowContext(ctx, `SELECT count(*) FROM tax_filings WHERE id=$1`, f.ID).Scan(&count)
 	if count != 0 {
 		t.Fatalf("filing still in PG after delete: %d", count)
+	}
+	// การลบต้องตามรอยได้: ใคร/รุ่นไหน/เอกสารสุดท้าย (ห้ามหายเงียบ)
+	var auditedBy, auditedTax string
+	var auditedVersion int
+	if err := db.QueryRowContext(ctx, `SELECT saved_by, version, document->'values'->>'output_tax' FROM tax_filing_history WHERE filing_id=$1 AND action='delete'`, f.ID).
+		Scan(&auditedBy, &auditedVersion, &auditedTax); err != nil || auditedBy != "deleter" || auditedVersion != f.Version || auditedTax != "77.00" {
+		t.Fatalf("delete audit = by %q v%d tax %q err=%v", auditedBy, auditedVersion, auditedTax, err)
 	}
 }
 

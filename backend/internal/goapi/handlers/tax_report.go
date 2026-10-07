@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,8 +15,10 @@ import (
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/whtcert"
+	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -118,6 +121,10 @@ func TaxVatRegisterHandler(c echo.Context) error {
 	}
 
 	limit, offset := normalizeVatRegisterPaging(req.Limit, req.Offset)
+
+	if ok, resp := taxCallerAllowed(c, businessCode); !ok {
+		return resp
+	}
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -385,6 +392,26 @@ func taxScopeFail(c echo.Context, e *companyContextError) error {
 	return taxReportFail(c, e.Status, e.Code, key)
 }
 
+// taxCallerAllowed - รายงาน/แบบยื่นภาษีต้องตรวจสิทธิ์จากฐานควบคุมกลางด้วย (ไม่เชื่อ company ใน token อย่างเดียว):
+// สมาชิกภาพยังใช้งานได้ ไม่หมดอายุ และบริษัท/สาขาที่เลือกอยู่ใน access_scopes — ใช้ whtCallerAccess ชุดเดียวกับหนังสือรับรอง 50 ทวิ
+// ไม่ผ่าน → ตอบแล้ว (ok=false, resp = ผลการเขียน response ให้ handler คืนต่อ)
+func taxCallerAllowed(c echo.Context, company string) (ok bool, resp error) {
+	user, _ := c.Get("UserInfo").(msmodels.UserInfo)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	_, err := whtCallerAccess(ctx, user, company)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, orgpolicy.ErrAccessExpired):
+		return false, taxReportFail(c, http.StatusForbidden, "ACCESS_EXPIRED", "user_access_expired")
+	case errors.Is(err, errWhtScopeDenied), errors.Is(err, orgpolicy.ErrActiveMembershipRequired):
+		return false, taxReportFail(c, http.StatusForbidden, "FORBIDDEN", "gl_err_company_forbidden")
+	}
+	logger.Error("tax: caller access: %v", err)
+	return false, taxReportFail(c, http.StatusInternalServerError, "ACCESS_CHECK_FAILED", "tax_report_failed")
+}
+
 // isValidReportPeriod - ตรวจปี/เดือนของงวดภาษี (ปีอยู่ในช่วงสมเหตุสมผล, เดือน 1-12)
 func isValidReportPeriod(year, month int) bool {
 	return year >= 2000 && year <= 2100 && month >= 1 && month <= 12
@@ -519,6 +546,10 @@ func TaxWithholdingHandler(c echo.Context) error {
 	}
 
 	limit, offset := normalizeVatRegisterPaging(req.Limit, req.Offset)
+
+	if ok, resp := taxCallerAllowed(c, businessCode); !ok {
+		return resp
+	}
 
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {

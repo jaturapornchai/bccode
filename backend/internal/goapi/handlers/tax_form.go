@@ -119,6 +119,9 @@ func beginTaxForm(c echo.Context, needCode bool) (*taxFormCall, error) {
 	if info, ok := c.Get("UserInfo").(msmodels.UserInfo); ok {
 		t.username = info.Username
 	}
+	if ok, resp := taxCallerAllowed(c, company); !ok {
+		return nil, resp
+	}
 	t.req.Code = strings.TrimSpace(t.req.Code)
 	if _, ok := taxForms[t.req.Code]; needCode && !ok {
 		return nil, t.fail(http.StatusBadRequest, "tax_form_unknown", "code")
@@ -410,7 +413,7 @@ func TaxFormDeleteHandler(c echo.Context) error {
 		logger.Error("TaxFormDelete: db: %v", err)
 		return t.fail(http.StatusInternalServerError, "tax_form_failed")
 	}
-	switch err := deleteTaxFiling(ctx, db, t.company, t.req.ID, t.req.Version); {
+	switch err := deleteTaxFiling(ctx, db, t.company, t.username, t.req.ID, t.req.Version); {
 	case errors.Is(err, errTaxFilingNotFound):
 		return t.fail(http.StatusNotFound, "tax_form_not_found")
 	case errors.Is(err, errTaxFilingConflict):
@@ -431,16 +434,26 @@ var (
 )
 
 // deleteTaxFiling - ลบตาม id + version ของบริษัท; ไม่มีฉบับนี้ (หรือเป็นของบริษัทอื่น) = not found ไม่ใช่ "มีผู้อื่นแก้"
-func deleteTaxFiling(ctx context.Context, db *sql.DB, company string, id int64, version int) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM tax_filings WHERE id=$1 AND company_code=$2 AND version=$3`, id, company, version)
+// การลบบันทึกใน tax_filing_history (action='delete', saved_by = ผู้ลบ, เอกสารรุ่นสุดท้าย) ใน transaction เดียวกับการลบ
+func deleteTaxFiling(ctx context.Context, db *sql.DB, company, user string, id int64, version int) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if n, err := res.RowsAffected(); err != nil || n > 0 {
+	defer tx.Rollback()
+	var raw []byte
+	err = tx.QueryRowContext(ctx, `DELETE FROM tax_filings WHERE id=$1 AND company_code=$2 AND version=$3 RETURNING document`, id, company, version).Scan(&raw)
+	if err == nil {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO tax_filing_history (filing_id, version, document, saved_by, action) VALUES ($1,$2,$3,$4,'delete')`, id, version, raw, user); err != nil {
+			return err
+		}
+		return tx.Commit()
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 	var exists bool
-	if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM tax_filings WHERE id=$1 AND company_code=$2)`, id, company).Scan(&exists); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM tax_filings WHERE id=$1 AND company_code=$2)`, id, company).Scan(&exists); err != nil {
 		return err
 	}
 	if !exists {
@@ -500,8 +513,10 @@ CREATE TABLE IF NOT EXISTS tax_filing_history (
     version   INT NOT NULL,
     document  JSONB NOT NULL,
     saved_by  TEXT NOT NULL DEFAULT '',
-    saved_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    saved_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    action    TEXT NOT NULL DEFAULT 'save'
 );
+ALTER TABLE tax_filing_history ADD COLUMN IF NOT EXISTS action TEXT NOT NULL DEFAULT 'save';
 CREATE INDEX IF NOT EXISTS idx_tax_filing_history_filing ON tax_filing_history(filing_id, version);
 -- Tables made before these columns became TEXT (company codes and usernames/emails did not fit
 -- VARCHAR(20)/(100)): widen once; later calls find nothing to change.

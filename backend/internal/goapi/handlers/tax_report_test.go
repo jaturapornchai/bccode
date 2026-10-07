@@ -10,6 +10,7 @@ import (
 
 	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/language"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	"smlcloudplatform/internal/whtcert"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
@@ -198,7 +199,14 @@ func TestSumPP30FromRecordedVat(t *testing.T) {
 
 var taxReportTestUser = msmodels.UserInfo{Username: "tester", HoldingCode: "h1", BusinessCode: "b1", UID: "u1"}
 
+// callTaxReportHandler - เรียก handler โดยผู้ใช้มีสิทธิ์ทั้งบริษัท (stub whtCallerAccess); เทสสิทธิ์ที่ถูกปฏิเสธใช้ doTaxReportHandler
 func callTaxReportHandler(t *testing.T, handler echo.HandlerFunc, body string, user *msmodels.UserInfo) *httptest.ResponseRecorder {
+	t.Helper()
+	stubWhtAccess(t, whtCompanyWide, nil)
+	return doTaxReportHandler(t, handler, body, user)
+}
+
+func doTaxReportHandler(t *testing.T, handler echo.HandlerFunc, body string, user *msmodels.UserInfo) *httptest.ResponseRecorder {
 	t.Helper()
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
@@ -212,6 +220,40 @@ func callTaxReportHandler(t *testing.T, handler echo.HandlerFunc, body string, u
 		t.Fatalf("handler error: %v", err)
 	}
 	return rec
+}
+
+// TestTaxEndpointsRejectCallerWithoutAccess - สมาชิกภาพหมดอายุ/ไม่มีสิทธิ์บริษัท/ไม่มีสมาชิกภาพ ต้องถูกปฏิเสธก่อนแตะข้อมูลภาษีทุก endpoint
+func TestTaxEndpointsRejectCallerWithoutAccess(t *testing.T) {
+	handlers := map[string]struct {
+		handler echo.HandlerFunc
+		body    string
+	}{
+		"vat-register": {TaxVatRegisterHandler, `{"year":2026,"month":9,"type":"sale"}`},
+		"vat-summary":  {TaxVatSummaryHandler, `{"year":2026,"month":9}`},
+		"wht":          {TaxWithholdingHandler, `{"year":2026,"month":9,"direction":"paid"}`},
+		"form-load":    {TaxFormLoadHandler, `{"id":1}`},
+		"form-delete":  {TaxFormDeleteHandler, `{"id":1,"version":1}`},
+	}
+	denials := map[string]struct {
+		err    error
+		status int
+		code   string
+	}{
+		"expired":       {orgpolicy.ErrAccessExpired, http.StatusForbidden, "ACCESS_EXPIRED"},
+		"scope denied":  {errWhtScopeDenied, http.StatusForbidden, "FORBIDDEN"},
+		"no membership": {orgpolicy.ErrActiveMembershipRequired, http.StatusForbidden, "FORBIDDEN"},
+	}
+	for name, h := range handlers {
+		for dname, d := range denials {
+			t.Run(name+"/"+dname, func(t *testing.T) {
+				stubWhtAccess(t, nil, d.err)
+				rec := doTaxReportHandler(t, h.handler, h.body, &taxReportTestUser)
+				if rec.Code != d.status || !strings.Contains(rec.Body.String(), `"code":"`+d.code+`"`) {
+					t.Fatalf("want %d %s, got %d body=%s", d.status, d.code, rec.Code, rec.Body.String())
+				}
+			})
+		}
+	}
 }
 
 func TestTaxVatRegisterHandler_Unauthorized(t *testing.T) {
@@ -321,6 +363,7 @@ func TestTaxReportErrorsFollowLanguage(t *testing.T) {
 // TestTaxFormComputeReturnsRecomputedTotals - /compute ใช้ prepareTaxDocument ตัวเดียวกับ save/pdf
 func TestTaxFormComputeReturnsRecomputedTotals(t *testing.T) {
 	body := `{"code":"pnd53","document":{"values":{"total_tax":"1.00"},"rows":[{"l1_amount":"100","l1_tax":"3"},{"l1_amount":"200.50","l1_tax":"6.02"}]}}`
+	stubWhtAccess(t, whtCompanyWide, nil)
 	rec := callTaxHandlerLang(t, TaxFormComputeHandler, "/", "th", body, &taxReportTestUser)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"total_tax":"9.02"`) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())

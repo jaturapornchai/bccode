@@ -282,7 +282,7 @@ func TestWhtCertificateHandler_EnforcesCompanyAndBranchScope(t *testing.T) {
 			stubWhtCompany(t, CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", TaxID: "0105558012349"})
 			stubWhtAccess(t, tc.scopes, tc.err)
 			stubWhtRecorded(t, recorded, generalledger.SubledgerPartner{}, nil)
-			rec := callTaxReportHandler(t, WhtCertificateHandler, tc.body, &taxReportTestUser)
+			rec := doTaxReportHandler(t, WhtCertificateHandler, tc.body, &taxReportTestUser)
 			if rec.Code != tc.status {
 				t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 			}
