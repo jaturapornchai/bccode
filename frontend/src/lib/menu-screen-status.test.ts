@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
-import { CUSTOM_MENU_SCREEN_ROUTES, isMenuBackendRetired, isMenuScreenPending, isMenuDataPending } from "./menu-screen-status";
+import { CUSTOM_MENU_SCREEN_ROUTES, isMenuBackendRetired, isMenuScreenPending, isMenuDataPending, isRetiredBackendScreen } from "./menu-screen-status";
 
 describe("menu screen availability", () => {
   it("tracks the actual custom screen dispatcher, including newly connected screens", () => {
@@ -27,17 +27,35 @@ describe("menu screen availability", () => {
     "/pending/product-status-report", "/pending/product-price-setting-report",
   ];
 
+  // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
+  const NO_BACKEND_DOCUMENT_ROUTES = [
+    "/transaction/purchasereceiptadjustment", "/transaction/etax", "/transaction/withholdingtax",
+    "/banking/petty-cash-limit", "/banking/contacts",
+  ];
+
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
     expect(items).toHaveLength(204);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
-    const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...retired])].sort();
+    const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();
     expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual(expected);
     expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(items.length - expected.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
-    expect(isMenuBackendRetired("/transaction/landedcost")).toBe(true);
-    expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(true);
+    // เอกสารธุรกรรมที่ยังมี config ทำงานจริงกับตาราง doc (ไม่ใช่ retired / pending)
+    expect(isMenuBackendRetired("/transaction/landedcost")).toBe(false);
+    expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(false);
+    for (const route of ["/transaction/sale", "/transaction/paid", "/banking/cash-deposit", "/transaction/landedcost"]) {
+      expect(isMenuScreenPending(route), route).toBe(false);
+    }
+    // เมนูที่ไม่มีประเภทเอกสารใน backend เป็น pending แต่ยังอยู่ในเมนู; จอสินค้า 3 จอไม่มี API
+    for (const route of [...NO_BACKEND_DOCUMENT_ROUTES, "/product", "/productbarcode", "/productbarcodeshelf"]) {
+      expect(isMenuScreenPending(route), route).toBe(true);
+    }
+    expect(flattenMenuItems().map((item) => item.route)).toEqual(expect.arrayContaining(NO_BACKEND_DOCUMENT_ROUTES));
+    expect(isRetiredBackendScreen("/product")).toBe(true);
+    expect(isRetiredBackendScreen("/productbarcodeshelf?x=1")).toBe(true);
+    expect(isRetiredBackendScreen("/transaction/sale")).toBe(false);
     expect(isMenuBackendRetired("/productserialregistry")).toBe(true);
     expect(isMenuBackendRetired("/promotionscreen")).toBe(true);
     expect(isMenuBackendRetired("/transaction/saleorder")).toBe(false);
@@ -81,8 +99,8 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/tools/ar-recalculate")).toBe(true);
     expect(isMenuDataPending("/gl/reprocess")).toBe(false);
 
-    // งานอนุมัติ: มีเฉพาะใบขอซื้อ
-    expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);
+    // งานอนุมัติ: backend ยังไม่มี endpoint อนุมัติเลย (pr_approval ถูกถอดจาก APPROVAL_KINDS)
+    expect(isMenuDataPending("/procurement/requisition-approval")).toBe(true);
     expect(isMenuDataPending("/sales/quotation-approval")).toBe(true);
 
     // ภาษี (2026-09-23): รายงานภาษีหัก ณ ที่จ่าย/50 ทวิ และภาษีขาย/ซื้อ อ่านจาก GL จริง (details.vats);

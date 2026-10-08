@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
+	"smlcloudplatform/internal/doctype"
 	"smlcloudplatform/internal/goapi/inventory/costing"
 	m "smlcloudplatform/internal/goapi/inventory/models"
 	"smlcloudplatform/internal/goapi/logger"
@@ -264,11 +266,11 @@ func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, ho
 		s.docno,
 		s.transflag,
 		CASE 
-			WHEN s.transflag = 12 THEN 'ซื้อสินค้า'
-			WHEN s.transflag = 44 THEN 'ขายสินค้า'
-			WHEN s.transflag = 20 THEN 'เบิกสินค้า'
-			WHEN s.transflag = 54 THEN 'รับคืนจากการขาย'
-			WHEN s.transflag = 16 THEN 'ส่งคืนจากการซื้อ'
+			WHEN s.transflag = ` + strconv.Itoa(doctype.Purchase) + ` THEN 'ซื้อสินค้า'
+			WHEN s.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + ` THEN 'ขายสินค้า'
+			WHEN s.transflag = ` + strconv.Itoa(doctype.StockPickup) + ` THEN 'เบิกสินค้า'
+			WHEN s.transflag = ` + strconv.Itoa(doctype.SaleInvoiceReturn) + ` THEN 'รับคืนจากการขาย'
+			WHEN s.transflag = ` + strconv.Itoa(doctype.PurchaseReturn) + ` THEN 'ส่งคืนจากการซื้อ'
 			ELSE 'เคลื่อนไหวสต็อก'
 		END AS transname,
 		s.itemcode,
@@ -326,9 +328,9 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 	stockLedgerRows, err := s.db.QueryContext(ctx,
 		`SELECT s.docdatetime, s.docno,
 		        CASE 
-		            WHEN s.transflag = 12 THEN 'purchase'
-		            WHEN s.transflag = 44 THEN 'sale'
-		            WHEN s.transflag = 20 THEN 'issue'
+		            WHEN s.transflag = `+strconv.Itoa(doctype.Purchase)+` THEN 'purchase'
+		            WHEN s.transflag = `+strconv.Itoa(doctype.SaleInvoice)+` THEN 'sale'
+		            WHEN s.transflag = `+strconv.Itoa(doctype.StockPickup)+` THEN 'issue'
 		            ELSE 'other'
 		        END AS transactiontype,
 		        s.transflag,

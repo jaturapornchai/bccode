@@ -81,7 +81,7 @@ async function main() {
     ]
   };
 
-  const srRes = await fetch(`${NEXT_BASE_URL}/api/erp-transaction/salereturn`, {
+  const srRes = await fetch(`${NEXT_BASE_URL}/api/erp-transaction/sale-invoice-return`, {
     method: "POST",
     headers: authHeaders,
     body: JSON.stringify(saleReturnPayload)
@@ -114,7 +114,7 @@ async function main() {
     ]
   };
 
-  const prRes = await fetch(`${NEXT_BASE_URL}/api/erp-transaction/purchasereturn`, {
+  const prRes = await fetch(`${NEXT_BASE_URL}/api/erp-transaction/purchase-return`, {
     method: "POST",
     headers: authHeaders,
     body: JSON.stringify(purchaseReturnPayload)

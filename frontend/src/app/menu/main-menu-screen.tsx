@@ -102,7 +102,7 @@ import { SystemSettingsScreen } from "../system-settings/system-settings-screen"
 import { ZoomControl } from "../zoom-control";
 import { ChampMenuBar } from "./champ-menu-bar";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
-import { isMenuBackendRetired, isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status";
+import { isRetiredBackendScreen, isFixedAssetRoute } from "@/lib/menu-screen-status";
 import { isGeneralLedgerRoute } from "@/lib/general-ledger";
 import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
 import { FixedAssetsScreen } from "@/app/asset/fixed-assets-screen";
@@ -2211,6 +2211,9 @@ function WorkTabPanel({
   const plannedCard = (
     <MenuPlannedCard route={activeTab.route} item={activeTab.item} title={activeTab.title} language={language} backendLanguage={backendLanguage} />
   );
+
+  // จอสินค้า/บาร์โค้ด/ชุดสินค้า ยิง API ที่ไม่มีใน backend (PostgreSQL อย่างเดียว) — แสดง "ยังไม่พร้อม" ไม่ปล่อยจอที่บันทึกไม่ได้
+  if (isRetiredBackendScreen(activeTab.route)) return plannedCard;
 
   if (activeTab.route === "/shortcuts") {
     return (

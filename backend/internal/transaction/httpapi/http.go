@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 	"smlcloudplatform/internal/goapi/mypg"
@@ -47,20 +48,18 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (gl.Sco
 	if err != nil {
 		return scope, nil, fmt.Errorf("เชื่อมต่อฐานข้อมูลล้มเหลว: %w", err)
 	}
+	if err := ensureSchema(ctx, db); err != nil {
+		return scope, nil, fmt.Errorf("เตรียมตารางเอกสารล้มเหลว: %w", err)
+	}
 	return scope, db, nil
 }
 
 func parseTransFlag(module string) (int, string, error) {
-	clean := strings.ToLower(strings.TrimSpace(module))
-	flag, ok := ModuleTransFlags[clean]
+	dt, ok := doctype.ByKey(strings.ToLower(strings.TrimSpace(module)))
 	if !ok {
 		return 0, "", fmt.Errorf("โมดูลไม่ถูกต้อง (%s)", module)
 	}
-	prefix := ModulePrefixes[clean]
-	if prefix == "" {
-		prefix = "DOC"
-	}
-	return flag, prefix, nil
+	return dt.Flag, dt.Prefix, nil
 }
 
 func fail(request microservice.IContext, status int, message string) error {
@@ -208,6 +207,9 @@ func (h *Http) update(request microservice.IContext) error {
 
 	saved, err := h.store.SaveDoc(ctx, db, scope.Company, scope.Branch, transflag, prefix, &doc, scope.Actor, true)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fail(request, http.StatusNotFound, "ไม่พบเอกสารที่ต้องการแก้ไข")
+		}
 		return fail(request, http.StatusInternalServerError, fmt.Sprintf("แก้ไขเอกสารไม่สำเร็จ: %v", err))
 	}
 

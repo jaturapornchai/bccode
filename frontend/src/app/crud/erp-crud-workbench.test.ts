@@ -60,6 +60,19 @@ describe("ErpCrudWorkbench Master-Detail Contract (.agents/skills/datacrud/SKILL
     expect(workbenchSource).toContain("handleCancelEdit");
   });
 
+  it("lets the backend issue the document number and warns when a type is store-only", () => {
+    expect(workbenchSource).not.toContain("defaultDocPrefix");
+    expect(workbenchSource).toContain("docno_auto_placeholder");
+    expect(workbenchSource).toContain("formDoc.id && !formDoc.docno?.trim()");
+    expect(workbenchSource).toContain("ERP_AUTO_POSTING_MODULES.includes(config.apiPath)");
+    expect(workbenchSource).toContain("erp_store_only_notice");
+  });
+
+  it("guards the screens that have no backend and no longer lists live routes by hand", () => {
+    expect(mainMenuSource).toContain("isRetiredBackendScreen(activeTab.route)) return plannedCard");
+    expect(statusSource).not.toContain("LIVE_ERP_TRANSACTION_ROUTES");
+  });
+
   it("is registered and connected in MainMenu and MenuScreenStatus", () => {
     expect(mainMenuSource).toContain("isErpTransactionRoute");
     expect(mainMenuSource).toContain("<ErpCrudWorkbench");

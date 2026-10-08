@@ -34,6 +34,7 @@ import {
   saveErpTransaction,
   deleteErpTransaction,
 } from "@/lib/erp-transaction";
+import { ERP_AUTO_POSTING_MODULES } from "@/lib/erp-transaction-modules";
 
 // The screen title is the menu label the user clicked, so it follows every language the menu does.
 const MENU_LABEL_BY_ROUTE = new Map(flattenMenuItems().map((item) => [item.route, item.label]));
@@ -170,9 +171,8 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     }
 
     const today = new Date().toISOString().split("T")[0];
-    const prefix = config?.defaultDocPrefix || "DOC";
     const initialNew: Partial<ErpTransactionDoc> = {
-      docno: `${prefix}-${Date.now().toString().slice(-6)}`,
+      docno: "",
       docdatetime: `${today}T09:00:00Z`,
       custcode: "",
       custname: "",
@@ -335,7 +335,8 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   // Save Document
   const handleSaveDoc = async () => {
     if (!config) return;
-    if (!formDoc.docno?.trim()) {
+    // เอกสารใหม่ปล่อยว่างได้ — backend ออกเลขที่ให้ตอนบันทึก; เอกสารเดิมต้องมีเลขที่
+    if (formDoc.id && !formDoc.docno?.trim()) {
       setAlertKey("docno_required");
       return;
     }
@@ -459,6 +460,23 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               dictionary,
               "module_not_available",
               "จอนี้ยังไม่เปิดใช้งาน ระบบยังไม่รองรับเอกสารชนิดนี้ กรุณาติดต่อผู้ดูแลระบบ",
+            )}
+          </p>
+        </div>
+      ) : null}
+
+      {!moduleUnavailable && !ERP_AUTO_POSTING_MODULES.includes(config.apiPath) ? (
+        // เอกสารชนิดนี้ backend เก็บอย่างเดียว ไม่ลงบัญชี/ตัดสต็อก — บอกผู้ใช้ตรง ๆ กันเข้าใจผิดว่าลงบัญชีแล้ว
+        <div
+          role="status"
+          className="mb-3 shrink-0 flex items-start gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[0.95rem] leading-relaxed text-foreground"
+        >
+          <Info className="mt-0.5 size-5 shrink-0" />
+          <p className="flex-1">
+            {backendText(
+              dictionary,
+              "erp_store_only_notice",
+              "เอกสารชนิดนี้บันทึกเก็บไว้เท่านั้น ยังไม่ลงบัญชีและไม่ตัดสต็อกอัตโนมัติ",
             )}
           </p>
         </div>
@@ -718,7 +736,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-border/60 rounded-xl p-4 bg-card">
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                    {backendText(dictionary, "document_no", "เลขที่เอกสาร") + " *"}
+                    {backendText(dictionary, "document_no", "เลขที่เอกสาร") + (formDoc.id ? " *" : "")}
                   </label>
                   <Input
                     value={formDoc.docno || ""}
@@ -727,7 +745,11 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       setIsDirty(true);
                     }}
                     className="h-9 text-sm"
-                    placeholder="DOC-202609-0001"
+                    placeholder={backendText(
+                      dictionary,
+                      "docno_auto_placeholder",
+                      "ระบบออกเลขที่เอกสารให้อัตโนมัติเมื่อบันทึก",
+                    )}
                   />
                 </div>
 

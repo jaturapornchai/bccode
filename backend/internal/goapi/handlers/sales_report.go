@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"smlcloudplatform/internal/doctype"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
 
@@ -187,7 +189,7 @@ SELECT
 FROM public.stock_ledger p
 LEFT JOIN public.doc doc ON doc.businesscode = p.businesscode AND doc.docno = p.docno
 LEFT JOIN public.debtor d ON doc.custcode = d.code
-WHERE p.transflag = 44
+WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
   AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2
   AND NOT EXISTS (
@@ -212,10 +214,10 @@ WHERE p.transflag = 44
   AND p.docno IN (
     SELECT DISTINCT sub.docno
     FROM public.stock_ledger sub
-    WHERE sub.transflag = 44
+    WHERE sub.transflag = %d
       AND sub.businesscode = $3
       AND sub.docdatetime >= $1 AND sub.docdatetime < $2
-      AND sub.itemcode = ANY($%d)`, argIndex)
+      AND sub.itemcode = ANY($%d)`, doctype.SaleInvoice, argIndex)
 		args = append(args, pq.Array(productCodes))
 		argIndex++
 
@@ -275,7 +277,7 @@ LEFT JOIN LATERAL (
   FROM public.productbarcode pb
   WHERE pb.barcode = p.barcode
 ) unit_lookup ON TRUE
-WHERE p.transflag = 44
+WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
   AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2
   AND NOT EXISTS (
@@ -300,10 +302,10 @@ WHERE p.transflag = 44
   AND p.docno IN (
     SELECT DISTINCT sub.docno
     FROM public.stock_ledger sub
-    WHERE sub.transflag = 44
+    WHERE sub.transflag = %d
       AND sub.businesscode = $3
       AND sub.docdatetime >= $1 AND sub.docdatetime < $2
-      AND sub.itemcode = ANY($%d)`, argIndex)
+      AND sub.itemcode = ANY($%d)`, doctype.SaleInvoice, argIndex)
 		args = append(args, pq.Array(productCodes))
 		argIndex++
 
@@ -416,7 +418,7 @@ SELECT
   COALESCE(SUM(p.amount), 0) as totalcost,
   COALESCE(SUM(p.docvalue) - SUM(p.amount), 0) as total_profit
 FROM public.stock_ledger p
-WHERE p.transflag = 44
+WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
   AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2
   AND NOT EXISTS (

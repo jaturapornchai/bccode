@@ -8,6 +8,8 @@ import (
 	"math"
 	"sort"
 	"time"
+
+	"smlcloudplatform/internal/doctype"
 )
 
 // Direction ทิศทางการเคลื่อนไหวสต็อก
@@ -30,57 +32,31 @@ const (
 	PolicyStandardCost NegativePolicy = 4
 )
 
-// ทิศทางของแต่ละประเภทเอกสาร ยึดตามที่ระบบกำหนดไว้ใน myglobal/global.go:28-29
-// (ตัวคิดต้นทุนเดิมใน process-stock-calc-cost.go:386-427 ให้ทิศทาง 16, 58, 68 ไม่ตรงกับตารางนี้)
-var transFlagDirection = map[int]int{
-	54:  DirectionIn,  // ยอดยกมา
-	12:  DirectionIn,  // ซื้อสินค้า
-	310: DirectionIn,  // รับสินค้า (พาเชียล)
-	48:  DirectionIn,  // รับคืนจากลูกค้า
-	60:  DirectionIn,  // รับเข้า (สำเร็จรูป)
-	58:  DirectionIn,  // รับคืนจากการเบิก
-	66:  DirectionIn,  // ปรับสต็อก (เพิ่ม)
-	44:  DirectionOut, // ขายสินค้า
-	16:  DirectionOut, // ส่งคืนสินค้าให้ผู้ขาย
-	56:  DirectionOut, // เบิกออก
-	68:  DirectionOut, // ปรับสต็อก (ลด)
-	72:  DirectionOut, // โอนย้ายออก
-}
-
-// DirectionOf คืนทิศทางของประเภทเอกสาร และบอกว่ารู้จักประเภทนี้หรือไม่
-// ใช้ได้กับการคัดกรองระดับเอกสาร ส่วนการคิดต้นทุนรายบรรทัดให้ใช้ DirectionOfMovement
-func DirectionOf(transFlag int) (int, bool) {
-	dir, ok := transFlagDirection[transFlag]
-	return dir, ok
-}
-
-// KnownTransFlags คืนประเภทเอกสารทั้งหมดที่เครื่องคิดต้นทุนรู้จักทิศทาง
-// ใช้ตรวจว่ารายชื่อประเภทเอกสารที่ระบบนำมาคิด ครอบคลุมครบตามที่เครื่องคิดต้นทุนรู้จัก
-func KnownTransFlags() []int {
-	flags := make([]int, 0, len(transFlagDirection))
-	for flag := range transFlagDirection {
-		flags = append(flags, flag)
-	}
-	sort.Ints(flags)
-	return flags
-}
-
-// TransFlagStockTransfer คือประเภทเอกสารโอนย้ายสินค้าระหว่างคลัง
-const TransFlagStockTransfer = 72
-
-// DirectionOfMovement คืนทิศทางของรายการหนึ่งบรรทัด
+// DirectionOfMovement คืนทิศทางของรายการหนึ่งบรรทัด และบอกว่าบรรทัดนี้นำมาคิดต้นทุนหรือไม่
 //
-// เอกสารโอนคลังหนึ่งใบมีสองขาเสมอ ขาออกจากคลังต้นทางกับขาเข้าคลังปลายทาง
-// ทิศทางของบรรทัดจึงอ่านจาก calcflag ไม่ใช่จากประเภทเอกสาร
-// ถ้าดูแต่ประเภทเอกสาร ขาเข้าจะถูกคิดเป็นขาออกด้วย แล้วของจะหายจากบริษัททุกครั้งที่โอนคลัง
+// ผลต่อสต็อกของแต่ละประเภทเอกสารมาจากทะเบียน doctype ที่เดียว
+// เอกสารที่ทิศทางอยู่รายบรรทัด (โอนคลัง ปรับปรุงสต็อก) อ่านจาก calcflag: ติดลบคือจ่ายออก บวกคือรับเข้า
+// โอนคลังหนึ่งใบมีสองขาเสมอ ถ้าดูแต่ประเภทเอกสาร ขาเข้าจะถูกคิดเป็นขาออกด้วย แล้วของจะหายจากบริษัททุกครั้งที่โอนคลัง
+// บรรทัดที่ calcflag เป็นศูนย์ไม่รู้ทิศทาง จึงข้าม ดีกว่าเดาแล้วสต็อกงอกหรือหายเงียบ ๆ
 func DirectionOfMovement(mv Movement) (int, bool) {
-	if mv.TransFlag == TransFlagStockTransfer {
+	dt, ok := doctype.ByFlag(mv.TransFlag)
+	if !ok {
+		return 0, false
+	}
+	switch dt.Stock {
+	case doctype.StockIn:
+		return DirectionIn, true
+	case doctype.StockOut:
+		return DirectionOut, true
+	case doctype.StockByLine:
 		if mv.CalcFlag < 0 {
 			return DirectionOut, true
 		}
-		return DirectionIn, true
+		if mv.CalcFlag > 0 {
+			return DirectionIn, true
+		}
 	}
-	return DirectionOf(mv.TransFlag)
+	return 0, false
 }
 
 // Movement คือรายการเคลื่อนไหวหนึ่งบรรทัดที่อ่านมาจาก docdetail
@@ -245,7 +221,7 @@ func Calculate(opening map[string]Balance, movements []Movement, opt Options) Re
 		}
 
 		unitCost, amount := valueOf(mv, qty, docQty, direction, bal, opt)
-		if mv.TransFlag == TransFlagStockTransfer {
+		if mv.TransFlag == doctype.StockTransfer {
 			unitCost, amount = transferValue(mv, qty, direction, unitCost, amount, transferCost, opt)
 		}
 

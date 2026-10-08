@@ -13,9 +13,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+
+	"smlcloudplatform/internal/doctype"
 )
 
-var testTransFlags = []int{54, 12, 310, 48, 60, 58, 66, 44, 16, 56, 68, 72}
+var testTransFlags = doctype.StockFlags()
 
 // engineTestDB เตรียม schema แยกต่อหนึ่งเทสต์ พร้อมตารางจริงที่ engine ใช้
 func engineTestDB(t *testing.T) *sql.DB {
@@ -189,9 +191,9 @@ func TestRecalculateWritesLedgerAndPeriodBalance(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
-		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 10, sumAmount: 1400, when: at(2)},
-		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 5, when: at(3)},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "PU002", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1400, when: at(2)},
+		docLine{docNo: "SA001", line: 1, transFlag: doctype.SaleInvoice, qty: 5, when: at(3)},
 	)
 
 	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
@@ -232,8 +234,8 @@ func TestRecalculateIsIdempotent(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
-		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 4, when: at(2)},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "SA001", line: 1, transFlag: doctype.SaleInvoice, qty: 4, when: at(2)},
 	)
 	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
 
@@ -263,8 +265,8 @@ func TestRecalculateDoesNotTouchOtherCompany(t *testing.T) {
 	db := engineTestDB(t)
 	ctx := context.Background()
 
-	insertDoc(t, db, "BC01", "ITEM01", docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)})
-	insertDoc(t, db, "BC02", "ITEM01", docLine{docNo: "PU900", line: 1, transFlag: 12, qty: 7, sumAmount: 700, when: at(1)})
+	insertDoc(t, db, "BC01", "ITEM01", docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)})
+	insertDoc(t, db, "BC02", "ITEM01", docLine{docNo: "PU900", line: 1, transFlag: doctype.Purchase, qty: 7, sumAmount: 700, when: at(1)})
 
 	for _, business := range []string{"BC01", "BC02"} {
 		if _, err := Recalculate(ctx, db, Scope{BusinessCode: business, ItemCode: "ITEM01", From: at(1)},
@@ -294,8 +296,8 @@ func TestCancelledDocumentIsExcluded(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
-		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 99, sumAmount: 9900, when: at(2), cancelled: true},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "PU002", line: 1, transFlag: doctype.Purchase, qty: 99, sumAmount: 9900, when: at(2), cancelled: true},
 	)
 
 	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)},
@@ -322,9 +324,9 @@ func TestPartialRecalculationMatchesFullRecalculation(t *testing.T) {
 	march := time.Date(2026, 3, 10, 9, 0, 0, 0, time.UTC)
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: january},
-		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 10, sumAmount: 1400, when: february},
-		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 5, when: march},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: january},
+		docLine{docNo: "PU002", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1400, when: february},
+		docLine{docNo: "SA001", line: 1, transFlag: doctype.SaleInvoice, qty: 5, when: march},
 	)
 
 	full := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: january}
@@ -500,12 +502,12 @@ func TestConcurrentRecalculationIsSerialised(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)})
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)})
 
 	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
 	result := Calculate(nil, []Movement{{
 		WhCode: "WH01", DocDateTime: at(1), DocNo: "PU001", LineNumber: 1,
-		TransFlag: 12, Qty: 10, UnitStand: 1, UnitDivide: 1, SumAmount: 1000,
+		TransFlag: doctype.Purchase, Qty: 10, UnitStand: 1, UnitDivide: 1, SumAmount: 1000,
 	}}, DefaultOptions())
 
 	// ตัวแรกจับล็อกแล้วค้างไว้ด้วยทรานแซกชันที่ยังไม่ commit
@@ -552,7 +554,7 @@ func TestParallelItemsDoNotBlockEachOther(t *testing.T) {
 	items := []string{"ITEM01", "ITEM02", "ITEM03", "ITEM04"}
 	for _, item := range items {
 		insertDoc(t, db, "BC01", item,
-			docLine{docNo: "PU-" + item, line: 1, transFlag: 12, qty: 5, sumAmount: 500, when: at(1)})
+			docLine{docNo: "PU-" + item, line: 1, transFlag: doctype.Purchase, qty: 5, sumAmount: 500, when: at(1)})
 	}
 
 	var wg sync.WaitGroup
@@ -637,7 +639,7 @@ func TestWorkerWakesOnNotification(t *testing.T) {
 	defer cancel()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 6, sumAmount: 600, when: at(1)})
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 6, sumAmount: 600, when: at(1)})
 
 	worker := NewWorker(db, dsn, testTransFlags)
 	worker.PollInterval = time.Hour // ตัดรอบตรวจเองออก เพื่อพิสูจน์ว่าถูกปลุกด้วยสัญญาณจริง
@@ -706,7 +708,7 @@ func TestDocumentArrivingDuringCalculationStaysQueued(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)})
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)})
 	if err := MarkDirty(ctx, db, "BC01", "ITEM01", at(1), "doc"); err != nil {
 		t.Fatalf("mark dirty: %v", err)
 	}
@@ -723,7 +725,7 @@ func TestDocumentArrivingDuringCalculationStaysQueued(t *testing.T) {
 
 	// เอกสารใบที่สองเข้ามาหลังอ่านข้อมูลไปแล้ว
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 5, sumAmount: 600, when: at(2)})
+		docLine{docNo: "PU002", line: 1, transFlag: doctype.Purchase, qty: 5, sumAmount: 600, when: at(2)})
 	if err := MarkDirty(ctx, db, "BC01", "ITEM01", at(2), "doc"); err != nil {
 		t.Fatalf("mark dirty for the late document: %v", err)
 	}
@@ -748,8 +750,8 @@ func TestDeletedDocumentLeavesTheLedger(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
-		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 4, sumAmount: 600, when: at(2)},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "PU002", line: 1, transFlag: doctype.Purchase, qty: 4, sumAmount: 600, when: at(2)},
 	)
 
 	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
@@ -761,7 +763,7 @@ func TestDeletedDocumentLeavesTheLedger(t *testing.T) {
 	}
 
 	// ลบเอกสารใบที่สอง (ทำเครื่องหมายที่หัวเอกสาร บรรทัดยังอยู่ครบ)
-	if err := MarkDocumentDirty(ctx, db, "BC01", "PU002", 12, "docdelete"); err != nil {
+	if err := MarkDocumentDirty(ctx, db, "BC01", "PU002", doctype.Purchase, "docdelete"); err != nil {
 		t.Fatalf("mark document dirty: %v", err)
 	}
 	if _, err := db.Exec(`UPDATE doc SET isdelete = TRUE WHERE businesscode='BC01' AND docno='PU002'`); err != nil {
@@ -803,7 +805,7 @@ func TestOpeningBalanceComesFromTheLatestClosedPeriod(t *testing.T) {
 
 	january := time.Date(2026, 1, 5, 9, 0, 0, 0, time.UTC)
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: january})
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: january})
 	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: january},
 		testTransFlags, DefaultOptions()); err != nil {
 		t.Fatalf("january recalculate: %v", err)
@@ -811,7 +813,7 @@ func TestOpeningBalanceComesFromTheLatestClosedPeriod(t *testing.T) {
 
 	// ขายในเดือนมีนาคม เดือนกุมภาพันธ์ไม่มีรายการเลยจึงไม่มียอดปลายงวด
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 4, when: at(3)})
+		docLine{docNo: "SA001", line: 1, transFlag: doctype.SaleInvoice, qty: 4, when: at(3)})
 	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(3)},
 		testTransFlags, DefaultOptions()); err != nil {
 		t.Fatalf("march recalculate: %v", err)
@@ -839,8 +841,8 @@ func TestRecalculationReachesBackWhenNoOpeningExists(t *testing.T) {
 
 	january := time.Date(2026, 1, 5, 9, 0, 0, 0, time.UTC)
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: january},
-		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 4, when: at(3)},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: january},
+		docLine{docNo: "SA001", line: 1, transFlag: doctype.SaleInvoice, qty: 4, when: at(3)},
 	)
 
 	// งานเข้าคิวด้วยวันที่ของเอกสารใบใหม่เท่านั้น เหมือนตอนรับเอกสารจริง
@@ -864,9 +866,9 @@ func TestWarehouseTransferMovesStockBetweenWarehouses(t *testing.T) {
 	ctx := context.Background()
 
 	insertDoc(t, db, "BC01", "ITEM01",
-		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
-		docLine{docNo: "TF001", line: 1, transFlag: 72, calcFlag: -1, qty: -4, when: at(2)},
-		docLine{docNo: "TF001", line: 2, transFlag: 72, calcFlag: 1, qty: 4, when: at(2), whCode: "WH02"},
+		docLine{docNo: "PU001", line: 1, transFlag: doctype.Purchase, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "TF001", line: 1, transFlag: doctype.StockTransfer, calcFlag: -1, qty: -4, when: at(2)},
+		docLine{docNo: "TF001", line: 2, transFlag: doctype.StockTransfer, calcFlag: 1, qty: 4, when: at(2), whCode: "WH02"},
 	)
 
 	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)},

@@ -185,8 +185,3 @@ type ProductDocRefStruct struct {
 	UnitStand  float64 `json:"unitstand"`
 	UnitDivide float64 `json:"unitdivide"`
 }
-
-type StockTransactionStruct struct {
-	Name  string
-	Flags []int
-}

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ERP_MODULE_CONFIGS,
@@ -8,6 +10,7 @@ import {
   deleteErpTransaction,
   type ErpTransactionDoc,
 } from "./erp-transaction";
+import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
 import { setupTestAuthSession } from "./test-auth-session";
 
 setupTestAuthSession();
@@ -69,14 +72,70 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(saleConfig?.domain).toBe("sales");
     expect(saleConfig?.title.th).toContain("ใบสั่งขาย");
     expect(saleConfig?.counterpartyLabel.th).toBe("ลูกค้า");
-    expect(saleConfig?.defaultDocPrefix).toBe("SO");
+    expect(saleConfig?.apiPath).toBe("sale-order");
 
     const poConfig = getErpModuleConfig("/transaction/purchaseorder");
     expect(poConfig).toBeDefined();
     expect(poConfig?.domain).toBe("purchase");
     expect(poConfig?.title.th).toContain("ใบสั่งซื้อ");
     expect(poConfig?.counterpartyLabel.th).toBe("เจ้าหนี้");
-    expect(poConfig?.defaultDocPrefix).toBe("PO");
+    expect(poConfig?.apiPath).toBe("purchase-order");
+  });
+
+  // เมนูที่ backend ไม่มีเอกสารรองรับ ถูกถอด config ออก → เป็นจอ "รอพัฒนา" แทนจอที่บันทึกไม่ได้
+  it("has no config for menus without a backend document type", () => {
+    for (const route of [
+      "/transaction/purchasereceiptadjustment",
+      "/transaction/etax",
+      "/transaction/withholdingtax",
+      "/banking/petty-cash-limit",
+      "/banking/contacts",
+    ]) {
+      expect(isErpTransactionRoute(route)).toBe(false);
+    }
+  });
+
+  it("maps every screen to a backend registry key, one document type per screen", () => {
+    const paths = ERP_MODULE_CONFIGS.map((c) => c.apiPath);
+    for (const path of paths) {
+      expect(path).not.toContain("/");
+      expect(ERP_TRANSACTION_MODULES).toContain(path);
+    }
+    // count-sheet and stockcount are the same Champ document (stock-count); no other screens share a type
+    const shared = [...new Set(paths.filter((path, i) => paths.indexOf(path) !== i))];
+    expect(shared).toEqual(["stock-count"]);
+    expect(getErpModuleConfig("/inventory/count-sheet")?.apiPath).toBe("stock-count");
+    expect(getErpModuleConfig("/transaction/stockcount")?.apiPath).toBe("stock-count");
+    // route spelling is inverted vs the Thai label for these two: the label decides the type
+    expect(getErpModuleConfig("/transaction/purchasedebitnote")?.apiPath).toBe("apcreditnote");
+    expect(getErpModuleConfig("/transaction/purchasecreditnote")?.apiPath).toBe("apdebitnote");
+    expect(getErpModuleConfig("/transaction/stockpickupproduct")?.apiPath).toBe("stock-pickup-product");
+  });
+
+  it("keeps the frontend module list identical to the backend doctype registry", () => {
+    const source = readFileSync(resolve(process.cwd(), "../backend/internal/doctype/doctype.go"), "utf8");
+    const registryKeys = [...source.matchAll(/^\t\{"([a-z-]+)", /gm)].map((match) => match[1]);
+    expect(registryKeys).toHaveLength(63);
+    expect([...ERP_TRANSACTION_MODULES].sort()).toEqual([...registryKeys].sort());
+    expect(new Set(ERP_TRANSACTION_MODULES).size).toBe(ERP_TRANSACTION_MODULES.length);
+  });
+
+  it("limits the auto-posting list to registry types the backend posts on save", () => {
+    for (const key of ERP_AUTO_POSTING_MODULES) expect(ERP_TRANSACTION_MODULES).toContain(key);
+    expect([...ERP_AUTO_POSTING_MODULES].sort()).toEqual(
+      ["expense", "paid", "pay", "purchase", "purchase-return", "sale-invoice", "sale-invoice-return", "stock-pickup-product"],
+    );
+  });
+
+  it("has all-column language rows for the document-number and store-only notices", () => {
+    const lines = readFileSync(resolve(process.cwd(), "../backend/assets/language/languages.tsv"), "utf8").split(/\r?\n/);
+    for (const key of ["docno_auto_placeholder", "erp_store_only_notice"]) {
+      const row = lines.find((line) => line.startsWith(key + "\t"));
+      expect(row, key).toBeDefined();
+      const columns = row!.split("\t");
+      expect(columns).toHaveLength(13);
+      expect(columns.every((column) => column.trim() !== "")).toBe(true);
+    }
   });
 
   const config = getErpModuleConfig("/transaction/quotation")!;

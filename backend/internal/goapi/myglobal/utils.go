@@ -16,24 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// GetTransactionMultiplier returns calc multiplier based on transaction flag
-func GetTransactionMultiplier(transFlag int) float64 {
-	switch transFlag {
-	case 12, 48, 60, 58, 66, 310: // ซื้อสินค้า, รับสินค้า, รับสำเร็จรูป, รับคืนจากการเบิก, ปรับสต็อก (เพิ่ม), รับสินค้า (พาเชียล)
-		return 1.0
-	case 16, 44, 56, 68: // ส่งคืนสินค้า, ขายสินค้า, เบิกสินค้า, ปรับสต็อก (ลด)
-		return -1.0
-	case 54: // Stock Balance - ปรับยอดคงเหลือ
-		return 1.0
-	case 72: // Transfer - โอนย้าย
-		return 1.0
-	case 6: // ใบสั่งซื้อ (PO) - ไม่กระทบสต็อก
-		return 0
-	default:
-		return 1.0
-	}
-}
-
 func GenUUID() string {
 	// create guid
 	return uuid.New().String()
@@ -98,90 +80,6 @@ func FormatNumber(number float64, point int) string {
 	}
 
 	return result
-}
-
-func FormatNumberWithOptionalDecimal(number float64, point int) string {
-	if number == 0 || math.IsNaN(number) {
-		return ""
-	}
-
-	// แยกส่วนจำนวนเต็มกับทศนิยม
-	format := fmt.Sprintf("%%.%df", point)
-	numStr := fmt.Sprintf(format, number)
-
-	// แยกส่วนจำนวนเต็มออกมา
-	parts := strings.Split(numStr, ".")
-	integerPart := parts[0]
-
-	// เพิ่มคอมมาในส่วนจำนวนเต็ม
-	var result string
-	for i, digit := range integerPart {
-		if i > 0 && (len(integerPart)-i)%3 == 0 && digit != '-' {
-			result += ","
-		}
-		result += string(digit)
-	}
-
-	// ถ้ามีทศนิยม ให้ตรวจสอบว่าเป็นจำนวนเต็มหรือไม่
-	if len(parts) > 1 {
-		decimalPart := parts[1]
-		// ตรวจสอบว่าทศนิยมเป็น 0 ทั้งหมดหรือไม่
-		isZeroDecimal := true
-		for _, digit := range decimalPart {
-			if digit != '0' {
-				isZeroDecimal = false
-				break
-			}
-		}
-		// ถ้าทศนิยมไม่ใช่ 0 ให้ต่อส่วนทศนิยมกลับเข้าไป
-		if !isZeroDecimal {
-			result += "." + decimalPart
-		}
-	}
-
-	return result
-}
-
-func TransFlagName(transFlag int, qty float64) string {
-	name := ""
-	switch transFlag {
-	case 12:
-		name = "ซื้อ"
-	case 16:
-		name = "ส่งคืน"
-	case 44:
-		name = "ขาย"
-	case 48:
-		name = "รับคืน"
-	case 56:
-		name = "เบิก"
-	case 60:
-		name = "รับ"
-	case 54:
-		name = "ยกมา"
-	case 58:
-		name = "รับคืนจากเบิก"
-	case 66:
-		name = "ปรับปรุงเพิ่ม"
-	case 68:
-		name = "ปรับปรุงลด"
-	case 72:
-		if qty > 0 {
-			name = "โอนเข้า"
-		} else {
-			name = "โอนออก"
-		}
-	case 310:
-		name = "รับ (พาเชียล)"
-	case 866:
-		name = "ปรับปรุงต้นทุน (เพิ่ม)"
-	case 868:
-		name = "ปรับปรุงต้นทุน (ลด)"
-	default:
-		logger.Info("Unknown transFlag: %d", transFlag)
-		return "Unknown (transFlag: " + strconv.Itoa(transFlag) + ")"
-	}
-	return name + " " + FormatNumberWithOptionalDecimal(qty, 2)
 }
 
 func ConvertPDFToGzip(inputPath, outputPath string) error {
@@ -492,29 +390,4 @@ func ParseNumericValue(value any, defaultValue float64) float64 {
 		return float64(val)
 	}
 	return defaultValue
-}
-
-func StockTransactionList() []models.StockTransactionStruct {
-	result := []models.StockTransactionStruct{
-		{Name: "transactionPurchaseOrder", Flags: []int{0, 6}},     // สั่งซื้อ
-		{Name: "transactionPurchasepartial", Flags: []int{0, 310}}, // รับบางส่วน (พาเชียล)
-		{Name: "transactionPurchase", Flags: []int{0, 12}},         // ซื้อ (ตั้งหนี้/พร้อมสินค้า)
-
-		{Name: "transactionSaleOrder", Flags: []int{0, 36}},         // สั่งขาย
-		{Name: "transactionSaleInvoice", Flags: []int{0, 44}},       // ขาย
-		{Name: "transactionSaleInvoiceReturn", Flags: []int{0, 48}}, // รับคืน
-		{Name: "transactionPurchaseReturn", Flags: []int{0, 16}},    // ส่งคืน
-
-		{Name: "transactionStockTransfer", Flags: []int{72}},       // โอน
-		{Name: "transactionStockReceiveProduct", Flags: []int{60}}, // รับเข้า
-
-		{Name: "transactionStockBalance", Flags: []int{54}},
-
-		{Name: "transactionStockPickupProduct", Flags: []int{56}}, // เบิกออก
-		{Name: "transactionStockReturnProduct", Flags: []int{58}}, // รับคืนจากเบิก
-
-		{Name: "transactionStockAdjustment", Flags: []int{66, 68, 866, 868}}, // ปรับปรุง
-	}
-
-	return result
 }

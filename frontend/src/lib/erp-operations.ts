@@ -203,11 +203,9 @@ export interface PendingApprovalDoc {
   requiredlevelname: string;
 }
 
-// จอที่ backend มี endpoint อนุมัติจริงรองรับแล้วเท่านั้น
-// (จอยกเลิกเอกสาร/ใบเสนอราคา/ใบสั่งขาย ยังไม่มี API จึงไม่ผูกไว้ ห้ามเดาว่าใช้ชุดเดียวกัน)
-const APPROVAL_KINDS: Record<string, string> = {
-  pr_approval: "pr",
-};
+// จอที่ backend มี endpoint อนุมัติจริงรองรับแล้วเท่านั้น — ตอนนี้ backend ไม่มี endpoint อนุมัติเลย
+// (pr-status/pending ที่เคยผูกไว้ไม่มีใน backend) จึงว่าง; เมื่อสร้าง endpoint จริงแล้วค่อยเพิ่ม code -> kind ที่นี่
+const APPROVAL_KINDS: Record<string, string> = {};
 
 export function isApprovalApiReady(code: string): boolean {
   return code in APPROVAL_KINDS;

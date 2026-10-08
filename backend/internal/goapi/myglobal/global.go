@@ -3,6 +3,7 @@ package myglobal
 import (
 	"database/sql"
 	"fmt"
+	"smlcloudplatform/internal/doctype"
 	"smlcloudplatform/internal/goapi/logger"
 	"strings"
 	"sync"
@@ -24,12 +25,8 @@ var ConfigSystem ConfigSystemModel = ConfigSystemModel{
 	DefaultLanguage:   "th",
 }
 
-// TransFlags ที่มีการคำนวณต้นทุน (ตาม calccost.md)
-// เพิ่มจำนวนคงเหลือ: 54(ยกมา), 12=ซื้อสินค้า, 310=รับสินค้า(พาเชียล), 48=รับคืน, 60=รับเข้า(สำเร็จรูป), 58=รับคืนจากการเบิก, 66=ปรับสต็อก(เพิ่ม)
-// ลดจำนวนคงเหลือ: 44=ขายสินค้า, 16=ส่งคืนสินค้า, 56=เบิกออก, 68=ปรับสต็อก(ลด), 72=โอนย้าย
-// หมายเหตุ: 866(ปรับปรุงต้นทุนเพิ่ม), 868(ปรับปรุงต้นทุนลด) ไม่คำนวณต้นทุน
-
-var TransFlagsToProcess = []int{54, 12, 310, 48, 60, 58, 66, 44, 16, 56, 68, 72}
+// TransFlagsToProcess คือประเภทเอกสารที่เครื่องคิดต้นทุนนำมาคิด มาจากทะเบียน doctype ที่เดียว
+var TransFlagsToProcess = doctype.StockFlags()
 
 // Global Database Manager (สำหรับ unified database management)
 var (
@@ -39,26 +36,12 @@ var (
 )
 
 // GetTransFlagsForQuery สร้าง string สำหรับใช้ใน SQL IN clause จาก TransFlagsToProcess
-// ตัวอย่าง: "12,16,44,48,54,56,58,60,66,68,72,310,866,868"
 func GetTransFlagsForQuery() string {
 	transFlagStrings := make([]string, len(TransFlagsToProcess))
 	for i, flag := range TransFlagsToProcess {
 		transFlagStrings[i] = fmt.Sprintf("%d", flag)
 	}
 	return strings.Join(transFlagStrings, ",")
-}
-
-// IsCalcStockTransFlag ตรวจสอบว่า TransFlag นี้มีการคำนวณสต็อกหรือไม่
-// คืนค่า 1 ถ้ามีการคำนวณสต็อก, 0 ถ้าไม่มี
-func IsCalcStockTransFlag(transFlag int) int8 {
-	switch transFlag {
-	case 12, 16, 44, 48, 54, 56, 58, 60, 66, 68, 72, 310, 866, 868:
-		// ซื้อ, ส่งคืน, ขาย, รับสินค้า, ยกมา, เบิก, รับคืน, รับเข้า, ปรับสต็อก, โอนย้าย, รับพาเชียล, ผลิต
-		return 1
-	default:
-		// เอกสารอื่นๆ เช่น ใบสั่งซื้อ (10), ใบสั่งขาย (14) ไม่มีการคำนวณสต็อก
-		return 0
-	}
 }
 
 // SetGlobalDatabaseConnection - ตั้งค่า global database connection

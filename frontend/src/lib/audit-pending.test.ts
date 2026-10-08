@@ -22,7 +22,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-09-25: /gl/budget monthly entry screen connected (gl-budgets.tsx).
     // 2026-10-07: +20 items the real Champ menu has but BC lacks ("รอพัฒนา", routes /pending/*) — see menu-bars.test.ts.
     // 2026-10-08: -15 non-Champ items pruned to align with Champ parity, leaving 5 Champ-only items + 19 original = 24.
-    expect(pendingList.length).toBe(24);
+    // 2026-10-08: +5 เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (etax, withholdingtax, purchasereceiptadjustment, petty-cash-limit, bank contacts) = 29.
+    expect(pendingList.length).toBe(29);
   });
 });
 

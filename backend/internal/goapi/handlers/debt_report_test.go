@@ -21,57 +21,57 @@ func TestBuildDebtReportQuery(t *testing.T) {
 			reportCode: "ap_movement",
 			partyCode:  "AP001",
 			hasDate:    true,
-			wantSub:    "public.creditortransaction",
-			wantArgs:   5, // fromDate, toDate, partyCode, limit, offset
+			wantSub:    "d.ledger = 'ap'",
+			wantArgs:   6, // company, fromDate, toDate, partyCode, limit, offset
 		},
 		{
 			reportCode: "ap_status",
 			partyCode:  "AP002",
 			hasDate:    false,
-			wantSub:    "public.creditor",
-			wantArgs:   3, // partyCode, limit, offset
+			wantSub:    "d.ledger = 'ap'",
+			wantArgs:   4, // company, partyCode, limit, offset
 		},
 		{
 			reportCode: "ap_outstanding",
 			partyCode:  "",
 			hasDate:    false,
-			wantSub:    "t.balanceamount > 0",
-			wantArgs:   2, // limit, offset
+			wantSub:    "HAVING (d.amount - COALESCE(SUM(s.amount), 0)) > 0",
+			wantArgs:   3, // company, limit, offset
 		},
 		{
 			reportCode: "ap_daily_payment",
 			partyCode:  "AP003",
 			hasDate:    true,
-			wantSub:    "t.paidamount > 0",
-			wantArgs:   5, // fromDate, toDate, partyCode, limit, offset
+			wantSub:    "d.ledger = 'ap' AND d.side = 1",
+			wantArgs:   6, // company, fromDate, toDate, partyCode, limit, offset
 		},
 		{
 			reportCode: "ar_movement",
 			partyCode:  "AR001",
 			hasDate:    true,
-			wantSub:    "public.debtortransaction",
-			wantArgs:   5, // fromDate, toDate, partyCode, limit, offset
+			wantSub:    "d.ledger = 'ar'",
+			wantArgs:   6, // company, fromDate, toDate, partyCode, limit, offset
 		},
 		{
 			reportCode: "ar_status",
 			partyCode:  "AR002",
 			hasDate:    false,
-			wantSub:    "public.debtor",
-			wantArgs:   3, // partyCode, limit, offset
+			wantSub:    "d.ledger = 'ar'",
+			wantArgs:   4, // company, partyCode, limit, offset
 		},
 		{
 			reportCode: "ar_outstanding",
 			partyCode:  "",
 			hasDate:    false,
-			wantSub:    "t.balanceamount > 0",
-			wantArgs:   2, // limit, offset
+			wantSub:    "HAVING (d.amount - COALESCE(SUM(s.amount), 0)) > 0",
+			wantArgs:   3, // company, limit, offset
 		},
 		{
 			reportCode: "ar_credit_limit",
 			partyCode:  "AR003",
 			hasDate:    false,
 			wantSub:    "creditday",
-			wantArgs:   3, // partyCode, limit, offset
+			wantArgs:   4, // company, partyCode, limit, offset
 		},
 	}
 

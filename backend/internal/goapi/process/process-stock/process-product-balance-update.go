@@ -3,6 +3,7 @@ package processstock
 import (
 	"database/sql"
 	"fmt"
+	"smlcloudplatform/internal/doctype"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -205,16 +206,16 @@ func queryBalanceByItems(db *sql.DB, businessCode string, itemCodes []string) (m
 }
 
 // ==================== Query: ค้างรับ (PO - received) ====================
-// ค้างรับ = จำนวนสั่งซื้อใน PO (transflag=6, ยังไม่ปิด) - จำนวนรับแล้ว (transflag=12,310 ที่อ้าง PO)
+// ค้างรับ = จำนวนสั่งซื้อใน PO (ใบสั่งซื้อ ยังไม่ปิด) - จำนวนรับแล้ว (ซื้อสินค้า และรับสินค้าจากการซื้อ ที่อ้าง PO)
 
 func queryPendingRecvAll(db *sql.DB, businessCode string) (map[string]float64, error) {
-	query := `
+	query := fmt.Sprintf(`
 		WITH openpo AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.businesscode = $1 AND dd.transflag = 6 AND d.isclosed = false
+			WHERE dd.businesscode = $1 AND dd.transflag = %d AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
@@ -222,7 +223,7 @@ func queryPendingRecvAll(db *sql.DB, businessCode string) (map[string]float64, e
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as receivedqty
 			FROM docdetail dd
 			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
-			WHERE dd.businesscode = $1 AND dd.transflag IN (12, 310)
+			WHERE dd.businesscode = $1 AND dd.transflag IN (%d, %d)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT po.itemcode, SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) as pending
@@ -230,7 +231,7 @@ func queryPendingRecvAll(db *sql.DB, businessCode string) (map[string]float64, e
 		LEFT JOIN received r ON po.docno = r.docno AND po.itemcode = r.itemcode
 		GROUP BY po.itemcode
 		HAVING SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) > 0
-	`
+	`, doctype.PurchaseOrder, doctype.Purchase, doctype.GoodsReceive)
 	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
@@ -243,7 +244,7 @@ func queryPendingRecvByItems(db *sql.DB, businessCode string, itemCodes []string
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.businesscode = $1 AND dd.transflag = 6 AND d.isclosed = false AND dd.itemcode IN (%s)
+			WHERE dd.businesscode = $1 AND dd.transflag = %d AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		received AS (
@@ -251,7 +252,7 @@ func queryPendingRecvByItems(db *sql.DB, businessCode string, itemCodes []string
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as receivedqty
 			FROM docdetail dd
 			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
-			WHERE dd.businesscode = $1 AND dd.transflag IN (12, 310) AND dd.itemcode IN (%s)
+			WHERE dd.businesscode = $1 AND dd.transflag IN (%d, %d) AND dd.itemcode IN (%s)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT po.itemcode, SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) as pending
@@ -259,7 +260,7 @@ func queryPendingRecvByItems(db *sql.DB, businessCode string, itemCodes []string
 		LEFT JOIN received r ON po.docno = r.docno AND po.itemcode = r.itemcode
 		GROUP BY po.itemcode
 		HAVING SUM(po.orderedqty - COALESCE(r.receivedqty, 0)) > 0
-	`, ph, ph2)
+	`, doctype.PurchaseOrder, ph, doctype.Purchase, doctype.GoodsReceive, ph2)
 	// ส่ง args 2 ชุด (สำหรับ openpo + received) — placeholder groups are now distinct
 	doubleArgs := append([]interface{}{businessCode}, args...)
 	doubleArgs = append(doubleArgs, args2...)
@@ -267,16 +268,16 @@ func queryPendingRecvByItems(db *sql.DB, businessCode string, itemCodes []string
 }
 
 // ==================== Query: ค้างส่ง (SO - delivered) ====================
-// ค้างส่ง = จำนวนสั่งขายใน SO (transflag=36, ยังไม่ปิด) - จำนวนส่งแล้ว (transflag=44 ที่อ้าง SO)
+// ค้างส่ง = จำนวนสั่งขายใน SO (ใบสั่งขาย ยังไม่ปิด) - จำนวนส่งแล้ว (ขายสินค้าที่อ้าง SO)
 
 func queryPendingSendAll(db *sql.DB, businessCode string) (map[string]float64, error) {
-	query := `
+	query := fmt.Sprintf(`
 		WITH openso AS (
 			SELECT dd.itemcode, dd.docno,
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.businesscode = $1 AND dd.transflag = 36 AND d.isclosed = false
+			WHERE dd.businesscode = $1 AND dd.transflag = %d AND d.isclosed = false
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
@@ -284,7 +285,7 @@ func queryPendingSendAll(db *sql.DB, businessCode string) (map[string]float64, e
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as deliveredqty
 			FROM docdetail dd
 			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
-			WHERE dd.businesscode = $1 AND dd.transflag = 44
+			WHERE dd.businesscode = $1 AND dd.transflag = %d
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT so.itemcode, SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) as pending
@@ -292,7 +293,7 @@ func queryPendingSendAll(db *sql.DB, businessCode string) (map[string]float64, e
 		LEFT JOIN delivered d ON so.docno = d.docno AND so.itemcode = d.itemcode
 		GROUP BY so.itemcode
 		HAVING SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) > 0
-	`
+	`, doctype.SaleOrder, doctype.SaleInvoice)
 	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
@@ -305,7 +306,7 @@ func queryPendingSendByItems(db *sql.DB, businessCode string, itemCodes []string
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as orderedqty
 			FROM docdetail dd
 			JOIN doc d ON d.businesscode = dd.businesscode AND d.docno = dd.docno AND d.transflag = dd.transflag
-			WHERE dd.businesscode = $1 AND dd.transflag = 36 AND d.isclosed = false AND dd.itemcode IN (%s)
+			WHERE dd.businesscode = $1 AND dd.transflag = %d AND d.isclosed = false AND dd.itemcode IN (%s)
 			GROUP BY dd.itemcode, dd.docno
 		),
 		delivered AS (
@@ -313,7 +314,7 @@ func queryPendingSendByItems(db *sql.DB, businessCode string, itemCodes []string
 				SUM(dd.totalqty * COALESCE(dd.unitstand,1) / NULLIF(COALESCE(dd.unitdivide,1), 0)) as deliveredqty
 			FROM docdetail dd
 			JOIN docref dr ON dr.businesscode = dd.businesscode AND dd.docno = dr.docno
-			WHERE dd.businesscode = $1 AND dd.transflag = 44 AND dd.itemcode IN (%s)
+			WHERE dd.businesscode = $1 AND dd.transflag = %d AND dd.itemcode IN (%s)
 			GROUP BY dr.docnoref, dd.itemcode
 		)
 		SELECT so.itemcode, SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) as pending
@@ -321,7 +322,7 @@ func queryPendingSendByItems(db *sql.DB, businessCode string, itemCodes []string
 		LEFT JOIN delivered d ON so.docno = d.docno AND so.itemcode = d.itemcode
 		GROUP BY so.itemcode
 		HAVING SUM(so.orderedqty - COALESCE(d.deliveredqty, 0)) > 0
-	`, ph, ph2)
+	`, doctype.SaleOrder, ph, doctype.SaleInvoice, ph2)
 	doubleArgs := append([]interface{}{businessCode}, args...)
 	doubleArgs = append(doubleArgs, args2...)
 	return queryItemQtyMapWithArgs(db, query, doubleArgs)

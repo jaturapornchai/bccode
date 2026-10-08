@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"smlcloudplatform/internal/doctype"
 )
 
 func day(d int) time.Time {
@@ -25,6 +27,11 @@ func mv(docNo string, line int, transFlag int, qty, sumAmount float64, t time.Ti
 	}
 }
 
+func byLine(m Movement, calcFlag int) Movement {
+	m.CalcFlag = calcFlag
+	return m
+}
+
 func approx(t *testing.T, got, want float64, label string) {
 	t.Helper()
 	if math.Abs(got-want) > 0.005 {
@@ -34,9 +41,9 @@ func approx(t *testing.T, got, want float64, label string) {
 
 func TestWeightedAverageBasicFlow(t *testing.T) {
 	movements := []Movement{
-		mv("PU001", 1, 12, 10, 1000, day(1)), // ซื้อ 10 @100
-		mv("PU002", 1, 12, 10, 1400, day(2)), // ซื้อ 10 @140 → เฉลี่ย 120
-		mv("SA001", 1, 44, 5, 0, day(3)),     // ขาย 5 ใช้ต้นทุน 120
+		mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)), // ซื้อ 10 @100
+		mv("PU002", 1, doctype.Purchase, 10, 1400, day(2)), // ซื้อ 10 @140 → เฉลี่ย 120
+		mv("SA001", 1, doctype.SaleInvoice, 5, 0, day(3)),  // ขาย 5 ใช้ต้นทุน 120
 	}
 	res := Calculate(nil, movements, DefaultOptions())
 
@@ -52,26 +59,65 @@ func TestWeightedAverageBasicFlow(t *testing.T) {
 	approx(t, res.Rows[2].AvgCost, 120, "avg after sale stays")
 }
 
-// ทิศทางของทุกประเภทเอกสารต้องตรงกับที่ระบบประกาศไว้ใน myglobal/global.go:28-29
-func TestTransFlagDirectionsMatchSystemDefinition(t *testing.T) {
-	in := []int{54, 12, 310, 48, 60, 58, 66}
-	out := []int{44, 16, 56, 68, 72}
+func flagOf(t *testing.T, key string) int {
+	t.Helper()
+	dt, ok := doctype.ByKey(key)
+	if !ok {
+		t.Fatalf("doctype %q is not registered", key)
+	}
+	return dt.Flag
+}
 
-	for _, flag := range in {
-		if dir, ok := DirectionOf(flag); !ok || dir != DirectionIn {
-			t.Errorf("transflag %d should be inbound, got dir=%d ok=%v", flag, dir, ok)
+// ทิศทางของเอกสารที่โมดูลธุรกรรมเขียนลง docdetail ต้องตรงกับความหมายของเอกสาร
+func TestDirectionFollowsDocumentType(t *testing.T) {
+	want := map[string]int{
+		"stock-balance":         DirectionIn,
+		"purchase":              DirectionIn,
+		"goodsreceive":          DirectionIn,
+		"sale-invoice-return":   DirectionIn,
+		"stock-return-product":  DirectionIn,
+		"stock-receive-product": DirectionIn,
+		"sale-invoice":          DirectionOut,
+		"purchase-return":       DirectionOut,
+		"stock-pickup-product":  DirectionOut,
+	}
+	for key, dir := range want {
+		if got, ok := DirectionOfMovement(Movement{TransFlag: flagOf(t, key)}); !ok || got != dir {
+			t.Errorf("%s: direction %d ok=%v, want %d", key, got, ok, dir)
 		}
 	}
-	for _, flag := range out {
-		if dir, ok := DirectionOf(flag); !ok || dir != DirectionOut {
-			t.Errorf("transflag %d should be outbound, got dir=%d ok=%v", flag, dir, ok)
+	// ใบสั่งซื้อ ใบสั่งขาย ใบเสนอราคา ใบเสร็จ และเลขที่ไม่มีในทะเบียน ต้องไม่ถูกนำมาคิดต้นทุน
+	for _, flag := range []int{doctype.PurchaseOrder, doctype.SaleOrder, flagOf(t, "quotation"), doctype.Paid, 866, 0} {
+		if dir, ok := DirectionOfMovement(Movement{TransFlag: flag}); ok {
+			t.Errorf("transflag %d must not move stock, got dir=%d", flag, dir)
 		}
 	}
-	if _, ok := DirectionOf(10); ok {
-		t.Error("purchase order (10) must not move stock")
-	}
-	if _, ok := DirectionOf(866); ok {
-		t.Error("cost adjustment (866) is not a stock movement")
+}
+
+// ทุกประเภทในทะเบียนที่ประกาศผลต่อสต็อก เครื่องคิดต้นทุนต้องรู้จัก ส่วนที่ไม่กระทบสต็อกต้องข้าม
+func TestEngineKnowsEveryRegisteredStockType(t *testing.T) {
+	for _, dt := range doctype.All() {
+		up, upOK := DirectionOfMovement(Movement{TransFlag: dt.Flag, CalcFlag: 1})
+		down, downOK := DirectionOfMovement(Movement{TransFlag: dt.Flag, CalcFlag: -1})
+		_, zeroOK := DirectionOfMovement(Movement{TransFlag: dt.Flag})
+		switch dt.Stock {
+		case doctype.StockIn:
+			if !upOK || !downOK || !zeroOK || up != DirectionIn || down != DirectionIn {
+				t.Errorf("%s must always be inbound", dt.Key)
+			}
+		case doctype.StockOut:
+			if !upOK || !downOK || !zeroOK || up != DirectionOut || down != DirectionOut {
+				t.Errorf("%s must always be outbound", dt.Key)
+			}
+		case doctype.StockByLine:
+			if !upOK || !downOK || up != DirectionIn || down != DirectionOut || zeroOK {
+				t.Errorf("%s must follow calcflag per line and skip lines without it", dt.Key)
+			}
+		default:
+			if upOK || downOK || zeroOK {
+				t.Errorf("%s must not move stock", dt.Key)
+			}
+		}
 	}
 }
 
@@ -79,12 +125,12 @@ func TestTransFlagDirectionsMatchSystemDefinition(t *testing.T) {
 func TestDirectionIgnoresSignOfQuantity(t *testing.T) {
 	opt := DefaultOptions()
 	positive := Calculate(nil, []Movement{
-		mv("PU001", 1, 12, 10, 1000, day(1)),
-		mv("AD001", 1, 68, 4, 0, day(2)), // ปรับสต็อกลด ส่งมาเป็นบวก
+		mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)),
+		mv("SA001", 1, doctype.SaleInvoice, 4, 0, day(2)), // ขาย ส่งจำนวนมาเป็นบวก
 	}, opt)
 	negative := Calculate(nil, []Movement{
-		mv("PU001", 1, 12, 10, 1000, day(1)),
-		mv("AD001", 1, 68, -4, 0, day(2)), // ปรับสต็อกลด ส่งมาเป็นลบ
+		mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)),
+		mv("SA001", 1, doctype.SaleInvoice, -4, 0, day(2)), // ขาย ส่งจำนวนมาเป็นลบ
 	}, opt)
 
 	approx(t, positive.Rows[1].BalanceQty, 6, "reduce with positive qty")
@@ -93,10 +139,10 @@ func TestDirectionIgnoresSignOfQuantity(t *testing.T) {
 
 // สินค้าคนละคลังต้องมีต้นทุนถัวเฉลี่ยของตัวเอง ไม่ปนกัน
 func TestAveragePerWarehouseIsIndependent(t *testing.T) {
-	a := mv("PU001", 1, 12, 10, 1000, day(1))
-	b := mv("PU002", 1, 12, 10, 3000, day(2))
+	a := mv("PU001", 1, doctype.Purchase, 10, 1000, day(1))
+	b := mv("PU002", 1, doctype.Purchase, 10, 3000, day(2))
 	b.WhCode = "WH02"
-	sale := mv("SA001", 1, 44, 1, 0, day(3))
+	sale := mv("SA001", 1, doctype.SaleInvoice, 1, 0, day(3))
 
 	res := Calculate(nil, []Movement{a, b, sale}, DefaultOptions())
 
@@ -107,11 +153,11 @@ func TestAveragePerWarehouseIsIndependent(t *testing.T) {
 // คิดซ้ำด้วย input เดิมต้องได้ผลเท่าเดิมทุกครั้ง
 func TestCalculationIsDeterministic(t *testing.T) {
 	movements := []Movement{
-		mv("PU001", 1, 12, 10, 1000, day(1)),
-		mv("PU002", 1, 12, 5, 700, day(2)),
-		mv("SA001", 1, 44, 3, 0, day(2)),
-		mv("SA001", 2, 44, 2, 0, day(2)),
-		mv("AD001", 1, 66, 1, 150, day(3)),
+		mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)),
+		mv("PU002", 1, doctype.Purchase, 5, 700, day(2)),
+		mv("SA001", 1, doctype.SaleInvoice, 3, 0, day(2)),
+		mv("SA001", 2, doctype.SaleInvoice, 2, 0, day(2)),
+		byLine(mv("AD001", 1, flagOf(t, "stock-adjustment"), 1, 150, day(3)), 1),
 	}
 
 	first := Calculate(nil, movements, DefaultOptions())
@@ -130,10 +176,10 @@ func TestCalculationIsDeterministic(t *testing.T) {
 func TestSortGroupsLinesWithinDocument(t *testing.T) {
 	same := day(5)
 	movements := []Movement{
-		mv("DOC-B", 2, 12, 1, 100, same),
-		mv("DOC-A", 2, 12, 1, 100, same),
-		mv("DOC-B", 1, 12, 1, 100, same),
-		mv("DOC-A", 1, 12, 1, 100, same),
+		mv("DOC-B", 2, doctype.Purchase, 1, 100, same),
+		mv("DOC-A", 2, doctype.Purchase, 1, 100, same),
+		mv("DOC-B", 1, doctype.Purchase, 1, 100, same),
+		mv("DOC-A", 1, doctype.Purchase, 1, 100, same),
 	}
 	SortMovements(movements)
 
@@ -151,9 +197,9 @@ func TestSortGroupsLinesWithinDocument(t *testing.T) {
 // behindindex ต้องมีอำนาจเหนือเลขที่เอกสารเมื่อวันที่เท่ากัน
 func TestBehindIndexOverridesDocumentNumber(t *testing.T) {
 	same := day(5)
-	later := mv("DOC-A", 1, 12, 1, 100, same)
+	later := mv("DOC-A", 1, doctype.Purchase, 1, 100, same)
 	later.BehindIndex = 2
-	earlier := mv("DOC-Z", 1, 12, 1, 100, same)
+	earlier := mv("DOC-Z", 1, doctype.Purchase, 1, 100, same)
 	earlier.BehindIndex = 1
 
 	movements := []Movement{later, earlier}
@@ -167,10 +213,10 @@ func TestBehindIndexOverridesDocumentNumber(t *testing.T) {
 // การเรียงต้องไม่ขึ้นกับลำดับที่ส่งเข้ามา — สลับยังไงก็ต้องได้ผลเดิม
 func TestSortIsStableUnderShuffle(t *testing.T) {
 	base := []Movement{
-		mv("D1", 1, 12, 1, 10, day(1)),
-		mv("D1", 2, 12, 1, 10, day(1)),
-		mv("D2", 1, 44, 1, 0, day(1)),
-		mv("D3", 1, 12, 1, 10, day(2)),
+		mv("D1", 1, doctype.Purchase, 1, 10, day(1)),
+		mv("D1", 2, doctype.Purchase, 1, 10, day(1)),
+		mv("D2", 1, doctype.SaleInvoice, 1, 0, day(1)),
+		mv("D3", 1, doctype.Purchase, 1, 10, day(2)),
 	}
 	SortMovements(base)
 	reference := Calculate(nil, base, DefaultOptions())
@@ -194,12 +240,12 @@ func TestSortIsStableUnderShuffle(t *testing.T) {
 // เริ่มจากยอดยกมาของงวดก่อน ต้องได้ผลเท่ากับการไล่คิดตั้งแต่รายการแรก
 func TestResumeFromOpeningMatchesFullRecalculation(t *testing.T) {
 	history := []Movement{
-		mv("PU001", 1, 12, 10, 1000, day(1)),
-		mv("PU002", 1, 12, 10, 1400, day(2)),
+		mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)),
+		mv("PU002", 1, doctype.Purchase, 10, 1400, day(2)),
 	}
 	later := []Movement{
-		mv("SA001", 1, 44, 5, 0, day(3)),
-		mv("PU003", 1, 12, 5, 800, day(4)),
+		mv("SA001", 1, doctype.SaleInvoice, 5, 0, day(3)),
+		mv("PU003", 1, doctype.Purchase, 5, 800, day(4)),
 	}
 
 	full := Calculate(nil, append(append([]Movement{}, history...), later...), DefaultOptions())
@@ -223,8 +269,8 @@ func TestResumeFromOpeningMatchesFullRecalculation(t *testing.T) {
 // ของหมดคลังต้องไม่เหลือมูลค่าค้าง
 func TestZeroQuantityLeavesNoValue(t *testing.T) {
 	res := Calculate(nil, []Movement{
-		mv("PU001", 1, 12, 3, 1000, day(1)), // ต้นทุนต่อหน่วยหารไม่ลงตัว
-		mv("SA001", 1, 44, 3, 0, day(2)),
+		mv("PU001", 1, doctype.Purchase, 3, 1000, day(1)), // ต้นทุนต่อหน่วยหารไม่ลงตัว
+		mv("SA001", 1, doctype.SaleInvoice, 3, 0, day(2)),
 	}, DefaultOptions())
 
 	last := res.Rows[len(res.Rows)-1]
@@ -234,8 +280,8 @@ func TestZeroQuantityLeavesNoValue(t *testing.T) {
 
 func TestNegativeStockPolicies(t *testing.T) {
 	movements := []Movement{
-		mv("PU001", 1, 12, 5, 500, day(1)),
-		mv("SA001", 1, 44, 8, 0, day(2)), // ขายเกินของที่มี
+		mv("PU001", 1, doctype.Purchase, 5, 500, day(1)),
+		mv("SA001", 1, doctype.SaleInvoice, 8, 0, day(2)), // ขายเกินของที่มี
 	}
 
 	allow := Calculate(nil, movements, Options{PointQty: 8, PointAmount: 2, PointCost: 2, Policy: PolicyAllowNegative})
@@ -251,7 +297,7 @@ func TestNegativeStockPolicies(t *testing.T) {
 	approx(t, reset.Rows[1].AvgCost, 0, "reset: average cost")
 
 	standard := Calculate(nil, []Movement{
-		mv("SA001", 1, 44, 2, 0, day(1)), // ขายทั้งที่ยังไม่มีของ
+		mv("SA001", 1, doctype.SaleInvoice, 2, 0, day(1)), // ขายทั้งที่ยังไม่มีของ
 	}, Options{PointQty: 8, PointAmount: 2, PointCost: 2, Policy: PolicyStandardCost,
 		StandardCost: map[string]float64{"WH01": 70}})
 	approx(t, standard.Rows[0].UnitCost, 70, "standard cost used when empty")
@@ -260,7 +306,7 @@ func TestNegativeStockPolicies(t *testing.T) {
 
 // หน่วยนับที่ต้องแปลงเป็นหน่วยฐาน เช่น ซื้อเป็นลัง 1 ลัง = 12 ชิ้น
 func TestUnitConversion(t *testing.T) {
-	m := mv("PU001", 1, 12, 2, 2400, day(1))
+	m := mv("PU001", 1, doctype.Purchase, 2, 2400, day(1))
 	m.UnitStand = 12
 	m.UnitDivide = 1
 
@@ -271,7 +317,7 @@ func TestUnitConversion(t *testing.T) {
 
 // ขาเข้าที่ไม่ส่งมูลค่ารวมมา ให้ตีจากราคาต่อหน่วย
 func TestInboundFallsBackToUnitPrice(t *testing.T) {
-	m := mv("PU001", 1, 12, 4, 0, day(1))
+	m := mv("PU001", 1, doctype.Purchase, 4, 0, day(1))
 	m.PriceExcludeVat = 25
 
 	res := Calculate(nil, []Movement{m}, DefaultOptions())
@@ -282,8 +328,8 @@ func TestInboundFallsBackToUnitPrice(t *testing.T) {
 // ราคาต่อหน่วยในเอกสารเป็นราคาต่อหน่วยที่ซื้อขายจริง (เช่นต่อลัง) ไม่ใช่ต่อหน่วยฐาน
 // ถ้าเอาไปคูณกับจำนวนหน่วยฐาน มูลค่าจะบานตามตัวคูณของหน่วยนับ
 func TestPriceFallbackUsesDocumentUnitNotBaseUnit(t *testing.T) {
-	m := mv("PU001", 1, 12, 2, 0, day(1)) // ซื้อ 2 ลัง ไม่ส่งมูลค่ารวมมา
-	m.UnitStand = 12                      // 1 ลัง = 12 ชิ้น
+	m := mv("PU001", 1, doctype.Purchase, 2, 0, day(1)) // ซื้อ 2 ลัง ไม่ส่งมูลค่ารวมมา
+	m.UnitStand = 12                                    // 1 ลัง = 12 ชิ้น
 	m.UnitDivide = 1
 	m.PriceExcludeVat = 600 // 600 บาทต่อลัง
 
@@ -295,12 +341,12 @@ func TestPriceFallbackUsesDocumentUnitNotBaseUnit(t *testing.T) {
 
 // รายงานขายต้องอ่านจำนวนและมูลค่าตามเอกสารได้จากสมุดสต็อกโดยตรง
 func TestLedgerKeepsDocumentFacts(t *testing.T) {
-	buy := mv("PU001", 1, 12, 2, 2400, day(1))
+	buy := mv("PU001", 1, doctype.Purchase, 2, 2400, day(1))
 	buy.UnitStand = 12
 	buy.UnitDivide = 1
 	buy.Price = 1200
 
-	sell := mv("SA001", 1, 44, 3, 750, day(2)) // ขาย 3 ชิ้น มูลค่า 750
+	sell := mv("SA001", 1, doctype.SaleInvoice, 3, 750, day(2)) // ขาย 3 ชิ้น มูลค่า 750
 	sell.Price = 250
 
 	res := Calculate(nil, []Movement{buy, sell}, DefaultOptions())
@@ -316,8 +362,8 @@ func TestLedgerKeepsDocumentFacts(t *testing.T) {
 
 func TestClosingBalancePerPeriod(t *testing.T) {
 	res := Calculate(nil, []Movement{
-		mv("PU001", 1, 12, 10, 1000, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)),
-		mv("SA001", 1, 44, 4, 0, time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)),
+		mv("PU001", 1, doctype.Purchase, 10, 1000, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)),
+		mv("SA001", 1, doctype.SaleInvoice, 4, 0, time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)),
 	}, DefaultOptions())
 
 	january, ok := res.Closing["WH01|2026-01"]
@@ -336,8 +382,8 @@ func TestClosingBalancePerPeriod(t *testing.T) {
 
 func TestUnknownTransFlagIsSkipped(t *testing.T) {
 	res := Calculate(nil, []Movement{
-		mv("PU001", 1, 12, 5, 500, day(1)),
-		mv("SO001", 1, 14, 3, 300, day(2)), // ใบสั่งขาย ไม่กระทบสต็อก
+		mv("PU001", 1, doctype.Purchase, 5, 500, day(1)),
+		mv("SO001", 1, doctype.SaleOrder, 3, 300, day(2)), // ใบสั่งขาย ไม่กระทบสต็อก
 	}, DefaultOptions())
 
 	if len(res.Rows) != 1 {
@@ -370,12 +416,12 @@ func TestPeriodKeyUsesBusinessTimezone(t *testing.T) {
 // โอนคลังต้องมีสองขาในใบเดียว ของออกจากคลังต้นทางแล้วเข้าคลังปลายทางด้วยต้นทุนเดิม
 // ยอดรวมทั้งบริษัททั้งจำนวนและมูลค่าต้องเท่าเดิมหลังโอน
 func TestWarehouseTransferKeepsTotalStockAndValue(t *testing.T) {
-	buy := mv("PU001", 1, 12, 10, 1000, day(1)) // ซื้อเข้า WH01 10 ชิ้น @100
+	buy := mv("PU001", 1, doctype.Purchase, 10, 1000, day(1)) // ซื้อเข้า WH01 10 ชิ้น @100
 
-	transferOut := mv("TF001", 1, TransFlagStockTransfer, -4, 0, day(2))
+	transferOut := mv("TF001", 1, doctype.StockTransfer, -4, 0, day(2))
 	transferOut.CalcFlag = -1
 
-	transferIn := mv("TF001", 2, TransFlagStockTransfer, 4, 0, day(2))
+	transferIn := mv("TF001", 2, doctype.StockTransfer, 4, 0, day(2))
 	transferIn.CalcFlag = 1
 	transferIn.WhCode = "WH02"
 
@@ -404,11 +450,11 @@ func TestWarehouseTransferKeepsTotalStockAndValue(t *testing.T) {
 
 // ใบโอนไม่มีราคาในเอกสาร ถ้าตีมูลค่าขาเข้าด้วยราคาเอกสารของจะกลายเป็นต้นทุนศูนย์
 func TestWarehouseTransferInDoesNotUseDocumentPrice(t *testing.T) {
-	buy := mv("PU001", 1, 12, 10, 2500, day(1)) // ต้นทุน 250 ต่อชิ้น
+	buy := mv("PU001", 1, doctype.Purchase, 10, 2500, day(1)) // ต้นทุน 250 ต่อชิ้น
 
-	transferOut := mv("TF001", 1, TransFlagStockTransfer, -2, 0, day(2))
+	transferOut := mv("TF001", 1, doctype.StockTransfer, -2, 0, day(2))
 	transferOut.CalcFlag = -1
-	transferIn := mv("TF001", 2, TransFlagStockTransfer, 2, 0, day(2))
+	transferIn := mv("TF001", 2, doctype.StockTransfer, 2, 0, day(2))
 	transferIn.CalcFlag = 1
 	transferIn.WhCode = "WH02"
 	transferIn.Price = 999 // ราคาขายที่ติดมากับเอกสาร ต้องไม่ถูกใช้เป็นต้นทุน
@@ -417,4 +463,28 @@ func TestWarehouseTransferInDoesNotUseDocumentPrice(t *testing.T) {
 	in := res.Rows[2]
 	approx(t, in.UnitCost, 250, "destination cost is the source average cost")
 	approx(t, in.BalanceAmount, 500, "destination value")
+}
+
+// บรรทัดของเอกสารโอนคลัง/ปรับปรุงสต็อกที่ไม่มี calcflag ไม่รู้ทิศทาง ต้องข้าม ไม่เดาเป็นรับเข้า
+func TestByLineDocumentWithoutCalcFlagIsSkipped(t *testing.T) {
+	res := Calculate(nil, []Movement{
+		mv("PUR6903-0001", 1, doctype.Purchase, 5, 500, day(1)),
+		mv("XFR6903-0001", 1, doctype.StockTransfer, 5, 0, day(2)),
+		mv("ADJ6903-0001", 1, flagOf(t, "stock-adjustment"), 2, 0, day(3)),
+	}, DefaultOptions())
+	if len(res.Rows) != 1 {
+		t.Fatalf("rows = %d, want 1 (lines without calcflag must be skipped)", len(res.Rows))
+	}
+}
+
+// รับสินค้าสำเร็จรูปเป็นรับเข้าธรรมดา ตีมูลค่าตามเอกสาร ไม่ใช่ขาเข้าของใบโอนคลัง
+func TestFinishedGoodsReceiptIsInboundAtDocumentValue(t *testing.T) {
+	res := Calculate(nil, []Movement{
+		mv("RCV6903-0001", 1, flagOf(t, "stock-receive-product"), 5, 750, day(1)),
+	}, DefaultOptions())
+	if len(res.Rows) != 1 || res.Rows[0].Direction != DirectionIn {
+		t.Fatalf("finished goods receipt must be one inbound row, got %+v", res.Rows)
+	}
+	approx(t, res.Rows[0].UnitCost, 150, "finished goods unit cost")
+	approx(t, res.Rows[0].BalanceQty, 5, "finished goods balance")
 }

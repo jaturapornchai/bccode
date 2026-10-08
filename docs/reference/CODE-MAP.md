@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-08 @ commit 85874e2a - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-08 @ commit a63116ca - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -432,7 +432,7 @@ Files indexed: 32
 | 1195 | const-arrow | `handleSave` |
 | 2355 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2339 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2342 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -487,7 +487,7 @@ Files indexed: 32
 | 2052 | function | `clearDragState` |
 | 2059 | function | `reorderFromPointer` |
 | 2184 | function | `WorkTabPanel` |
-| 2324 | function | `DashboardLoading` |
+| 2327 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 
@@ -713,24 +713,24 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## backend/internal/transaction/httpapi/service.go (1664 lines)
+## backend/internal/transaction/httpapi/service.go (1665 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 15 | function | `NewStore` |
-| 19 | function | `ListDocs` |
-| 99 | function | `GetDoc` |
-| 187 | function | `NextDocNo` |
-| 211 | function | `SaveDoc` |
-| 432 | function | `postPurchaseToGL` |
-| 585 | function | `postSaleToGL` |
-| 739 | function | `postReceiptToGLAndAR` |
-| 895 | function | `postPaymentToGLAndAP` |
-| 1051 | function | `postSaleReturnToGLAndAR` |
-| 1220 | function | `postPurchaseReturnToGLAndAP` |
-| 1389 | function | `postExpenseToGL` |
-| 1517 | function | `postStockMovement` |
-| 1628 | function | `DeleteDoc` |
+| 17 | function | `NewStore` |
+| 21 | function | `ListDocs` |
+| 101 | function | `GetDoc` |
+| 189 | function | `NextDocNo` |
+| 213 | function | `SaveDoc` |
+| 435 | function | `postPurchaseToGL` |
+| 588 | function | `postSaleToGL` |
+| 742 | function | `postReceiptToGLAndAR` |
+| 898 | function | `postPaymentToGLAndAP` |
+| 1054 | function | `postSaleReturnToGLAndAR` |
+| 1223 | function | `postPurchaseReturnToGLAndAP` |
+| 1392 | function | `postExpenseToGL` |
+| 1520 | function | `postStockMovement` |
+| 1629 | function | `DeleteDoc` |
 
 ## frontend/src/app/gl/gl-masters.tsx (1543 lines)
 
@@ -1296,20 +1296,20 @@ Files indexed: 32
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
 
-## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
+## frontend/src/app/crud/erp-crud-workbench.tsx (1096 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 47 | function | `ErpCrudWorkbench` |
-| 128 | const-arrow | `handleSelectRow` |
-| 150 | const-arrow | `handleStartEdit` |
-| 158 | const-arrow | `handleStartCreate` |
+| 48 | function | `ErpCrudWorkbench` |
+| 129 | const-arrow | `handleSelectRow` |
+| 151 | const-arrow | `handleStartEdit` |
+| 159 | const-arrow | `handleStartCreate` |
 | 206 | const-arrow | `handleCancelEdit` |
 | 224 | const-arrow | `handleDeleteDoc` |
 | 257 | const-arrow | `updateLineItem` |
 | 336 | const-arrow | `handleSaveDoc` |
-| 682 | section | `EDIT MODE FORM` |
-| 916 | section | `READ-ONLY VIEW MODE` |
+| 700 | section | `EDIT MODE FORM` |
+| 938 | section | `READ-ONLY VIEW MODE` |
 
 ## frontend/src/components/system-settings/utils.ts (1069 lines)
 

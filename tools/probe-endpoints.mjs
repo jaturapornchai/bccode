@@ -47,17 +47,24 @@ async function probe(method, path, body) {
   }
 }
 
-// Modules the erp-transaction proxy allows, i.e. every document screen in the
-// work tabs (frontend/src/app/api/erp-transaction/[...erpPath]/route.ts).
+// Modules the erp-transaction proxy allows = the 63 document types in the backend registry
+// (backend/internal/doctype/doctype.go, mirrored by frontend/src/lib/erp-transaction-modules.ts).
 const TRANSACTION_MODULES = [
-  "sale-invoice", "sale-order", "quotation", "sale-invoice-return",
-  "purchase", "purchase-order", "purchase-requisition", "purchase-return",
-  "paid", "pay", "stock-balance", "stock-receive-product", "stock-prickup-product",
-  "stock-return-product", "stock-transfer", "stock-adjustment", "receivableother",
-  "billingnote", "deposit", "depositrefund", "paidadvance", "paidadvancerefund",
-  "receivedeposit", "receivedepositrefund",
-  "bank/saledebitnote", "bank/purchasedebitnote", "bank/banktransferrecord",
-  "bank/depositrecord", "chequereceive/chequedeposit", "chequepayment/chequepaymentdeposit",
+  "stock-balance", "stock-receive-product", "stock-pickup-product", "stock-return-product",
+  "stock-transfer", "stock-adjustment", "stock-issue-request", "stock-transfer-request",
+  "goods-inspection", "stock-count",
+  "quotation", "sale-order", "sale-invoice", "sale-invoice-return", "ardebitnote",
+  "debtorbeginningbalance", "receivableother", "billingnote", "paid", "receivedeposit",
+  "receiveadvancerefund", "chequereceived",
+  "purchase-requisition", "purchase-order", "purchase", "purchase-return",
+  "creditorbeginningbalance", "expense", "apbillingreceipt", "pay", "deposit",
+  "advancepayment", "advancepaymentrefund",
+  "rfq", "goodsreceive", "invoicereceive", "landedcost", "apdebitnote", "apcreditnote",
+  "apotherdebt", "apbaddebt", "receiveadvance", "temporaryreceipt", "arbaddebt",
+  "otherincome", "employeeadvance", "cashdeposit", "cashwithdrawal", "bankexpense",
+  "bankincome", "banktransfer", "chequeissued", "chequedeposit", "chequereceivedclear",
+  "chequereceivedreturn", "chequeredeposit", "chequereceivedcancel", "chequediscount",
+  "chequeissuedclear", "chequeissuedcancel", "creditcard", "creditcardsettle", "creditcardcancel",
 ];
 
 const GROUPS = {
@@ -74,7 +81,7 @@ const GROUPS = {
     { label: "tax reconciliation", method: "GET", path: "/fa/v2/reports/tax-reconciliation?year=2026" },
   ],
   approval: () => [
-    // erp-operations.ts APPROVAL_KINDS: only "pr" is wired on the frontend today.
+    // erp-operations.ts APPROVAL_KINDS is empty today (the backend has no approval endpoint); these probes show when one appears.
     { label: "pr pending", method: "POST", path: "/goapi/api/approval/pr-status/pending", body: { holdingcode: holdingCode } },
     { label: "po pending", method: "POST", path: "/goapi/api/approval/po-status/pending", body: { holdingcode: holdingCode } },
   ],

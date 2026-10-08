@@ -43,31 +43,16 @@ const POSTGRES_SETTING_BASE_PATHS = new Set<string>([
   "/holding/employee", "/holding/permission", "/organization/role-permission",
 ]);
 
-// 2026-10-08: รายการเอกสารจัดซื้อ/จัดขาย ที่เชื่อมต่อ GoAPI + PostgreSQL (doc, docdetail) แล้ว
-export const LIVE_ERP_TRANSACTION_ROUTES = new Set<string>([
-  "/transaction/purchaseorder",
-  "/transaction/sale",
-  "/transaction/quotation",
-  "/transaction/saleorder",
-  "/transaction/purchase",
-  "/transaction/purchaserequisition",
-  "/transaction/purchasereturn",
-  "/transaction/salereturn",
-  "/transaction/stockbalance",
-  "/transaction/stockreceiveproduct",
-  "/transaction/stockpickupproduct",
-  "/transaction/stockreturnproduct",
-  "/transaction/stocktransfer",
-  "/transaction/adjust",
-  "/transaction/paid",
-  "/transaction/pay",
-  "/transaction/expense",
-]);
+/** จอที่ไม่มี API จริงรองรับเลย — WorkTabPanel ต้องแสดงการ์ด "ยังไม่พร้อม" แทนจอที่ยิง API ที่ไม่มีอยู่ */
+export function isRetiredBackendScreen(route: string): boolean {
+  return RETIRED_BACKEND_ROUTES.has(route.split("?")[0]);
+}
 
+// จอเอกสารธุรกรรม ERP ที่ยังมี config (ERP_MODULE_CONFIGS) ทำงานจริงกับตาราง doc ผ่าน /transaction/:module
+// จึงไม่ใช่ "retired"; เมนูที่ไม่มี config จะตกเป็น pending ใน isMenuScreenPending เอง
 export function isMenuBackendRetired(route: string): boolean {
   const clean = route.split("?")[0];
-  if (LIVE_ERP_TRANSACTION_ROUTES.has(clean)) return false;
-  if (RETIRED_BACKEND_ROUTES.has(clean) || isErpTransactionRoute(clean) || isOperationsRoute(clean)) return true;
+  if (isRetiredBackendScreen(clean) || isOperationsRoute(clean)) return true;
   const setting = getSystemSettingConfig(clean);
   return Boolean(setting?.basePath && !POSTGRES_SETTING_BASE_PATHS.has(setting.basePath));
 }

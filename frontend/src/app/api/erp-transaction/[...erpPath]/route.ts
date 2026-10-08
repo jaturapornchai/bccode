@@ -1,67 +1,9 @@
 import { NextResponse } from "next/server";
+import { ERP_TRANSACTION_MODULES } from "@/lib/erp-transaction-modules";
 import { getBackendUrlFromRequest, getMainApiUrl, isRecord, proxyMainApiJson, requireBearerToken } from "@/lib/workspace-api";
 
 type Context = { params: Promise<{ erpPath: string[] }> };
 const bad = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
-
-const ALLOWED_MODULES = [
-  "sale-invoice",
-  "sale-order",
-  "quotation",
-  "sale-invoice-return",
-  "purchase",
-  "purchase-order",
-  "purchase-requisition",
-  "purchase-return",
-  "paid",
-  "pay",
-  "stock-balance",
-  "stock-receive-product",
-  "stock-prickup-product",
-  "stock-return-product",
-  "stock-transfer",
-  "stock-adjustment",
-  "receivableother",
-  "billingnote",
-  "apbillingreceipt",
-  "deposit",
-  "depositrefund",
-  "paidadvance",
-  "paidadvancerefund",
-  "advancepayment",
-  "advancepaymentrefund",
-  "receivedeposit",
-  "receivedepositrefund",
-  "receiveadvance",
-  "receiveadvancerefund",
-  "debtorbeginningbalance",
-  "creditorbeginningbalance",
-  "bank",
-  "chequereceive",
-  "chequepayment",
-  "chequereceived",
-  "chequeissued",
-  "salereturn",
-  "purchasereturn",
-  "expense",
-  "creditnote",
-  "debitnote",
-  "temporaryreceipt",
-  "withholdingtax",
-  "employeeadvance",
-  "otherincomereceipt",
-  "accounttransfer",
-  "rfq",
-  "purchasepartial",
-  "accrualreceive",
-  "landedcost",
-  "purchasereceiptadjustment",
-  "stockcount",
-  "issue-request",
-  "transfer-request",
-  "goods-inspection",
-  "count-sheet",
-];
 
 function sanitizeSegments(segments: string[]): boolean {
   // \p{M} = สระบน/ล่างและวรรณยุกต์ไทย (รหัสเช่น "ที่01") — ขาดแล้วรหัสไทยถูกปฏิเสธ (docs/kms/17-dev-gotchas.md)
@@ -75,7 +17,7 @@ export async function GET(request: Request, context: Context) {
   const { erpPath } = await context.params;
   if (!erpPath || erpPath.length === 0) return bad("ไม่พบรายการที่ต้องการ", 404);
 
-  if (!ALLOWED_MODULES.includes(erpPath[0])) {
+  if (!ERP_TRANSACTION_MODULES.includes(erpPath[0])) {
     return bad("โมดูลไม่ถูกต้อง", 404);
   }
 
@@ -104,7 +46,7 @@ export async function POST(request: Request, context: Context) {
   const { erpPath } = await context.params;
   if (!erpPath || erpPath.length === 0) return bad("ไม่พบรายการที่ต้องการ", 404);
 
-  if (!ALLOWED_MODULES.includes(erpPath[0])) {
+  if (!ERP_TRANSACTION_MODULES.includes(erpPath[0])) {
     return bad("โมดูลไม่ถูกต้อง", 404);
   }
 
@@ -144,7 +86,7 @@ export async function PUT(request: Request, context: Context) {
   const { erpPath } = await context.params;
   if (!erpPath || erpPath.length === 0) return bad("ไม่พบรายการที่ต้องการ", 404);
 
-  if (!ALLOWED_MODULES.includes(erpPath[0])) {
+  if (!ERP_TRANSACTION_MODULES.includes(erpPath[0])) {
     return bad("โมดูลไม่ถูกต้อง", 404);
   }
 
@@ -184,7 +126,7 @@ export async function DELETE(request: Request, context: Context) {
   const { erpPath } = await context.params;
   if (!erpPath || erpPath.length === 0) return bad("ไม่พบรายการที่ต้องการ", 404);
 
-  if (!ALLOWED_MODULES.includes(erpPath[0])) {
+  if (!ERP_TRANSACTION_MODULES.includes(erpPath[0])) {
     return bad("โมดูลไม่ถูกต้อง", 404);
   }
 

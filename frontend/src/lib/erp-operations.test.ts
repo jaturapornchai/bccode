@@ -62,7 +62,8 @@ describe("approval workflow API", () => {
   });
 
   it("only exposes screens that have a real approval endpoint", () => {
-    expect(isApprovalApiReady("pr_approval")).toBe(true);
+    // backend ไม่มี endpoint อนุมัติ (pr-status/pending ไม่มีจริง) จึงไม่มีจอใดพร้อม
+    expect(isApprovalApiReady("pr_approval")).toBe(false);
     expect(isApprovalApiReady("po_cancellation")).toBe(false);
     expect(isApprovalApiReady("qt_approval")).toBe(false);
     expect(isApprovalApiReady("so_approval")).toBe(false);
@@ -86,79 +87,18 @@ describe("approval workflow API", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("maps pending documents from the backend payload", async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        success: true,
-        count: 1,
-        data: [
-          {
-            docno: "PR-202609-001",
-            docdatetime: "2026-09-12",
-            createdbyname: "user one",
-            custname: "Vendor Co.",
-            totalamount: 128400,
-            requiredlevelname: "Manager",
-          },
-        ],
-      }),
-    }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await fetchPendingApprovals({ code: "pr_approval", holdingcode: "H01" });
-
-    expect(result.error).toBeUndefined();
-    expect(result.docs).toHaveLength(1);
-    expect(result.docs[0].docno).toBe("PR-202609-001");
-    expect(result.docs[0].totalamount).toBe(128400);
-    const [url] = fetchMock.mock.calls[0] as unknown as [string];
-    expect(url).toContain("/api/goapi/api/approval/pr-status/pending");
-  });
-
-  it("returns an empty list with an error key when the backend fails", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
-    const result = await fetchPendingApprovals({ code: "pr_approval", holdingcode: "H01" });
-    expect(result.docs).toEqual([]);
-    expect(result.error).toBe("load_failed");
-  });
-
-  it("requires holding, docno and an acting user before approving", async () => {
+  // pr_approval ถูกถอดจาก APPROVAL_KINDS: backend ไม่มี endpoint อนุมัติ จึงห้ามยิง API ที่ไม่มีอยู่
+  it("does not call the backend for pr_approval while no approval endpoint exists", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const base = { code: "pr_approval", action: "approve" as const };
 
-    expect((await submitApprovalAction({ ...base, holdingcode: "", docno: "PR-1", actionby: "u" })).messageKey).toBe("holding_required");
-    expect((await submitApprovalAction({ ...base, holdingcode: "H01", docno: "", actionby: "u" })).messageKey).toBe("docno_required");
-    expect((await submitApprovalAction({ ...base, holdingcode: "H01", docno: "PR-1", actionby: "" })).messageKey).toBe("unauthorized");
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("posts approve and reject to the matching endpoint", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ success: true }) }));
-    vi.stubGlobal("fetch", fetchMock);
-
+    const list = await fetchPendingApprovals({ code: "pr_approval", holdingcode: "H01" });
     const approved = await submitApprovalAction({
       code: "pr_approval", holdingcode: "H01", docno: "PR-1", action: "approve", actionby: "user1",
     });
-    const rejected = await submitApprovalAction({
-      code: "pr_approval", holdingcode: "H01", docno: "PR-1", action: "reject", actionby: "user1",
-    });
 
-    expect(approved).toEqual({ success: true, messageKey: "approve_success" });
-    expect(rejected).toEqual({ success: true, messageKey: "reject_success" });
-    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toContain("/pr-status/approve");
-    expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toContain("/pr-status/reject");
-    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(String(init.body)).toContain("\"actionby\":\"user1\"");
-  });
-
-  it("treats success:false and network failures as failed actions", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ success: false }) })));
-    expect((await submitApprovalAction({ code: "pr_approval", holdingcode: "H01", docno: "PR-1", action: "approve", actionby: "u" })).messageKey).toBe("action_failed");
-
-    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
-    expect((await submitApprovalAction({ code: "pr_approval", holdingcode: "H01", docno: "PR-1", action: "approve", actionby: "u" })).messageKey).toBe("connection_error");
+    expect(list).toEqual({ docs: [], error: "approval_not_available" });
+    expect(approved).toEqual({ success: false, messageKey: "approval_not_available" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

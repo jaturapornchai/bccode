@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"smlcloudplatform/internal/doctype"
 )
 
 type Store struct{}
@@ -47,7 +49,7 @@ func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transf
 		COALESCE(totalvatvalue_doc, 0), COALESCE(totalbeforevat_doc, 0),
 		COALESCE(totalaftervat_doc, 0), COALESCE(iscancel, false),
 		COALESCE(isclosed, false), COALESCE(branchid, ''),
-		COALESCE(cancelreason, ''), created_at, modified_at
+		COALESCE(custname, ''), COALESCE(description, ''), COALESCE(remark, ''), created_at, modified_at
 		FROM doc %s ORDER BY docdatetime DESC, docno DESC LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
 
 	args = append(args, limit, offset)
@@ -69,7 +71,7 @@ func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transf
 			&d.TotalVatValue, &d.TotalBeforeVat,
 			&d.TotalAfterVat, &d.IsCancel,
 			&d.IsClosed, &d.BranchCode,
-			&d.Remark, &createdAt, &modifiedAt,
+			&d.CustName, &d.Description, &d.Remark, &createdAt, &modifiedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan doc row: %w", err)
 		}
@@ -113,7 +115,7 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 		COALESCE(totalvatvalue_doc, 0), COALESCE(totalbeforevat_doc, 0),
 		COALESCE(totalaftervat_doc, 0), COALESCE(iscancel, false),
 		COALESCE(isclosed, false), COALESCE(branchid, ''),
-		COALESCE(cancelreason, ''), created_at, modified_at
+		COALESCE(custname, ''), COALESCE(description, ''), COALESCE(remark, ''), created_at, modified_at
 		FROM doc %s LIMIT 1`, where)
 
 	var d ErpTransactionDoc
@@ -126,7 +128,7 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 		&d.TotalVatValue, &d.TotalBeforeVat,
 		&d.TotalAfterVat, &d.IsCancel,
 		&d.IsClosed, &d.BranchCode,
-		&d.Remark, &createdAt, &modifiedAt,
+		&d.CustName, &d.Description, &d.Remark, &createdAt, &modifiedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -235,22 +237,29 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 		doc.DocNo = docNo
 	}
 
+	var docID int
 	if isEdit {
 		// Update header
 		updateQuery := `UPDATE doc SET
 			docdatetime = $1, custcode = $2, totalamount = $3,
 			totalvalue_doc = $4, totaldiscount_doc = $5, totalvatvalue_doc = $6,
 			totalbeforevat_doc = $7, totalaftervat_doc = $8,
-			cancelreason = $9, branchid = $10, modifier_code = $11, modified_at = $12
-			WHERE businesscode = $13 AND transflag = $14 AND docno = $15`
+			custname = $9, description = $10, remark = $11,
+			branchid = $12, modifier_code = $13, modified_at = $14
+			WHERE businesscode = $15 AND transflag = $16 AND docno = $17 AND NOT COALESCE(isdelete, false)
+			RETURNING id`
 
-		_, err = tx.ExecContext(ctx, updateQuery,
+		err = tx.QueryRowContext(ctx, updateQuery,
 			docDate, doc.CustCode, doc.TotalAmount,
 			doc.TotalValue, doc.TotalDiscount, doc.TotalVatValue,
 			doc.TotalBeforeVat, doc.TotalAfterVat,
-			doc.Remark, branch, actor, now,
+			doc.CustName, doc.Description, doc.Remark,
+			branch, actor, now,
 			company, transflag, docNo,
-		)
+		).Scan(&docID)
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("update doc %s: %w", docNo, sql.ErrNoRows)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("update doc: %w", err)
 		}
@@ -265,21 +274,24 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 		insertQuery := `INSERT INTO doc (
 			businesscode, transflag, docno, custcode, docdatetime,
 			totalamount, totalvalue_doc, totaldiscount_doc, totalvatvalue_doc,
-			totalbeforevat_doc, totalaftervat_doc, branchid, cancelreason,
+			totalbeforevat_doc, totalaftervat_doc, branchid,
+			custname, description, remark,
 			creator_code, created_at, modifier_code, modified_at, checksum
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9,
-			$10, $11, $12, $13,
-			$14, $15, $16, $17, ''
-		)`
+			$10, $11, $12,
+			$13, $14, $15,
+			$16, $17, $18, $19, ''
+		) RETURNING id`
 
-		_, err = tx.ExecContext(ctx, insertQuery,
+		err = tx.QueryRowContext(ctx, insertQuery,
 			company, transflag, docNo, doc.CustCode, docDate,
 			doc.TotalAmount, doc.TotalValue, doc.TotalDiscount, doc.TotalVatValue,
-			doc.TotalBeforeVat, doc.TotalAfterVat, branch, doc.Remark,
+			doc.TotalBeforeVat, doc.TotalAfterVat, branch,
+			doc.CustName, doc.Description, doc.Remark,
 			actor, now, actor, now,
-		)
+		).Scan(&docID)
 		if err != nil {
 			return nil, fmt.Errorf("insert doc: %w", err)
 		}
@@ -324,18 +336,8 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	if docRefGlobal != "" {
 		refTransFlag := doc.DocRefTransFlag
 		if refTransFlag == 0 {
-			if strings.HasPrefix(docRefGlobal, "PO") {
-				refTransFlag = 6
-			} else if strings.HasPrefix(docRefGlobal, "SO") {
-				refTransFlag = 36
-			} else if strings.HasPrefix(docRefGlobal, "QT") {
-				refTransFlag = 34
-			} else if strings.HasPrefix(docRefGlobal, "PR") {
-				refTransFlag = 2
-			} else if strings.HasPrefix(docRefGlobal, "INV") {
-				refTransFlag = 44
-			} else if strings.HasPrefix(docRefGlobal, "PUR") {
-				refTransFlag = 12
+			if refType, ok := doctype.ByDocNo(docRefGlobal); ok {
+				refTransFlag = refType.Flag
 			}
 		}
 		_, _ = tx.ExecContext(ctx, `DELETE FROM docref WHERE businesscode=$1 AND docno=$2`, company, docNo)
@@ -347,8 +349,8 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 			WHERE businesscode = $2 AND docno = $3`, now, company, docRefGlobal)
 	}
 
-	// Auto-posting GL สำหรับการซื้อสินค้า (Purchase: transflag=12) หรือ flag PostToGL
-	if transflag == 12 || (doc.PostToGL && transflag != 44 && transflag != 28 && transflag != 29) {
+	// Auto-posting GL สำหรับการซื้อสินค้า (Purchase: transflag=12) เท่านั้น ประเภทอื่นบันทึกเอกสารอย่างเดียว
+	if transflag == doctype.Purchase {
 		if err := s.postPurchaseToGL(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postPurchaseToGL error for %s: %v\n", docNo, err)
 		} else {
@@ -357,7 +359,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL และ AR สำหรับการขายสินค้า (Sale Invoice: transflag=44)
-	if transflag == 44 {
+	if transflag == doctype.SaleInvoice {
 		if err := s.postSaleToGL(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postSaleToGL error for %s: %v\n", docNo, err)
 		} else {
@@ -366,7 +368,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL และ AR Settlement สำหรับใบเสร็จรับเงิน (Receipt/Paid: transflag=28)
-	if transflag == 28 {
+	if transflag == doctype.Paid {
 		if err := s.postReceiptToGLAndAR(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postReceiptToGLAndAR error for %s: %v\n", docNo, err)
 		} else {
@@ -375,7 +377,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL และ AP Settlement สำหรับใบสำคัญจ่าย (Payment/Pay: transflag=29)
-	if transflag == 29 {
+	if transflag == doctype.Pay {
 		if err := s.postPaymentToGLAndAP(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postPaymentToGLAndAP error for %s: %v\n", docNo, err)
 		} else {
@@ -384,7 +386,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL และ AR สำหรับรับคืนสินค้าจากการขาย (Sale Return: transflag=48)
-	if transflag == 48 {
+	if transflag == doctype.SaleInvoiceReturn {
 		if err := s.postSaleReturnToGLAndAR(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postSaleReturnToGLAndAR error for %s: %v\n", docNo, err)
 		} else {
@@ -393,7 +395,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL และ AP สำหรับส่งคืนสินค้าจากการซื้อ (Purchase Return: transflag=16)
-	if transflag == 16 {
+	if transflag == doctype.PurchaseReturn {
 		if err := s.postPurchaseReturnToGLAndAP(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postPurchaseReturnToGLAndAP error for %s: %v\n", docNo, err)
 		} else {
@@ -402,7 +404,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Auto-posting GL สำหรับบันทึกค่าใช้จ่าย (Expense: transflag=24)
-	if transflag == 24 {
+	if transflag == doctype.Expense {
 		if err := s.postExpenseToGL(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
 			fmt.Printf("❌ [Auto-GL] postExpenseToGL error for %s: %v\n", docNo, err)
 		} else {
@@ -411,7 +413,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	}
 
 	// Real-time Stock Movement สำหรับใบซื้อ (12), ใบขาย (44), รับคืนขาย (48), ส่งคืนซื้อ (16)
-	if transflag == 12 || transflag == 44 || transflag == 48 || transflag == 16 || transflag == 20 {
+	if transflag == doctype.Purchase || transflag == doctype.SaleInvoice || transflag == doctype.SaleInvoiceReturn || transflag == doctype.PurchaseReturn || transflag == doctype.StockPickup {
 		if err := s.postStockMovement(ctx, tx, company, branch, doc, docNo, transflag, docDate, now); err != nil {
 			fmt.Printf("❌ [Stock] postStockMovement error for %s (transflag=%d): %v\n", docNo, transflag, err)
 		} else {
@@ -423,6 +425,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 		return nil, fmt.Errorf("commit tx: %w", err)
 	}
 
+	doc.ID = strconv.Itoa(docID)
 	doc.DocDateTime = docDate.Format(time.RFC3339)
 	doc.TransFlag = transflag
 	doc.BranchCode = branch
@@ -1523,10 +1526,8 @@ func (s *Store) postStockMovement(ctx context.Context, tx *sql.Tx, company, bran
 	_, _ = tx.ExecContext(ctx, `DELETE FROM stock_ledger WHERE businesscode=$1 AND docno=$2`, company, docNo)
 
 	direction := 1
-	if transflag == 44 || transflag == 20 || transflag == 16 { // Sale, Out หรือ Purchase Return (ส่งคืน)
+	if dt, ok := doctype.ByFlag(transflag); ok && dt.Stock == doctype.StockOut {
 		direction = -1
-	} else if transflag == 12 || transflag == 48 { // Purchase หรือ Sale Return (รับคืน)
-		direction = 1
 	}
 
 	periodKey := docDate.Format("2006-01")

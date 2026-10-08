@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"smlcloudplatform/internal/doctype"
 	mypg "smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
@@ -91,7 +92,7 @@ func PurchaseHistoryHandler(c echo.Context) error {
 
 	// Build query with parameterized placeholders for barcodes
 	// Query doc (เอกสาร) join docdetail (รายละเอียดสินค้า)
-	// transflag: 12=ซื้อ, 16=ซื้อคืน, 20=สั่งซื้อ
+	// นับเฉพาะเอกสารซื้อสินค้า (doctype.Purchase)
 	placeholders := make([]string, len(req.Barcodes))
 	args := make([]interface{}, len(req.Barcodes)+2)
 
@@ -103,7 +104,7 @@ func PurchaseHistoryHandler(c echo.Context) error {
 	// Date range: months ago from now
 	dateFrom := time.Now().AddDate(0, -req.Months, 0)
 	args[len(req.Barcodes)] = dateFrom.Format("2006-01-02")
-	args[len(req.Barcodes)+1] = 12 // transflag for purchase
+	args[len(req.Barcodes)+1] = doctype.Purchase
 
 	query := fmt.Sprintf(`
 		SELECT

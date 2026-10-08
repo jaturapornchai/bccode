@@ -3,7 +3,7 @@ date: 2026-10-08
 severity: high
 component: [backend, frontend]
 tags: [bc-account, erp, transaction, permission, report, champ-parity, audit]
-fixed: false
+fixed: partial
 ---
 
 # Symptom
@@ -41,16 +41,33 @@ fixed: false
 
 ## Fix
 
-**ยังไม่ได้แก้** — งานนี้เป็นการออกแบบ ไม่ใช่ patch: ต้องรวมพจนานุกรม flag เป็นชุดเดียวที่ transaction, stockengine, รายงาน และ service.go ใช้ร่วมกัน (เปลี่ยนวิธีที่ GL/สต็อกถูกตัดสิน = ผลต่อบัญชี) และต้องให้ลุงจืดตัดสินเรื่องต่อไปนี้ก่อน:
+**แก้แล้ว (2026-10-08, ลุงจืดอนุมัติข้อ [1],[2] — ทดสอบ CRUD ด้วย):**
 
-1. จอที่ยังไม่มี backend จริง (สินค้า 3 จอ, 20 เส้นทางตาย, `pr_approval`): คืน guard (ซื่อตรง แต่ขัดคำสั่ง "ไม่มีคำว่ารอพัฒนา") หรือสร้างจริงทีละกลุ่ม
-2. เลข flag: คงเลข BC แล้วรวมเป็นทะเบียนเดียว หรือใช้ `GLSource` ของ Champ เป็นฐาน
-3. เลขเอกสาร: คงคำนำหน้าคงที่ใน `ModulePrefixes` หรือทำเป็นค่าตั้งต่อเอกสารตาม Champ (`DocFormat`)
-4. ที่ Champ ไม่มีเอกสารจริง (`etax`, `withholdingtax`, `purchasereceiptadjustment`) และที่เป็น master (`petty-cash-limit`, `bank-contact`): คง/แปลงเป็น action-report/ย้ายไป master/ลบ
-5. กลับรายการ GL ตอนลบ/แก้เอกสารที่ลงบัญชีแล้ว (ออกแบบ reversal) และเลิก hard-code ผังบัญชีใน auto-GL
+1. **ทะเบียนประเภทเอกสารเดียว** `backend/internal/doctype/doctype.go` (63 ประเภท: key, transflag, คำนำหน้า, ผลต่อสต็อก None/In/Out/ByLine) แทน `ModuleTransFlags`/`ModulePrefixes`/`PostToGL` ที่ซ้ำและขัดกัน ; `/transaction/:module`, `stockengine`, `myglobal.TransFlagsToProcess` และรายงานขาย/หนี้/สต็อกอ่านจากทะเบียนนี้ทั้งหมด — flag ไม่ซ้ำข้ามประเภท
+2. **เส้นทางตาย 20 เส้น/เอกสารเข้า flag ผิด** — `apiPath` ทุกตัวเป็น key ชั้นเดียวของทะเบียน ; BFF allowlist (`erp-transaction-modules.ts`) เท่ากับทะเบียนเป๊ะ ล็อกด้วย vitest ที่อ่าน `doctype.go`
+3. **ลงบัญชี/ตัดสต็อกเฉพาะ 8 ประเภทที่ service.go ลงอยู่แล้ว (ยังไม่ได้เทียบ Champ ทีละประเภท)** — ที่เหลือบันทึกเอกสารอย่างเดียว และจอบอกผู้ใช้ด้วย `erp_store_only_notice` ; ไม่มีเอกสาร "ซื้อ" ปลอมจากเส้นทางที่ใช้ `purchase` ร่วมกันอีก
+4. **ตาราง doc/docdetail/docref/stock_ledger/stock_period_balance ไม่มี DDL ในโค้ด** (พบระหว่างทำ UAT) — prod `rungrueng` ไม่มีตารางเหล่านี้เลย (มีแต่ฐาน `demo`) ; เพิ่ม `httpapi/schema.go` `ensureSchema` สร้างครั้งแรกที่ใช้ (advisory lock) ก่อน deploy ฝั่ง backend ต้องพร้อมนี้
+5. **Create→Read ทำ description/custname หาย, หมายเหตุไปอยู่ `cancelreason`, ไม่ตอบ `id`, แก้เอกสารที่ไม่มี/ลบแล้วตอบสำเร็จเงียบ ๆ** — เพิ่มคอลัมน์ custname/description/remark, ตอบ `id`, UPDATE ที่ไม่พบแถว = 404
+6. **เลขที่เอกสาร** — ส่ง `docno` ว่าง backend ออกให้ (`NextDocNo`) ; จอแสดง placeholder `docno_auto_placeholder`
+7. **จอสินค้า/บาร์โค้ด/ชุดสินค้า/ประวัติราคา** คืน guard `isRetiredBackendScreen` (backend ไม่มี `/api/product`) ; `APPROVAL_KINDS` ว่างเพราะไม่มี `/api/approval/*` ; รายงานหนี้/ขาย/สต็อกที่อ่าน flag ตามทะเบียนแก้ตามแล้ว (มีเทสต์ flag ทั้ง 3 จุด)
+
+**UAT (Create→Read→Update→Delete + ตรวจ PostgreSQL ทุก step, Demo→`rungrueng`/01, local `postgres` db `rungrueng`):** cashdeposit ผ่าน ; ประเภท store-only 55 ตัวผ่าน (doc +1, ไม่แตะ GL/สต็อก, แก้แถวเดิม, ลบ = soft delete) ; ประเภท posting 8 ตัวผ่านขั้น CRUD ; ลบข้อมูลทดสอบด้วย id เป้าหมายแล้ว จำนวนแถวกลับ baseline
+
+**ยังไม่แก้ — รอลุงจืดอนุมัติ [3] (รายงานเฉย ๆ):**
+
+- `/transaction/:module` ไม่ตรวจสิทธิ์รายเมนู ; UI ไม่เคารพสิทธิ์ create/update/delete ; ฟิลด์ `post_to_gl` จาก client
+- `DeleteDoc` (`service.go:~1646`) bug `args[:len(args)-2]` ไม่ลบ `stock_ledger` และไม่กลับรายการ GL ; แก้เอกสารที่ posted ไม่ลงบัญชีซ้ำและไม่กลับสต็อก — **ยืนยันจาก UAT:** แก้/ลบเอกสาร 8 ประเภท posting ไม่ย้อน GL/สต็อก
+- Auto-GL hard-code ผัง/ปีบัญชี fallback `"2569"` ; จำนวนเงิน `float64` (Rule 20) ; ความผิดพลาดของ auto-GL/สต็อกแค่ `fmt.Printf`
+- ประเภท ByLine (`stock-transfer`, `stock-adjustment`) ไม่เขียน `calcflag` → ไม่เคลื่อนสต็อก ; ไม่มีตัวกัน stock ติดลบ ; `apdebitnote`/`apcreditnote`/`ardebitnote` ผลต่อสต็อกรอตัดสิน
+- `status` draft/approved ไม่ถูกเก็บ ; เลขที่เอกสารต่อบริษัทแบบ Champ (`DocFormat`) ; ใบเช็ค/บัตรเครดิตไม่มีวงจรสถานะแบบ Champ
+- รายงานหนี้ 8 query ปนบริษัท (`d.company = '01'`) ; มูลค่าสต็อกไม่เลือกงวดล่าสุด ; ฟิลเตอร์รายงานตาม handoff ข้อ [2] เดิม ; `TestBuildDebtReportQuery` ล้มที่ HEAD
+- BFF `userErrorStatusOk` แปลง 4xx เป็น 200 แต่ `saveErpTransaction`/`deleteErpTransaction` เช็คแค่ `res.ok` (ยังไม่ทดสอบบนจอ)
+- จอ `/price_history`, `/product_barcode_shelf` แบบ standalone ยังไม่ guard (มีมาก่อน)
 
 ## Regression Test
 
-ยังไม่มี — เมื่อแก้ให้เพิ่ม: (1) vitest/Go ที่ยืนยันว่าทุก `apiPath` ใน `erp-transaction.ts` เป็นชื่อชั้นเดียว อยู่ใน BFF `ALLOWED_MODULES` และ `ModuleTransFlags`/`ModulePrefixes` และ flag ไม่ซ้ำข้ามประเภทเอกสาร; (2) ทดสอบ `DeleteDoc` ว่ากลับสต็อกและ GL; (3) ทดสอบสิทธิ์ปฏิเสธ (ไม่มีสิทธิ์ → 403) ทั้ง GET/POST/PUT/DELETE ที่ `/transaction/:module`; (4) รายงานหนี้แยกบริษัท และมูลค่าสต็อกไม่นับซ้ำงวด
+- Go: `backend/internal/doctype/doctype_test.go` (flag/key/prefix ไม่ซ้ำ, StockFlags), `stockengine/calc_test.go`, `httpapi/doctype_crud_test.go` (sqlmock: create→id, round-trip custname/description/remark, update 404), `report_doctype_flags_test.go`, `service_doctype_flags_test.go`, `process_product_balance_flags_test.go`
+- vitest: `erp-transaction.test.ts` (apiPath ชั้นเดียว ∈ ทะเบียน, BFF allowlist = `doctype.go`), `menu-screen-status.test.ts`, `erp-operations.test.ts`
+- UAT script (นอก repo): `C:/tmp/uat-erp-crud.mjs` — ยังไม่มีเทสต์สำหรับ [3] (สิทธิ์ 403, DeleteDoc ย้อนสต็อก/GL) ให้เพิ่มเมื่อแก้
 
 อ้างอิง: [[2026-09-19-champ-parity-menu-cut]] · `docs/kms/05` · `docs/kms/19-menu-coverage-market-standard.md`

@@ -60,6 +60,3 @@ func TruncateDocTables(holdingCode string) error {
 
 	return nil
 }
-
-// GetTransactionMultiplier is now in myglobal package
-// Use myglobal.GetTransactionMultiplier instead

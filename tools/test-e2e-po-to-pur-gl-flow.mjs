@@ -101,7 +101,6 @@ async function run() {
     totalvalue: 28037.38,
     totalbeforevat: 28037.38,
     totalvatvalue: 1962.62,
-    post_to_gl: true,
     details: [
       {
         linenumber: 1,

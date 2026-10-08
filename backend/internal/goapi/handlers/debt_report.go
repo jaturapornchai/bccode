@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"smlcloudplatform/internal/doctype"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
 
@@ -173,7 +175,7 @@ SELECT
   COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 5)) AS docno,
   d.partner_code AS creditorcode,
   COALESCE(p.payload->>'name', d.partner_code) AS creditorname,
-  CASE WHEN d.side = 2 THEN 36 ELSE 38 END AS transflag,
+  CASE WHEN d.side = 2 THEN ` + strconv.Itoa(doctype.Purchase) + ` ELSE ` + strconv.Itoa(doctype.Pay) + ` END AS transflag,
   CASE WHEN d.side = 2 THEN 'ซื้อเชื่อ' ELSE 'จ่ายชำระหนี้' END AS transname,
   CASE WHEN d.side = 2 THEN d.amount ELSE 0 END AS totalamount,
   CASE WHEN d.side = 1 THEN d.amount ELSE 0 END AS paidamount,
@@ -293,7 +295,7 @@ SELECT
   COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 5)) AS docno,
   d.partner_code AS debtorcode,
   COALESCE(p.payload->>'name', d.partner_code) AS debtorname,
-  CASE WHEN d.side = 1 THEN 44 ELSE 48 END AS transflag,
+  CASE WHEN d.side = 1 THEN ` + strconv.Itoa(doctype.SaleInvoice) + ` ELSE ` + strconv.Itoa(doctype.Paid) + ` END AS transflag,
   CASE WHEN d.side = 1 THEN 'ขายเชื่อ' ELSE 'รับชำระหนี้' END AS transname,
   CASE WHEN d.side = 1 THEN d.amount ELSE 0 END AS totalamount,
   CASE WHEN d.side = 2 THEN d.amount ELSE 0 END AS paidamount,
