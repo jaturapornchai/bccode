@@ -2212,9 +2212,6 @@ function WorkTabPanel({
     <MenuPlannedCard route={activeTab.route} item={activeTab.item} title={activeTab.title} language={language} backendLanguage={backendLanguage} />
   );
 
-  // 2026-09-23: backend เป็น PostgreSQL อย่างเดียว — จอที่ API เดิมอยู่บน MongoDB ถูกถอดแล้ว แสดง "ยังไม่พร้อม" ทันที ไม่ยิง API ที่ไม่มีอยู่
-  if (isMenuBackendRetired(activeTab.route)) return plannedCard;
-
   if (activeTab.route === "/shortcuts") {
     return (
       <ManageShortcutsScreen
@@ -2317,7 +2314,7 @@ function WorkTabPanel({
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);
-  if (systemSettingConfig && !isMenuScreenPending(activeTab.route)) {
+  if (systemSettingConfig) {
     return <SystemSettingsScreen embedded language={language} route={activeTab.route} />;
   }
 

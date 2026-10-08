@@ -27,6 +27,27 @@ var ModuleTransFlags = map[string]int{
 	"creditnote":            48,  // CN ใบลดหนี้
 	"debitnote":             50,  // DN ใบเพิ่มหนี้
 	"expense":               24,  // EXP บันทึกค่าใช้จ่าย
+	"billingnote":           26,  // BL ใบวางบิล
+	"apbillingreceipt":      27,  // BAP ใบรับวางบิล
+	"deposit":               22,  // DEP ใบจ่ายเงินมัดจำ
+	"depositrefund":         23,  // DPR ใบรับคืนเงินมัดจำ
+	"paidadvance":           30,  // ADV ใบจ่ายเงินล่วงหน้า
+	"advancepayment":        30,  // ADV ใบจ่ายเงินล่วงหน้า
+	"paidadvancerefund":     31,  // ADR ใบรับคืนเงินจ่ายล่วงหน้า
+	"advancepaymentrefund":  31,  // ADR ใบรับคืนเงินจ่ายล่วงหน้า
+	"receivedeposit":        32,  // RDEP ใบรับเงินมัดจำ
+	"receivedepositrefund":  33,  // RDR ใบจ่ายคืนเงินมัดจำ
+	"receiveadvance":        34,  // RADV ใบรับเงินล่วงหน้า
+	"receiveadvancerefund":  35,  // RADR ใบจ่ายคืนเงินรับล่วงหน้า
+	"receivableother":       54,  // AR-OTH ลูกหนี้อื่น
+	"debtorbeginningbalance": 52, // AR-BAL ลูกหนี้ยกมา
+	"creditorbeginningbalance": 53, // AP-BAL เจ้าหนี้ยกมา
+	"bank":                  60,  // BNK ธนาคาร/เงินสด
+	"chequereceive":         61,  // CHQ-IN เช็ครับ
+	"chequepayment":         62,  // CHQ-OUT เช็คจ่าย
+	"chequereceived":        61,  // CHQ-IN เช็ครับ
+	"chequeissued":          62,  // CHQ-OUT เช็คจ่าย
+	"temporaryreceipt":      28,  // TRC ใบเสร็จรับเงินชั่วคราว
 }
 
 // ModulePrefixes maps ERP module to default document number prefix.
@@ -54,6 +75,27 @@ var ModulePrefixes = map[string]string{
 	"creditnote":            "CN",
 	"debitnote":             "DN",
 	"expense":               "EXP",
+	"billingnote":           "BL",
+	"apbillingreceipt":      "BAP",
+	"deposit":               "DEP",
+	"depositrefund":         "DPR",
+	"paidadvance":           "ADV",
+	"advancepayment":        "ADV",
+	"paidadvancerefund":     "ADR",
+	"advancepaymentrefund":  "ADR",
+	"receivedeposit":        "RDEP",
+	"receivedepositrefund":  "RDR",
+	"receiveadvance":        "RADV",
+	"receiveadvancerefund":  "RADR",
+	"receivableother":       "AR-OTH",
+	"debtorbeginningbalance": "AR-BAL",
+	"creditorbeginningbalance": "AP-BAL",
+	"bank":                  "BNK",
+	"chequereceive":         "CHQ-IN",
+	"chequepayment":         "CHQ-OUT",
+	"chequereceived":        "CHQ-IN",
+	"chequeissued":          "CHQ-OUT",
+	"temporaryreceipt":      "TRC",
 }
 
 type ErpDetailItem struct {
