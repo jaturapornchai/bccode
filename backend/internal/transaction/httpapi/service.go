@@ -1644,7 +1644,7 @@ func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, company string, trans
 	}
 
 	var docNo string
-	_ = tx.QueryRowContext(ctx, fmt.Sprintf("SELECT docno FROM doc %s", where), args[:len(args)-2]...).Scan(&docNo)
+	_ = tx.QueryRowContext(ctx, fmt.Sprintf("SELECT docno FROM doc %s", where), args...).Scan(&docNo)
 	if docNo != "" {
 		_, _ = tx.ExecContext(ctx, "DELETE FROM stock_ledger WHERE businesscode=$1 AND docno=$2", company, docNo)
 	}
