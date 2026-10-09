@@ -11,6 +11,7 @@ import {
   type ErpTransactionDoc,
 } from "./erp-transaction";
 import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
+import { flattenMenuItems } from "./menu-data";
 import { setupTestAuthSession } from "./test-auth-session";
 
 setupTestAuthSession();
@@ -177,6 +178,60 @@ describe("ERP Transaction domain configs and operations", () => {
 
     expect(result.error).toBe("unauthorized");
     expect(result.items).toEqual([]);
+  });
+
+  it("fetchErpTransactions maps 403 to the read-forbidden key, not a re-login", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 403, {})),
+    );
+
+    const result = await fetchErpTransactions(config);
+
+    expect(result.error).toBe("erp_err_read_forbidden");
+    expect(result.items).toEqual([]);
+  });
+
+  it("save and delete map 403 to the action-forbidden key", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 403, {})),
+    );
+
+    const saved = await saveErpTransaction(config, { docno: "DOC1" }, false);
+    const deleted = await deleteErpTransaction(config, "DOC1");
+
+    expect(saved).toMatchObject({ success: false, message: "erp_err_action_forbidden" });
+    expect(deleted).toMatchObject({ success: false, message: "erp_err_action_forbidden" });
+  });
+
+  it("has all-column language rows for both forbidden messages", () => {
+    const tsv = readFileSync(resolve(process.cwd(), "../backend/assets/language/languages.tsv"), "utf8");
+    for (const key of ["erp_err_read_forbidden", "erp_err_action_forbidden"]) {
+      const row = tsv.split(/\r?\n/).find((line) => line.startsWith(key + "\t"));
+      expect(row, key).toBeTruthy();
+      const cells = (row ?? "").split("\t");
+      expect(cells).toHaveLength(13);
+      expect(cells.every((cell) => cell.trim() !== "")).toBe(true);
+    }
+  });
+
+  it("opens every ERP route under the menu id the backend checks for that document type", () => {
+    const source = readFileSync(resolve(process.cwd(), "../backend/internal/doctype/doctype.go"), "utf8");
+    const screenOf = new Map<string, string>(
+      [...source.matchAll(/^\t\{"([a-z-]+)", [A-Za-z0-9]+, "[A-Z-]+", Stock[A-Za-z]+, "([a-z-]+)"\}/gm)].map(
+        (match) => [match[1], match[2]] as [string, string],
+      ),
+    );
+    expect(screenOf.size).toBe(63);
+    // stock-count is the only type reachable from two menu entries (doctype.screenAliases)
+    const aliases: Record<string, string[]> = { "stock-count": ["stock-count-sheet"] };
+    const menuIdOfRoute = new Map(flattenMenuItems().map((item) => [item.route, item.id]));
+    for (const config of ERP_MODULE_CONFIGS) {
+      const menuId = menuIdOfRoute.get(config.route);
+      const allowed = [screenOf.get(config.apiPath), ...(aliases[config.apiPath] ?? [])];
+      expect(allowed, `${config.route} -> ${config.apiPath}`).toContain(menuId);
+    }
   });
 
   it("fetchErpTransactions returns load_failed on 500", async () => {

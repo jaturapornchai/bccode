@@ -55,7 +55,7 @@ fixed: partial
 
 **ยังไม่แก้ — รอลุงจืดอนุมัติ [3] (รายงานเฉย ๆ):**
 
-- `/transaction/:module` ไม่ตรวจสิทธิ์รายเมนู ; UI ไม่เคารพสิทธิ์ create/update/delete ; ฟิลด์ `post_to_gl` จาก client
+- ~~`/transaction/:module` ไม่ตรวจสิทธิ์รายเมนู ; UI ไม่เคารพสิทธิ์ create/update/delete~~ **แก้แล้ว 2026-10-09** (ADR `decisions/2026-10-09-erp-transaction-per-menu-permission.md`) ; ยังเหลือ: ฟิลด์ `post_to_gl` จาก client
 - `DeleteDoc` (`service.go:~1646`) bug `args[:len(args)-2]` ไม่ลบ `stock_ledger` และไม่กลับรายการ GL ; แก้เอกสารที่ posted ไม่ลงบัญชีซ้ำและไม่กลับสต็อก — **ยืนยันจาก UAT:** แก้/ลบเอกสาร 8 ประเภท posting ไม่ย้อน GL/สต็อก
 - Auto-GL hard-code ผัง/ปีบัญชี fallback `"2569"` ; จำนวนเงิน `float64` (Rule 20) ; ความผิดพลาดของ auto-GL/สต็อกแค่ `fmt.Printf`
 - ประเภท ByLine (`stock-transfer`, `stock-adjustment`) ไม่เขียน `calcflag` → ไม่เคลื่อนสต็อก ; ไม่มีตัวกัน stock ติดลบ ; `apdebitnote`/`apcreditnote`/`ardebitnote` ผลต่อสต็อกรอตัดสิน

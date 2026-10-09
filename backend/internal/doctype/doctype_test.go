@@ -206,3 +206,30 @@ func TestAllReturnsCopy(t *testing.T) {
 		t.Fatal("All() must not expose the registry slice")
 	}
 }
+
+// ทุกประเภทต้องผูกกับ menu id เพื่อให้ backend บังคับสิทธิ์รายเมนู; menu id ซ้ำกันข้ามประเภทไม่ได้
+// (จะเปิดสองประเภทด้วยสิทธิ์เดียว) ยกเว้น alias ที่ประกาศไว้
+func TestEveryTypeHasItsOwnPermissionScreen(t *testing.T) {
+	owner := map[string]string{}
+	for _, dt := range registry {
+		if !keyPattern.MatchString(dt.Screen) {
+			t.Errorf("%s: screen %q must be a lowercase menu id", dt.Key, dt.Screen)
+		}
+		screens := Screens(dt.Key)
+		if len(screens) == 0 || screens[0] != dt.Screen {
+			t.Errorf("%s: Screens=%v want primary %q first", dt.Key, screens, dt.Screen)
+		}
+		for _, screen := range screens {
+			if other, dup := owner[screen]; dup {
+				t.Errorf("screen %q shared by %s and %s", screen, other, dt.Key)
+			}
+			owner[screen] = dt.Key
+		}
+	}
+	if got := Screens("stock-count"); !reflect.DeepEqual(got, []string{"stock-count", "stock-count-sheet"}) {
+		t.Errorf("stock-count screens = %v", got)
+	}
+	if Screens("not-a-module") != nil {
+		t.Error("unknown module must have no screens")
+	}
+}

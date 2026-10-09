@@ -33,6 +33,7 @@ type DocType struct {
 	Flag   int
 	Prefix string
 	Stock  StockEffect
+	Screen string // menu id ในแค็ตตาล็อกสิทธิ์ (<screen> = เข้าจอ/อ่าน, <screen>:create|update|delete = เขียน)
 }
 
 // ค่าคงที่ของประเภทเอกสารที่โค้ดใช้ตัดสินใจ (ลงบัญชีอัตโนมัติ ตัดสต็อก รายงาน)
@@ -53,75 +54,75 @@ const (
 
 var registry = []DocType{
 	// สินค้าคงคลัง
-	{"stock-balance", 56, "BAL", StockIn},                  // บันทึกสินค้ายกมา
-	{"stock-receive-product", 72, "RCV", StockIn},          // บันทึกรับสินค้าสำเร็จรูป
-	{"stock-pickup-product", StockPickup, "OUT", StockOut}, // บันทึกเบิกใช้สินค้า,วัตถุดิบ
-	{"stock-return-product", 21, "RET", StockIn},           // บันทึกรับคืนสินค้า,วัตถุดิบ
-	{"stock-transfer", StockTransfer, "XFR", StockByLine},  // บันทึกโอนสินค้าระหว่างคลัง
-	{"stock-adjustment", 310, "ADJ", StockByLine},          // บันทึกปรับปรุงสินค้าหลังตรวจนับ
-	{"stock-issue-request", 430, "OUTR", StockNone},        // บันทึกใบขอเบิกใช้สินค้า,วัตถุดิบ
-	{"stock-transfer-request", 431, "XFRR", StockNone},     // บันทึกใบขอโอนสินค้า
-	{"goods-inspection", 432, "INSP", StockNone},           // ใบตรวจรับสินค้า
-	{"stock-count", 433, "CNT", StockNone},                 // บันทึกเอกสารเพื่อตรวจนับสินค้า และบันทึกผลการตรวจนับสินค้า
+	{"stock-balance", 56, "BAL", StockIn, "stock-balance"},                       // บันทึกสินค้ายกมา
+	{"stock-receive-product", 72, "RCV", StockIn, "stock-receive"},               // บันทึกรับสินค้าสำเร็จรูป
+	{"stock-pickup-product", StockPickup, "OUT", StockOut, "stock-pickup"},       // บันทึกเบิกใช้สินค้า,วัตถุดิบ
+	{"stock-return-product", 21, "RET", StockIn, "stock-return"},                 // บันทึกรับคืนสินค้า,วัตถุดิบ
+	{"stock-transfer", StockTransfer, "XFR", StockByLine, "stock-transfer"},      // บันทึกโอนสินค้าระหว่างคลัง
+	{"stock-adjustment", 310, "ADJ", StockByLine, "stock-adjust"},                // บันทึกปรับปรุงสินค้าหลังตรวจนับ
+	{"stock-issue-request", 430, "OUTR", StockNone, "stock-issue-request"},       // บันทึกใบขอเบิกใช้สินค้า,วัตถุดิบ
+	{"stock-transfer-request", 431, "XFRR", StockNone, "stock-transfer-request"}, // บันทึกใบขอโอนสินค้า
+	{"goods-inspection", 432, "INSP", StockNone, "goods-inspection"},             // ใบตรวจรับสินค้า
+	{"stock-count", 433, "CNT", StockNone, "stock-count"},                        // บันทึกเอกสารเพื่อตรวจนับสินค้า และบันทึกผลการตรวจนับสินค้า
 
 	// ขาย ลูกหนี้
-	{"quotation", 34, "QT", StockNone},                        // บันทึกใบเสนอราคาสินค้า
-	{"sale-order", SaleOrder, "SO", StockNone},                // บันทึกใบสั่งขาย/สั่งจองสินค้า
-	{"sale-invoice", SaleInvoice, "INV", StockOut},            // บันทึกขายสินค้า,บริการ
-	{"sale-invoice-return", SaleInvoiceReturn, "SR", StockIn}, // บันทึกใบรับคืนสินค้า,ลดหนี้
-	{"ardebitnote", 50, "DN", StockNone},                      // บันทึกใบเพิ่มหนี้/เพิ่มสินค้า(ลูกหนี้)
-	{"debtorbeginningbalance", 52, "AR-BAL", StockNone},       // บันทึกเอกสารลูกหนี้ยกมา
-	{"receivableother", 54, "AR-OTH", StockNone},              // บันทึกเอกสารตั้งลูกหนี้อื่นๆ
-	{"billingnote", 26, "BL", StockNone},                      // บันทึกใบวางบิล
-	{"paid", Paid, "RE", StockNone},                           // บันทึกใบเสร็จรับเงิน/รับชำระหนี้
-	{"receivedeposit", 32, "RDEP", StockNone},                 // บันทึกใบรับเงินมัดจำ
-	{"receiveadvancerefund", 35, "RADR", StockNone},           // บันทึกคืนเงินรับล่วงหน้า
-	{"chequereceived", 61, "CHQ-IN", StockNone},               // บันทึกเช็ครับ
+	{"quotation", 34, "QT", StockNone, "quotation"},                                 // บันทึกใบเสนอราคาสินค้า
+	{"sale-order", SaleOrder, "SO", StockNone, "sale-order"},                        // บันทึกใบสั่งขาย/สั่งจองสินค้า
+	{"sale-invoice", SaleInvoice, "INV", StockOut, "sale"},                          // บันทึกขายสินค้า,บริการ
+	{"sale-invoice-return", SaleInvoiceReturn, "SR", StockIn, "sale-return"},        // บันทึกใบรับคืนสินค้า,ลดหนี้
+	{"ardebitnote", 50, "DN", StockNone, "debit-note"},                              // บันทึกใบเพิ่มหนี้/เพิ่มสินค้า(ลูกหนี้)
+	{"debtorbeginningbalance", 52, "AR-BAL", StockNone, "debtor-beginning-balance"}, // บันทึกเอกสารลูกหนี้ยกมา
+	{"receivableother", 54, "AR-OTH", StockNone, "ar-other-debt"},                   // บันทึกเอกสารตั้งลูกหนี้อื่นๆ
+	{"billingnote", 26, "BL", StockNone, "billing-note"},                            // บันทึกใบวางบิล
+	{"paid", Paid, "RE", StockNone, "paid"},                                         // บันทึกใบเสร็จรับเงิน/รับชำระหนี้
+	{"receivedeposit", 32, "RDEP", StockNone, "receive-deposit"},                    // บันทึกใบรับเงินมัดจำ
+	{"receiveadvancerefund", 35, "RADR", StockNone, "return-advance"},               // บันทึกคืนเงินรับล่วงหน้า
+	{"chequereceived", 61, "CHQ-IN", StockNone, "cheque-received"},                  // บันทึกเช็ครับ
 
 	// ซื้อ เจ้าหนี้
-	{"purchase-requisition", 2, "PR", StockNone},          // บันทึกใบเสนอซื้อสินค้า
-	{"purchase-order", PurchaseOrder, "PO", StockNone},    // บันทึกใบสั่งซื้อสินค้า
-	{"purchase", Purchase, "PUR", StockIn},                // บันทึกซื้อสินค้า,บริการ
-	{"purchase-return", PurchaseReturn, "PRET", StockOut}, // บันทึกส่งคืนสินค้า
-	{"creditorbeginningbalance", 53, "AP-BAL", StockNone}, // บันทึกเอกสารเจ้าหนี้ยกมา
-	{"expense", Expense, "EXP", StockNone},                // บันทึกจ่ายเงินอื่นๆ
-	{"apbillingreceipt", 27, "BAP", StockNone},            // บันทึกใบรับวางบิล
-	{"pay", Pay, "PV", StockNone},                         // บันทึกจ่ายชำระหนี้
-	{"deposit", 22, "DEP", StockNone},                     // บันทึกใบจ่ายเงินมัดจำ
-	{"advancepayment", 30, "ADV", StockNone},              // บันทึกใบจ่ายเงินล่วงหน้า
-	{"advancepaymentrefund", 31, "ADR", StockNone},        // บันทึกรับคืนเงินจ่ายล่วงหน้า
+	{"purchase-requisition", 2, "PR", StockNone, "purchase-requisition"},                // บันทึกใบเสนอซื้อสินค้า
+	{"purchase-order", PurchaseOrder, "PO", StockNone, "purchase-order"},                // บันทึกใบสั่งซื้อสินค้า
+	{"purchase", Purchase, "PUR", StockIn, "purchase"},                                  // บันทึกซื้อสินค้า,บริการ
+	{"purchase-return", PurchaseReturn, "PRET", StockOut, "purchase-return"},            // บันทึกส่งคืนสินค้า
+	{"creditorbeginningbalance", 53, "AP-BAL", StockNone, "creditor-beginning-balance"}, // บันทึกเอกสารเจ้าหนี้ยกมา
+	{"expense", Expense, "EXP", StockNone, "expense-record"},                            // บันทึกจ่ายเงินอื่นๆ
+	{"apbillingreceipt", 27, "BAP", StockNone, "ap-billing-receipt"},                    // บันทึกใบรับวางบิล
+	{"pay", Pay, "PV", StockNone, "pay"},                                                // บันทึกจ่ายชำระหนี้
+	{"deposit", 22, "DEP", StockNone, "deposit"},                                        // บันทึกใบจ่ายเงินมัดจำ
+	{"advancepayment", 30, "ADV", StockNone, "advance-payment"},                         // บันทึกใบจ่ายเงินล่วงหน้า
+	{"advancepaymentrefund", 31, "ADR", StockNone, "advance-payment-refund"},            // บันทึกรับคืนเงินจ่ายล่วงหน้า
 
 	// ประเภทที่เพิ่มใหม่ ช่วง 400-499 เรียงตามลำดับที่เพิ่ม
-	{"rfq", 400, "RFQ", StockNone},                   // บันทึกใบสืบราคาสินค้ารวม
-	{"goodsreceive", GoodsReceive, "GR", StockIn},    // บันทึกรับสินค้าจากการซื้อ
-	{"invoicereceive", 402, "IR", StockNone},         // บันทึกตั้งหนี้จากการซื้อ
-	{"landedcost", 403, "LC", StockNone},             // บันทึกต้นทุนแฝง
-	{"apdebitnote", 404, "APDN", StockNone},          // บันทึกเพิ่มหนี้/เพิ่มสินค้า(เจ้าหนี้)
-	{"apcreditnote", 405, "APCN", StockNone},         // บันทึกส่งคืนสินค้า/ลดหนี้
-	{"apotherdebt", 406, "APOD", StockNone},          // บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ
-	{"apbaddebt", 407, "APBD", StockNone},            // บันทึกตัดหนี้สูญ(เจ้าหนี้)
-	{"receiveadvance", 408, "RADV", StockNone},       // บันทึกใบรับเงินล่วงหน้า
-	{"temporaryreceipt", 409, "TRC", StockNone},      // บันทึกใบเสร็จชั่วคราว
-	{"arbaddebt", 410, "ARBD", StockNone},            // บันทึกตัดหนี้สูญ(ลูกหนี้)
-	{"otherincome", 411, "OIN", StockNone},           // บันทึกรับเงินอื่นๆ
-	{"employeeadvance", 412, "EADV", StockNone},      // บันทึกขอเบิกเงินทดรองจ่าย
-	{"cashdeposit", 413, "CDP", StockNone},           // บันทึกนำฝากเงินสด
-	{"cashwithdrawal", 414, "CWD", StockNone},        // บันทึกถอนเงินสด
-	{"bankexpense", 415, "BEX", StockNone},           // บันทึกค่าใช้จ่ายธนาคาร
-	{"bankincome", 416, "BIN", StockNone},            // บันทึกรายได้จากธนาคาร
-	{"banktransfer", 417, "BTR", StockNone},          // บันทึกโอนเงินระหว่างธนาคาร
-	{"chequeissued", 418, "CHQ-OUT", StockNone},      // บันทึกเช็คจ่าย
-	{"chequedeposit", 419, "CQDP", StockNone},        // บันทึกนำฝากเช็ครับ
-	{"chequereceivedclear", 420, "CQIP", StockNone},  // บันทึกเช็ครับผ่าน
-	{"chequereceivedreturn", 421, "CQIR", StockNone}, // บันทึกเช็ครับคืน
-	{"chequeredeposit", 422, "CQRD", StockNone},      // บันทึกนำเช็คเข้าใหม่
-	{"chequereceivedcancel", 423, "CQIC", StockNone}, // บันทึกยกเลิกเช็ครับ
-	{"chequediscount", 424, "CQDS", StockNone},       // บันทึกขายลดเช็ครับ
-	{"chequeissuedclear", 425, "CQOP", StockNone},    // บันทึกเช็คจ่ายผ่าน
-	{"chequeissuedcancel", 426, "CQOC", StockNone},   // บันทึกยกเลิกเช็คจ่าย
-	{"creditcard", 427, "CC", StockNone},             // บันทึกบัตรเครดิต
-	{"creditcardsettle", 428, "CCS", StockNone},      // บันทึกขึ้นเงินบัตรเครดิต
-	{"creditcardcancel", 429, "CCC", StockNone},      // บันทึกยกเลิกบัตรเครดิต
+	{"rfq", 400, "RFQ", StockNone, "rfq"},                                      // บันทึกใบสืบราคาสินค้ารวม
+	{"goodsreceive", GoodsReceive, "GR", StockIn, "purchase-partial"},          // บันทึกรับสินค้าจากการซื้อ
+	{"invoicereceive", 402, "IR", StockNone, "accrual-receive"},                // บันทึกตั้งหนี้จากการซื้อ
+	{"landedcost", 403, "LC", StockNone, "purchase-landed-cost"},               // บันทึกต้นทุนแฝง
+	{"apdebitnote", 404, "APDN", StockNone, "purchase-credit-note"},            // บันทึกเพิ่มหนี้/เพิ่มสินค้า(เจ้าหนี้)
+	{"apcreditnote", 405, "APCN", StockNone, "purchase-debit-note"},            // บันทึกส่งคืนสินค้า/ลดหนี้
+	{"apotherdebt", 406, "APOD", StockNone, "ap-other-debt"},                   // บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ
+	{"apbaddebt", 407, "APBD", StockNone, "ap-bad-debt"},                       // บันทึกตัดหนี้สูญ(เจ้าหนี้)
+	{"receiveadvance", 408, "RADV", StockNone, "receive-advance"},              // บันทึกใบรับเงินล่วงหน้า
+	{"temporaryreceipt", 409, "TRC", StockNone, "temporary-receipt"},           // บันทึกใบเสร็จชั่วคราว
+	{"arbaddebt", 410, "ARBD", StockNone, "ar-bad-debt"},                       // บันทึกตัดหนี้สูญ(ลูกหนี้)
+	{"otherincome", 411, "OIN", StockNone, "other-income-receipt"},             // บันทึกรับเงินอื่นๆ
+	{"employeeadvance", 412, "EADV", StockNone, "employee-advance"},            // บันทึกขอเบิกเงินทดรองจ่าย
+	{"cashdeposit", 413, "CDP", StockNone, "cash-deposit"},                     // บันทึกนำฝากเงินสด
+	{"cashwithdrawal", 414, "CWD", StockNone, "cash-withdraw"},                 // บันทึกถอนเงินสด
+	{"bankexpense", 415, "BEX", StockNone, "bank-charges"},                     // บันทึกค่าใช้จ่ายธนาคาร
+	{"bankincome", 416, "BIN", StockNone, "bank-income"},                       // บันทึกรายได้จากธนาคาร
+	{"banktransfer", 417, "BTR", StockNone, "account-transfer"},                // บันทึกโอนเงินระหว่างธนาคาร
+	{"chequeissued", 418, "CHQ-OUT", StockNone, "cheque-issued"},               // บันทึกเช็คจ่าย
+	{"chequedeposit", 419, "CQDP", StockNone, "cheque-deposit"},                // บันทึกนำฝากเช็ครับ
+	{"chequereceivedclear", 420, "CQIP", StockNone, "cheque-received-clear"},   // บันทึกเช็ครับผ่าน
+	{"chequereceivedreturn", 421, "CQIR", StockNone, "cheque-received-return"}, // บันทึกเช็ครับคืน
+	{"chequeredeposit", 422, "CQRD", StockNone, "cheque-redeposit"},            // บันทึกนำเช็คเข้าใหม่
+	{"chequereceivedcancel", 423, "CQIC", StockNone, "cheque-received-cancel"}, // บันทึกยกเลิกเช็ครับ
+	{"chequediscount", 424, "CQDS", StockNone, "cheque-discount"},              // บันทึกขายลดเช็ครับ
+	{"chequeissuedclear", 425, "CQOP", StockNone, "cheque-issued-clear"},       // บันทึกเช็คจ่ายผ่าน
+	{"chequeissuedcancel", 426, "CQOC", StockNone, "cheque-issued-cancel"},     // บันทึกยกเลิกเช็คจ่าย
+	{"creditcard", 427, "CC", StockNone, "credit-card-receipts"},               // บันทึกบัตรเครดิต
+	{"creditcardsettle", 428, "CCS", StockNone, "credit-card-settle"},          // บันทึกขึ้นเงินบัตรเครดิต
+	{"creditcardcancel", 429, "CCC", StockNone, "credit-card-cancel"},          // บันทึกยกเลิกบัตรเครดิต
 }
 
 var (
@@ -151,6 +152,18 @@ func ByKey(key string) (DocType, bool) {
 func ByFlag(flag int) (DocType, bool) {
 	dt, ok := byFlag[flag]
 	return dt, ok
+}
+
+// screenAliases คือ menu id เพิ่มเติมที่เปิดจอของประเภทเดียวกัน (จอใบตรวจนับและจอผลตรวจนับใช้ stock-count ร่วมกัน)
+var screenAliases = map[string][]string{"stock-count": {"stock-count-sheet"}}
+
+// Screens คืน menu id ที่เปิดประเภทเอกสารนี้ได้ (ตัวแรกคือเมนูหลัก) ถ้าไม่รู้จัก key คืน nil
+func Screens(key string) []string {
+	dt, ok := byKey[key]
+	if !ok {
+		return nil
+	}
+	return append([]string{dt.Screen}, screenAliases[key]...)
 }
 
 // ByDocNo เดาประเภทเอกสารจากเลขที่เอกสาร ด้วย prefix ที่ยาวที่สุดที่ตามด้วยอักขระที่ไม่ใช่ตัวอักษร

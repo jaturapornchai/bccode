@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
@@ -22,12 +23,15 @@ import (
 type Http struct {
 	ms    *microservice.Microservice
 	store *Store
+	// session ยืนยัน session + สิทธิ์รายเมนู (ฉีดได้เพื่อทดสอบโดยไม่ต้องมีฐานข้อมูลกลาง)
+	session func(context.Context, microservice.IContext) (glhttp.SessionAccess, error)
 }
 
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 	return &Http{
-		ms:    ms,
-		store: NewStore(),
+		ms:      ms,
+		store:   NewStore(),
+		session: glhttp.ResolveSessionAccess,
 	}
 }
 
@@ -39,23 +43,103 @@ func (h *Http) RegisterHttp() {
 	h.ms.DELETE("/transaction/:module/:id", h.delete)
 }
 
-func (h *Http) scope(ctx context.Context, request microservice.IContext) (gl.Scope, *sql.DB, error) {
-	scope, err := glhttp.ResolveSessionScope(ctx, request)
-	if err != nil {
-		return gl.Scope{}, nil, fmt.Errorf("กรุณาเลือกบริษัทที่มีสิทธิ์ก่อนใช้งาน: %w", err)
+// การกระทำที่ตรวจสิทธิ์: "" = เข้าจอ/อ่าน, อื่นๆ ต้องมีทั้ง <เมนู> และ <เมนู>:<action> (กฎเดียวกับ GL)
+const (
+	actionRead   = ""
+	actionCreate = "create"
+	actionUpdate = "update"
+	actionDelete = "delete"
+)
+
+// docAccess คือผลของ authorize: ประเภทเอกสารที่ถูกต้อง session ที่ยืนยันแล้ว และฐานข้อมูลของ holding
+type docAccess struct {
+	ctx   context.Context
+	scope gl.Scope
+	db    *sql.DB
+	dt    doctype.DocType
+}
+
+// authorize ตรวจตามลำดับ module → session/สมาชิกภาพ → สิทธิ์รายเมนูของประเภทเอกสาร → เชื่อมฐานข้อมูล
+// ก่อนแตะข้อมูลใดๆ; ปฏิเสธ = ตอบ response เองแล้วคืน nil (ผู้เรียกคืน nil ต่อทันที)
+func (h *Http) authorize(request microservice.IContext, action string) *docAccess {
+	ctx := request.Request().Context()
+	lang := requestLanguage(request)
+
+	dt, ok := lookupDocType(request.Param("module"))
+	if !ok {
+		_ = fail(request, http.StatusBadRequest, fmt.Sprintf("โมดูลไม่ถูกต้อง (%s)", request.Param("module")))
+		return nil
 	}
-	db, err := mypg.PgSqlFastConnect(scope.Holding)
+	session, err := h.session(ctx, request)
 	if err != nil {
-		return scope, nil, fmt.Errorf("เชื่อมต่อฐานข้อมูลล้มเหลว: %w", err)
+		status, body := glhttp.SessionFailure(err, lang)
+		request.Response(status, body)
+		return nil
+	}
+	if !allowsDocType(session, dt, action) {
+		key := "erp_err_action_forbidden"
+		if action == actionRead {
+			key = "erp_err_read_forbidden"
+		}
+		_ = forbidden(request, key, lang)
+		return nil
+	}
+	db, err := mypg.PgSqlFastConnect(session.Scope.Holding)
+	if err != nil {
+		_ = fail(request, http.StatusServiceUnavailable, fmt.Sprintf("เชื่อมต่อฐานข้อมูลล้มเหลว: %v", err))
+		return nil
 	}
 	if err := ensureSchema(ctx, db); err != nil {
-		return scope, nil, fmt.Errorf("เตรียมตารางเอกสารล้มเหลว: %w", err)
+		_ = fail(request, http.StatusInternalServerError, fmt.Sprintf("เตรียมตารางเอกสารล้มเหลว: %v", err))
+		return nil
 	}
-	return scope, db, nil
+	return &docAccess{ctx: ctx, scope: session.Scope, db: db, dt: dt}
+}
+
+// menuAccess คือส่วนของ glhttp.SessionAccess ที่ใช้ตรวจสิทธิ์ (แยกไว้ให้ทดสอบโดยไม่ต้องมีฐานข้อมูลกลาง)
+type menuAccess interface {
+	Allows(screen, action string) bool
+}
+
+// allowsDocType: สิทธิ์เมนูใดเมนูหนึ่งที่เปิดจอของประเภทนี้ก็พอ (stock-count มี 2 จอ);
+// ประเภทที่ไม่มี menu id = ปฏิเสธ (fail-closed)
+func allowsDocType(session menuAccess, dt doctype.DocType, action string) bool {
+	for _, screen := range doctype.Screens(dt.Key) {
+		if screen != "" && session.Allows(screen, action) {
+			return true
+		}
+	}
+	return false
+}
+
+func requestLanguage(request microservice.IContext) string {
+	if lang := request.QueryParam("lang"); lang != "" {
+		return lang
+	}
+	if lang := request.Header("Accept-Language"); lang != "" {
+		return lang
+	}
+	return "th"
+}
+
+// forbidden ตอบ 403 พร้อมข้อความตามภาษาของคำขอ (key อยู่ใน languages.tsv)
+func forbidden(request microservice.IContext, key, lang string) error {
+	appErr := &apperr.AppError{
+		Code:       "forbidden",
+		Message:    language.Text(key, lang),
+		ThaiMsg:    language.Text(key, "th"),
+		HTTPStatus: http.StatusForbidden,
+	}
+	request.Response(http.StatusForbidden, appErr.ToResponse())
+	return nil
+}
+
+func lookupDocType(module string) (doctype.DocType, bool) {
+	return doctype.ByKey(strings.ToLower(strings.TrimSpace(module)))
 }
 
 func parseTransFlag(module string) (int, string, error) {
-	dt, ok := doctype.ByKey(strings.ToLower(strings.TrimSpace(module)))
+	dt, ok := lookupDocType(module)
 	if !ok {
 		return 0, "", fmt.Errorf("โมดูลไม่ถูกต้อง (%s)", module)
 	}
@@ -79,17 +163,12 @@ func success(request microservice.IContext, data interface{}) error {
 }
 
 func (h *Http) list(request microservice.IContext) error {
-	ctx := request.Request().Context()
-	scope, db, err := h.scope(ctx, request)
-	if err != nil {
-		return fail(request, http.StatusUnauthorized, err.Error())
+	access := h.authorize(request, actionRead)
+	if access == nil {
+		return nil
 	}
-
-	module := request.Param("module")
-	transflag, _, err := parseTransFlag(module)
-	if err != nil {
-		return fail(request, http.StatusBadRequest, err.Error())
-	}
+	ctx, scope, db := access.ctx, access.scope, access.db
+	transflag := access.dt.Flag
 
 	q := request.QueryParam("q")
 	limit, _ := strconv.Atoi(request.QueryParam("limit"))
@@ -118,17 +197,12 @@ func (h *Http) list(request microservice.IContext) error {
 }
 
 func (h *Http) get(request microservice.IContext) error {
-	ctx := request.Request().Context()
-	scope, db, err := h.scope(ctx, request)
-	if err != nil {
-		return fail(request, http.StatusUnauthorized, err.Error())
+	access := h.authorize(request, actionRead)
+	if access == nil {
+		return nil
 	}
-
-	module := request.Param("module")
-	transflag, _, err := parseTransFlag(module)
-	if err != nil {
-		return fail(request, http.StatusBadRequest, err.Error())
-	}
+	ctx, scope, db := access.ctx, access.scope, access.db
+	transflag := access.dt.Flag
 
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
@@ -150,17 +224,12 @@ func (h *Http) get(request microservice.IContext) error {
 }
 
 func (h *Http) create(request microservice.IContext) error {
-	ctx := request.Request().Context()
-	scope, db, err := h.scope(ctx, request)
-	if err != nil {
-		return fail(request, http.StatusUnauthorized, err.Error())
+	access := h.authorize(request, actionCreate)
+	if access == nil {
+		return nil
 	}
-
-	module := request.Param("module")
-	transflag, prefix, err := parseTransFlag(module)
-	if err != nil {
-		return fail(request, http.StatusBadRequest, err.Error())
-	}
+	ctx, scope, db := access.ctx, access.scope, access.db
+	transflag, prefix := access.dt.Flag, access.dt.Prefix
 
 	var doc ErpTransactionDoc
 	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
@@ -180,17 +249,12 @@ func (h *Http) create(request microservice.IContext) error {
 }
 
 func (h *Http) update(request microservice.IContext) error {
-	ctx := request.Request().Context()
-	scope, db, err := h.scope(ctx, request)
-	if err != nil {
-		return fail(request, http.StatusUnauthorized, err.Error())
+	access := h.authorize(request, actionUpdate)
+	if access == nil {
+		return nil
 	}
-
-	module := request.Param("module")
-	transflag, prefix, err := parseTransFlag(module)
-	if err != nil {
-		return fail(request, http.StatusBadRequest, err.Error())
-	}
+	ctx, scope, db := access.ctx, access.scope, access.db
+	transflag, prefix := access.dt.Flag, access.dt.Prefix
 
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
@@ -221,17 +285,12 @@ func (h *Http) update(request microservice.IContext) error {
 }
 
 func (h *Http) delete(request microservice.IContext) error {
-	ctx := request.Request().Context()
-	scope, db, err := h.scope(ctx, request)
-	if err != nil {
-		return fail(request, http.StatusUnauthorized, err.Error())
+	access := h.authorize(request, actionDelete)
+	if access == nil {
+		return nil
 	}
-
-	module := request.Param("module")
-	transflag, _, err := parseTransFlag(module)
-	if err != nil {
-		return fail(request, http.StatusBadRequest, err.Error())
-	}
+	ctx, scope, db := access.ctx, access.scope, access.db
+	transflag := access.dt.Flag
 
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {

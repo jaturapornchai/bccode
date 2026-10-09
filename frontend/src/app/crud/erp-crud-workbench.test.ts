@@ -68,6 +68,18 @@ describe("ErpCrudWorkbench Master-Detail Contract (.agents/skills/datacrud/SKILL
     expect(workbenchSource).toContain("erp_store_only_notice");
   });
 
+  it("offers create, edit and delete only when the menu permission allows them", () => {
+    expect(workbenchSource).toContain("useScreenActions(auth, workspace, route)");
+    expect(workbenchSource).toContain("onNew: screenActions.create ? handleStartCreate : undefined");
+    expect(workbenchSource).toContain("!screenActions.create ? null");
+    expect(workbenchSource).toContain("{screenActions.update ? (");
+    expect(workbenchSource).toContain("{screenActions.delete ? (");
+    expect(workbenchSource).toContain("if (!screenActions.update) return;");
+    expect(workbenchSource).toContain("!screenActions.delete) return;");
+    expect(workbenchSource).toContain("erp_err_action_forbidden");
+    expect(mainMenuSource).toContain("route={activeTab.route} auth={auth} workspace={workspace}");
+  });
+
   it("guards the screens that have no backend and no longer lists live routes by hand", () => {
     expect(mainMenuSource).toContain("isRetiredBackendScreen(activeTab.route)) return plannedCard");
     expect(statusSource).not.toContain("LIVE_ERP_TRANSACTION_ROUTES");

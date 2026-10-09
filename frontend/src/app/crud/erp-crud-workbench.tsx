@@ -35,6 +35,8 @@ import {
   deleteErpTransaction,
 } from "@/lib/erp-transaction";
 import { ERP_AUTO_POSTING_MODULES } from "@/lib/erp-transaction-modules";
+import { useScreenActions } from "@/lib/use-screen-actions";
+import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
 
 // The screen title is the menu label the user clicked, so it follows every language the menu does.
 const MENU_LABEL_BY_ROUTE = new Map(flattenMenuItems().map((item) => [item.route, item.label]));
@@ -43,9 +45,19 @@ interface ErpCrudWorkbenchProps {
   route: string;
   embedded?: boolean;
   language?: LanguageCode;
+  auth?: AuthSession | null;
+  workspace?: WorkspaceSession | null;
 }
 
-export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: ErpCrudWorkbenchProps) {
+export function ErpCrudWorkbench({
+  route,
+  embedded = false,
+  language = "th",
+  auth = null,
+  workspace = null,
+}: ErpCrudWorkbenchProps) {
+  // สิทธิ์ <เมนู>:create|update|delete ของผู้ใช้บนจอนี้ — backend บังคับจริงด้วย 403 (UI แค่ไม่เสนอปุ่มที่ทำไม่ได้)
+  const screenActions = useScreenActions(auth, workspace, route);
   const [backendUrl, setBackendUrl] = useState(() => getAuthSession()?.backendUrl ?? "");
   useEffect(() => {
     if (backendUrl) return;
@@ -149,6 +161,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
   // Start Edit Mode explicitly from Pencil
   const handleStartEdit = (doc: ErpTransactionDoc) => {
+    if (!screenActions.update) return;
     setSelectedDoc(doc);
     setFormDoc(JSON.parse(JSON.stringify(doc)));
     setIsEditing(true);
@@ -157,6 +170,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
   // Create New Document
   const handleStartCreate = async () => {
+    if (!screenActions.create) return;
     if (isDirty) {
       const ok = await confirm({
         title: backendText(dictionary, "unsaved_changes", "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก"),
@@ -222,7 +236,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
   // Delete Document
   const handleDeleteDoc = async (doc: ErpTransactionDoc) => {
-    if (!config || !doc.id) return;
+    if (!config || !doc.id || !screenActions.delete) return;
     const ok = await confirm({
       title: backendText(dictionary, "delete_document_confirm_title", "ยืนยันการลบเอกสาร {0}?").replace(
         "{0}",
@@ -335,6 +349,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   // Save Document
   const handleSaveDoc = async () => {
     if (!config) return;
+    if (!(formDoc.id ? screenActions.update : screenActions.create)) return;
     // เอกสารใหม่ปล่อยว่างได้ — backend ออกเลขที่ให้ตอนบันทึก; เอกสารเดิมต้องมีเลขที่
     if (formDoc.id && !formDoc.docno?.trim()) {
       setAlertKey("docno_required");
@@ -362,7 +377,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
   useFormShortcuts({
     onSave: handleSaveDoc,
-    onNew: handleStartCreate,
+    onNew: screenActions.create ? handleStartCreate : undefined,
     onCancel: isEditing ? handleCancelEdit : undefined,
     canSave: isEditing && !loading,
     disabled: loading || moduleUnavailable,
@@ -432,7 +447,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
         </div>
 
         <div className="flex items-center gap-2">
-          {moduleUnavailable ? null : (
+          {moduleUnavailable || !screenActions.create ? null : (
             <Button
               onClick={handleStartCreate}
               className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm gap-1.5"
@@ -502,6 +517,10 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต"
                       : alertKey === "unauthorized"
                         ? "ไม่มีสิทธิ์เข้าถึงข้อมูล"
+                        : alertKey === "erp_err_read_forbidden"
+                          ? "ไม่มีสิทธิ์เปิดดูเอกสารประเภทนี้"
+                          : alertKey === "erp_err_action_forbidden"
+                            ? "ไม่มีสิทธิ์เพิ่ม แก้ไข หรือลบเอกสารประเภทนี้"
                         : alertKey === "docno_required"
                           ? "กรุณาระบุเลขที่เอกสาร"
                           : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
@@ -633,28 +652,32 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       </td>
                       <td className="py-2 px-2 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            title={backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartEdit(item);
-                            }}
-                            className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            title={backendText(dictionary, "delete_document", "ลบเอกสาร")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDoc(item);
-                            }}
-                            className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
+                          {screenActions.update ? (
+                            <button
+                              type="button"
+                              title={backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEdit(item);
+                              }}
+                              className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              <Pencil className="size-3.5" />
+                            </button>
+                          ) : null}
+                          {screenActions.delete ? (
+                            <button
+                              type="button"
+                              title={backendText(dictionary, "delete_document", "ลบเอกสาร")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDoc(item);
+                              }}
+                              className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -970,15 +993,17 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     <Printer className="mr-1.5 size-3.5" />
                     {backendText(dictionary, "print_document", "พิมพ์เอกสาร")}
                   </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-9 text-xs bg-primary text-primary-foreground font-semibold"
-                    onClick={() => handleStartEdit(selectedDoc)}
-                  >
-                    <Pencil className="mr-1.5 size-3.5" />
-                    {backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
-                  </Button>
+                  {screenActions.update ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-9 text-xs bg-primary text-primary-foreground font-semibold"
+                      onClick={() => handleStartEdit(selectedDoc)}
+                    >
+                      <Pencil className="mr-1.5 size-3.5" />
+                      {backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
 

@@ -9,6 +9,7 @@
 - ตารางสร้างเองครั้งแรกที่ใช้ (`httpapi/schema.go` `ensureSchema` เรียกจาก `Http.scope`): `doc`, `docdetail`, `docref`, `stock_ledger`, `stock_period_balance` — ฐาน holding ใหม่ใช้งานได้ทันทีโดยไม่ต้องรัน DDL มือ
 - เลขที่เอกสาร: ส่ง `docno` ว่าง = backend ออกให้ `PREFIX+YY(พ.ศ.)+MM-NNNN` (`NextDocNo`) ; คำนำหน้าคงที่ตามทะเบียน (Champ ให้ผู้ใช้ตั้งเองต่อเอกสารที่ `BCSysTRFormat.DocFormat` — ยังไม่ทำ)
 - header เก็บ `custname`, `description`, `remark` แยกคอลัมน์ (ไม่ใช้ `cancelreason` แทนหมายเหตุอีก) ; ตอบ `id` แถวใหม่กลับตอนสร้าง
+- **สิทธิ์รายเมนู (2026-10-09):** ทุก handler เรียก `Http.authorize` (`httpapi/http.go`) — สิทธิ์ = menu id จากทะเบียน `doctype.Screens(key)`; อ่านต้องมี `<เมนู>`, เขียนต้องมี `<เมนู>:create|update|delete` ด้วย; ขาดสิทธิ์ = 403 `forbidden`; UI ซ่อนปุ่มตาม `useScreenActions` — ADR [`decisions/2026-10-09-erp-transaction-per-menu-permission.md`](decisions/2026-10-09-erp-transaction-per-menu-permission.md)
 - `mypg.DeleteDocPgSql`/`DeleteDocPgSqlTx` (`backend/internal/goapi/mypg/doc.go:15-23`) เป็นฟังก์ชันลบของ goapi เดิม ไม่ใช่ทางที่ module นี้ใช้
 
 ## 2. โค้ด goapi ที่ยังค้าง (อ่านตารางที่ไม่มีใครเติม)
@@ -26,7 +27,6 @@
 
 ## 4. ยังไม่ทำ / ยังไม่ตัดสินใจ
 
-- ตรวจสิทธิ์รายเมนูที่ `/transaction/:module` (ตอนนี้ตรวจแค่ session + บริษัท) และ UI ยังไม่เคารพสิทธิ์ create/update/delete — ดู [`bugs/2026-10-08-erp-unlock-6c4447f8-audit.md`](bugs/2026-10-08-erp-unlock-6c4447f8-audit.md)
 - แก้/ลบเอกสารที่ลงบัญชีหรือตัดสต็อกแล้วยังไม่กลับรายการ GL/`stock_ledger` (แก้ไม่ลงบัญชีซ้ำ ลบไม่ย้อน) ; auto-GL ยัง hard-code ผังบัญชีและใช้ `float64`
 - ประเภท ByLine (`stock-transfer`, `stock-adjustment`) ยังไม่เขียน `calcflag` ลง `docdetail` จึงไม่เคลื่อนสต็อก ; `apdebitnote`/`apcreditnote`/`ardebitnote` ผลต่อสต็อกรอลุงจืดตัดสิน
 - เลขที่เอกสารต่อบริษัทแบบ Champ (`BCSysTRFormat.DocFormat`) ยังไม่ทำ ; ใบเช็ค/บัตรเครดิตเป็นเอกสารบันทึกอย่างเดียว ยังไม่มีวงจรสถานะแบบ Champ

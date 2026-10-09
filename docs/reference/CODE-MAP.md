@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-08 @ commit a63116ca - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-09 @ commit b905c117 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -1212,6 +1212,21 @@ Files indexed: 32
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1121 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 52 | function | `ErpCrudWorkbench` |
+| 141 | const-arrow | `handleSelectRow` |
+| 163 | const-arrow | `handleStartEdit` |
+| 172 | const-arrow | `handleStartCreate` |
+| 220 | const-arrow | `handleCancelEdit` |
+| 238 | const-arrow | `handleDeleteDoc` |
+| 271 | const-arrow | `updateLineItem` |
+| 350 | const-arrow | `handleSaveDoc` |
+| 723 | section | `EDIT MODE FORM` |
+| 961 | section | `READ-ONLY VIEW MODE` |
+
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 
 | Line | Kind | Name |
@@ -1295,21 +1310,6 @@ Files indexed: 32
 | 1042 | function | `UnlinkLine` |
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1096 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 48 | function | `ErpCrudWorkbench` |
-| 129 | const-arrow | `handleSelectRow` |
-| 151 | const-arrow | `handleStartEdit` |
-| 159 | const-arrow | `handleStartCreate` |
-| 206 | const-arrow | `handleCancelEdit` |
-| 224 | const-arrow | `handleDeleteDoc` |
-| 257 | const-arrow | `updateLineItem` |
-| 336 | const-arrow | `handleSaveDoc` |
-| 700 | section | `EDIT MODE FORM` |
-| 938 | section | `READ-ONLY VIEW MODE` |
 
 ## frontend/src/components/system-settings/utils.ts (1069 lines)
 

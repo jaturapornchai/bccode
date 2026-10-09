@@ -12,6 +12,7 @@ import (
 	gl "smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/mcptoken"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
 
@@ -130,6 +131,41 @@ func (s requestScope) companyScope() (requestScope, error) {
 // ResolveSessionScope validates a browser session against the central PostgreSQL membership
 // metadata (company, branch, access scopes) — shared by modules that post through the ledger.
 func ResolveSessionScope(ctx context.Context, request microservice.IContext) (gl.Scope, error) {
+	access, err := ResolveSessionAccess(ctx, request)
+	return access.Scope, err
+}
+
+// SessionAccess คือ session ที่ยืนยันกับสมาชิกภาพกลางแล้ว พร้อมสิทธิ์รายเมนูของสมาชิก (resolve สดทุกคำขอ)
+type SessionAccess struct {
+	Scope       gl.Scope
+	permissions map[string]bool
+}
+
+// Allows ใช้กฎเดียวกับ GL: "" = เข้าจอ/อ่าน, create|update|delete ต้องมีทั้งเมนูและ <เมนู>:<action>;
+// OWNER/ADMIN มี "*" — เมนูที่ว่างหรือไม่มีในสิทธิ์ถูกปฏิเสธ
+func (a SessionAccess) Allows(screen, action string) bool {
+	return allowed(a.permissions, screen, action)
+}
+
+// NewSessionAccess สร้าง SessionAccess จากรายการสิทธิ์ที่ระบุตรง ๆ สำหรับทดสอบโมดูลที่ฉีดตัว resolve เอง
+func NewSessionAccess(scope gl.Scope, permissions ...string) SessionAccess {
+	granted := make(map[string]bool, len(permissions))
+	for _, permission := range permissions {
+		granted[permission] = true
+	}
+	return SessionAccess{Scope: scope, permissions: granted}
+}
+
+// ResolveSessionAccess เหมือน ResolveSessionScope แต่คืนสิทธิ์รายเมนูด้วย สำหรับโมดูลที่ต้องบังคับสิทธิ์เอง
+func ResolveSessionAccess(ctx context.Context, request microservice.IContext) (SessionAccess, error) {
 	scope, err := resolveScope(ctx, request, mypg.PgSqlFastConnect)
-	return scope.Scope, err
+	if err != nil {
+		return SessionAccess{Scope: scope.Scope}, err
+	}
+	return SessionAccess{Scope: scope.Scope, permissions: scope.Permissions}, nil
+}
+
+// SessionFailure แปล error ของ ResolveSessionAccess เป็น status + body ตามสัญญา error ของ GL (ไม่มีสิทธิ์ = 403)
+func SessionFailure(err error, lang string) (int, apperr.Response) {
+	return errorPayloadFor(err, lang)
 }

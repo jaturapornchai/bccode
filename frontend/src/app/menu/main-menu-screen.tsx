@@ -2288,7 +2288,7 @@ function WorkTabPanel({
 
 
   if (isErpTransactionRoute(activeTab.route)) {
-    return <ErpCrudWorkbench embedded language={language} route={activeTab.route} />;
+    return <ErpCrudWorkbench embedded language={language} route={activeTab.route} auth={auth} workspace={workspace} />;
   }
 
   const taxFormCode = taxFormRouteCode(activeTab.route);
