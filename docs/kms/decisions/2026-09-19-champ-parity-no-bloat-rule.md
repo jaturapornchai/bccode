@@ -6,6 +6,8 @@ tags: [bc-account, architecture, rule, champ, scope, parity, zero-bloat]
 
 # กฎ: ยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป (Upgrade จาก Windows สู่ Web)
 
+> ปรับปรุง 2026-10-09: ข้อ 1 และ 4 ผ่อนให้เสริมส่วนเพิ่มเล็กที่ไม่ขวางทาง Champ ได้ (ทำได้เลยแล้วรายงาน; ของใหญ่ยังต้องขออนุมัติ) — ดู [2026-10-09-champ-parity-purpose-additive-extras.md](2026-10-09-champ-parity-purpose-additive-extras.md)
+
 ## ที่มา
 
 ลุงจืดสั่ง 2026-09-19:
