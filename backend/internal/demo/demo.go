@@ -25,8 +25,9 @@ func Username() string {
 }
 
 // IsDemoUser is true when demo login is enabled and username is the demo account.
-// The demo account has no Google identity, so organization creation lets it through
-// (docs/login.md "บัญชี Demo").
+// The demo account has no Google identity: it is exempt from the Google requirement only
+// when creating Companies/Branches inside its own Holding, never for creating a Holding
+// (organization.RequireEmailedAccount).
 func IsDemoUser(username string) bool {
 	return Enabled() && strings.EqualFold(strings.TrimSpace(username), Username())
 }

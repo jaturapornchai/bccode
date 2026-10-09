@@ -63,8 +63,11 @@ func requireOrganizationCreator(ctx context.Context, db orgpolicy.Querier, userI
 	if policyErr := validateCreatorPolicy(disabledAt, authmodels.ROLE_USER, false); policyErr != nil {
 		return policyErr
 	}
-	// The public demo account has no Google identity by design (docs/login.md "บัญชี Demo").
-	if !demo.IsDemoUser(username) && !hasIdentity {
+	// The public demo account has no Google identity by design, so it may manage the
+	// Companies/Branches of the Holding it was seeded into (requireAdmin) but must never
+	// bootstrap a new Holding: anyone can press the Demo button, and every Holding it
+	// created became a permanent empty tenant owned by the shared account.
+	if !hasIdentity && !(requireAdmin && demo.IsDemoUser(username)) {
 		return errGoogleRequired
 	}
 	if !requireAdmin {
