@@ -43,6 +43,12 @@ type ErpTransactionDoc struct {
 	Status          int     `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
 	IsClosed        bool    `json:"isclosed,omitempty"`
 	IsCancel        bool    `json:"iscancel,omitempty"`
+	ApprovalStatus  string  `json:"approvalstatus,omitempty"`
+	ApprovedBy      string  `json:"approvedby,omitempty"`
+	ApprovedAt      *time.Time `json:"approvedat,omitempty"`
+	CancelledBy     string  `json:"cancelledby,omitempty"`
+	CancelledAt     *time.Time `json:"cancelledat,omitempty"`
+	CancelReason    string  `json:"cancelreason,omitempty"`
 	BranchCode      string  `json:"branchcode,omitempty"`
 	Remark          string  `json:"remark,omitempty"`
 	// GLStatus/GLDocNo answer a save: "posted" with the voucher number, "no_mapping" when the company has not set up
@@ -64,6 +70,36 @@ type DocItemResponse struct {
 	Success bool              `json:"success"`
 	Data    ErpTransactionDoc `json:"data"`
 	Message string            `json:"message,omitempty"`
+}
+
+type ErpDocEvent struct {
+	ID           int64     `json:"id"`
+	BusinessCode string    `json:"businesscode"`
+	TransFlag    int       `json:"transflag"`
+	DocNo        string    `json:"docno"`
+	Action       string    `json:"action"`
+	FromStatus   string    `json:"from_status"`
+	ToStatus     string    `json:"to_status"`
+	Reason       string    `json:"reason"`
+	Actor        string    `json:"actor"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type DocEventsResponse struct {
+	Success bool          `json:"success"`
+	Data    []ErpDocEvent `json:"data"`
+}
+
+type BatchApproveItemResult struct {
+	ID      string `json:"id"`
+	Success bool   `json:"success"`
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+type BatchApproveResponse struct {
+	Success bool                     `json:"success"`
+	Data    []BatchApproveItemResult `json:"data"`
 }
 
 type Pagination struct {

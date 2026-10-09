@@ -322,10 +322,12 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	stamp := time.Date(2026, 10, 8, 2, 0, 0, 0, time.UTC)
 	docColumns := []string{"id", "docno", "docdatetime", "transflag", "custcode", "totalamount", "totalvalue_doc",
 		"totaldiscount_doc", "totalvatvalue_doc", "totalbeforevat_doc", "totalaftervat_doc", "iscancel", "isclosed",
-		"branchid", "custname", "description", "remark", "created_at", "modified_at"}
+		"branchid", "custname", "description", "remark", "created_at", "modified_at",
+		"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
 	docRow := func() *sqlmock.Rows {
 		return sqlmock.NewRows(docColumns).AddRow(7, docNo, "2026-10-08T00:00:00Z", dt.Flag, "C101",
-			5350.0, 5000.0, 0.0, 350.0, 5000.0, 5350.0, false, false, testBranch, "บริษัท รุ่งเรืองก่อสร้าง จำกัด", "ซื้อปูนซีเมนต์", "ส่งภายในสัปดาห์นี้", stamp, stamp)
+			5350.0, 5000.0, 0.0, 350.0, 5000.0, 5350.0, false, false, testBranch, "บริษัท รุ่งเรืองก่อสร้าง จำกัด", "ซื้อปูนซีเมนต์", "ส่งภายในสัปดาห์นี้", stamp, stamp,
+			"", "", nil, "", nil, "")
 	}
 	mock.ExpectQuery(`FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3 LIMIT 1`).
 		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(docRow())
@@ -352,13 +354,15 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 		WithArgs(testCompany, dt.Flag, "%CDP%").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 	mock.ExpectQuery(`FROM doc WHERE businesscode = \$1 AND transflag = \$2 .* LIMIT \$4 OFFSET \$5`).
 		WithArgs(testCompany, dt.Flag, "%CDP%", 20, 0).WillReturnRows(docRow())
-	list, total, err := store.ListDocs(ctx, db, testCompany, dt.Flag, "CDP", 0, 20)
+	list, total, err := store.ListDocs(ctx, db, testCompany, dt.Flag, "CDP", "", 0, 20)
 	if err != nil || total != 1 || len(list) != 1 || list[0].DocNo != docNo {
 		t.Fatalf("ListDocs = %+v, %d, %v", list, total, err)
 	}
 
 	// Update
 	mock.ExpectBegin()
+	mock.ExpectQuery(`SELECT COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\)\s+FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3 AND NOT COALESCE\(isdelete, false\) FOR UPDATE`).
+		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"iscancel", "approval_status"}).AddRow(false, ""))
 	mock.ExpectQuery(`UPDATE doc SET docdatetime = \$1`).
 		WithArgs(append(withAny(nil, 14), testCompany, dt.Flag, docNo)...).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
 	mock.ExpectExec(`DELETE FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
@@ -375,8 +379,10 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 
 	// Delete (soft delete)
 	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT docno FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3`).
-		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"docno"}).AddRow(docNo))
+	mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3 FOR UPDATE`).
+		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow(docNo, false, ""))
+	mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
+		WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectExec(`UPDATE doc SET isdelete = true, modifier_code = \$1, modified_at = \$2\s+WHERE businesscode = \$3 AND transflag = \$4 AND docno = \$5`).
 		WithArgs(testActor, sqlmock.AnyArg(), testCompany, dt.Flag, docNo).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()

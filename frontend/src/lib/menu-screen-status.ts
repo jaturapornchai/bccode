@@ -54,7 +54,9 @@ export function isRetiredBackendScreen(route: string): boolean {
 // จึงไม่ใช่ "retired"; เมนูที่ไม่มี config จะตกเป็น pending ใน isMenuScreenPending เอง
 export function isMenuBackendRetired(route: string): boolean {
   const clean = route.split("?")[0];
-  if (isRetiredBackendScreen(clean) || isOperationsRoute(clean)) return true;
+  if (isRetiredBackendScreen(clean)) return true;
+  const op = getOperationsConfig(clean);
+  if (op) return !isApprovalApiReady(op.code);
   const setting = getSystemSettingConfig(clean);
   return Boolean(setting?.basePath && !POSTGRES_SETTING_BASE_PATHS.has(setting.basePath));
 }

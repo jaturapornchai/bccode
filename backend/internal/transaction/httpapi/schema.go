@@ -62,6 +62,10 @@ CREATE TABLE IF NOT EXISTS doc (
 	modified_at timestamptz DEFAULT now(),
 	isdelete boolean DEFAULT false,
 	approval_status text DEFAULT '',
+	approved_by text NOT NULL DEFAULT '',
+	approved_at timestamptz,
+	cancelled_by text NOT NULL DEFAULT '',
+	cancelled_at timestamptz,
 	isclosedmanual boolean DEFAULT false,
 	closedmanual_by_code text DEFAULT '',
 	closedmanual_by_name text DEFAULT '',
@@ -71,12 +75,25 @@ CREATE TABLE IF NOT EXISTS doc (
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS custname text NOT NULL DEFAULT '';
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS remark text NOT NULL DEFAULT '';
+ALTER TABLE doc ADD COLUMN IF NOT EXISTS approved_by text NOT NULL DEFAULT '';
+ALTER TABLE doc ADD COLUMN IF NOT EXISTS approved_at timestamptz;
+ALTER TABLE doc ADD COLUMN IF NOT EXISTS cancelled_by text NOT NULL DEFAULT '';
+ALTER TABLE doc ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
+DO $$
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1 FROM pg_constraint WHERE conname = 'doc_approval_status_chk'
+	) THEN
+		ALTER TABLE doc ADD CONSTRAINT doc_approval_status_chk CHECK (approval_status IN ('', 'approved')) NOT VALID;
+	END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_doc_company_doc ON doc (businesscode, transflag, docno);
 CREATE INDEX IF NOT EXISTS idx_doc_transflag_docno_docdatetime ON doc (transflag, docno, docdatetime);
 CREATE INDEX IF NOT EXISTS idx_doc_transflag_docno_perioddatetime ON doc (transflag, docno, perioddatetime);
 CREATE INDEX IF NOT EXISTS idx_doc_created_at ON doc (created_at);
 CREATE INDEX IF NOT EXISTS idx_doc_creator_code ON doc (creator_code);
 CREATE INDEX IF NOT EXISTS idx_doc_approval_status ON doc (approval_status) WHERE approval_status <> '';
+CREATE INDEX IF NOT EXISTS idx_doc_pending ON doc (businesscode, transflag, docdatetime) WHERE NOT isdelete AND NOT iscancel AND approval_status = '';
 
 CREATE TABLE IF NOT EXISTS docdetail (
 	id serial PRIMARY KEY,
@@ -199,6 +216,20 @@ CREATE TABLE IF NOT EXISTS erp_doc_journals (
 	CONSTRAINT erp_doc_journals_pk PRIMARY KEY (businesscode, transflag, docno, revision)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_erp_doc_journals_active ON erp_doc_journals (businesscode, transflag, docno) WHERE voided_at IS NULL;
+-- บันทึกประวัติการอนุมัติ/ยกเลิกเอกสาร (append-only audit trail ตามกฎบัญชี)
+CREATE TABLE IF NOT EXISTS erp_doc_events (
+	id bigserial PRIMARY KEY,
+	businesscode text NOT NULL,
+	transflag integer NOT NULL,
+	docno text NOT NULL,
+	action text NOT NULL CHECK (action IN ('approve','unapprove','cancel')),
+	from_status text NOT NULL DEFAULT '',
+	to_status text NOT NULL DEFAULT '',
+	reason text NOT NULL DEFAULT '',
+	actor text NOT NULL DEFAULT '',
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_erp_doc_events_doc ON erp_doc_events (businesscode, transflag, docno, id);
 `
 
 var (

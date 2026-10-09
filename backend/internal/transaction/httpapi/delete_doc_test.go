@@ -29,9 +29,11 @@ func TestDeleteDocReleasesLedgerAndStockForBothLookupForms(t *testing.T) {
 			db, mock, _ := newRecordedMock(t)
 			mock.ExpectBegin()
 			mock.ExpectExec(`pg_advisory_xact_lock`).WithArgs(testCompany).WillReturnResult(sqlmock.NewResult(0, 0))
-			mock.ExpectQuery(`SELECT docno FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND`).
+			mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND`).
 				WithArgs(tc.selectArgs...).
-				WillReturnRows(sqlmock.NewRows([]string{"docno"}).AddRow(docNo))
+				WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow(docNo, false, ""))
+			mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
+				WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			mock.ExpectQuery(`FROM gl_subledger_settlements`).
 				WithArgs(testCompany, "AP-"+docNo, "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))
 			mock.ExpectExec(`DELETE FROM gl_subledger_documents WHERE company=\$1 AND id=\$2`).
@@ -60,7 +62,7 @@ func TestDeleteDocTwiceIsNotFound(t *testing.T) {
 	dt := mustDocType(t, "cashdeposit")
 	db, mock, _ := newRecordedMock(t)
 	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT docno FROM doc`).WithArgs(testCompany, dt.Flag, "CDP6910-0001").WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc`).WithArgs(testCompany, dt.Flag, "CDP6910-0001").WillReturnError(sql.ErrNoRows)
 	mock.ExpectRollback()
 
 	err := NewStore().DeleteDoc(context.Background(), db, testScope(), dt, "CDP6910-0001")
@@ -79,8 +81,10 @@ func TestDeleteDocRefusedWhenSettled(t *testing.T) {
 	db, mock, _ := newRecordedMock(t)
 	mock.ExpectBegin()
 	mock.ExpectExec(`pg_advisory_xact_lock`).WithArgs(testCompany).WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectQuery(`SELECT docno FROM doc`).WithArgs(testCompany, dt.Flag, docNo).
-		WillReturnRows(sqlmock.NewRows([]string{"docno"}).AddRow(docNo))
+	mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc`).WithArgs(testCompany, dt.Flag, docNo).
+		WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow(docNo, false, ""))
+	mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
+		WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery(`FROM gl_subledger_settlements`).WithArgs(testCompany, "AP-"+docNo, "").
 		WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(1))
 	mock.ExpectRollback()

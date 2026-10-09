@@ -10,8 +10,10 @@ import {
   getOperationsConfig,
   operationsText,
   isApprovalApiReady,
+  getApprovalOperationMeta,
   fetchPendingApprovals,
   submitApprovalAction,
+  submitBatchApprove,
   type PendingApprovalDoc,
 } from "@/lib/erp-operations";
 import { getAuthSession } from "@/lib/client-auth-session";
@@ -30,6 +32,8 @@ import {
   AlertCircle,
   Loader2,
   RotateCw,
+  Undo2,
+  Ban,
 } from "lucide-react";
 
 interface OperationsWorkbenchProps {
@@ -50,7 +54,9 @@ const MESSAGES: Record<string, { key: string; th: string }> = {
   load_failed: { key: "load_data_failed", th: "โหลดข้อมูลไม่สำเร็จ" },
   connection_error: { key: "ops_msg_unable_to_connect_to_the", th: "เชื่อมต่อระบบไม่ได้" },
   action_failed: { key: "ops_msg_action_failed_please_try_again", th: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" },
-  approve_success: { key: "approve_success", th: "อนุมัติเอกสารเรียบร้อยแล้ว" },
+  approve_success: { key: "erp_msg_approved", th: "อนุมัติเอกสารเรียบร้อยแล้ว" },
+  unapprove_success: { key: "erp_msg_unapproved", th: "ยกเลิกการอนุมัติเอกสารเรียบร้อยแล้ว" },
+  cancel_success: { key: "erp_msg_cancelled", th: "ยกเลิกเอกสารเรียบร้อยแล้ว" },
   reject_success: { key: "reject_success", th: "บันทึกการไม่อนุมัติเรียบร้อยแล้ว" },
 };
 
@@ -77,13 +83,22 @@ export function OperationsWorkbench({
     primaryActionLabel: { th: "ดำเนินการ", en: "Execute" },
   };
 
+  const meta = getApprovalOperationMeta(config.code);
+  const actionType = meta?.actionType ?? "approve";
+
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [docs, setDocs] = useState<PendingApprovalDoc[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [noticeKey, setNoticeKey] = useState<string | null>(null);
   const [noticeOk, setNoticeOk] = useState<boolean>(false);
-  const [pendingAction, setPendingAction] = useState<{ docno: string; action: "approve" | "reject" } | null>(null);
+  const [actionDetail, setActionDetail] = useState<string | null>(null);
+  const [selectedDocnos, setSelectedDocnos] = useState<Set<string>>(new Set());
+  const [reasonInput, setReasonInput] = useState<string>("");
+  const [pendingAction, setPendingAction] = useState<{
+    docno: string;
+    action: "approve" | "unapprove" | "cancel";
+  } | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const approvalReady = config.category === "approval" && isApprovalApiReady(config.code);
@@ -113,22 +128,79 @@ export function OperationsWorkbench({
     );
   }, [docs, searchTerm]);
 
+  const toggleSelectDoc = useCallback((docno: string) => {
+    setSelectedDocnos((prev) => {
+      const next = new Set(prev);
+      if (next.has(docno)) {
+        next.delete(docno);
+      } else {
+        next.add(docno);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedDocnos.size === filteredDocs.length && filteredDocs.length > 0) {
+      setSelectedDocnos(new Set());
+    } else {
+      setSelectedDocnos(new Set(filteredDocs.map((d) => d.docno)));
+    }
+  }, [selectedDocnos.size, filteredDocs]);
+
+  async function handleBatchApprove() {
+    if (selectedDocnos.size === 0) return;
+    setSubmitting(true);
+    setActionDetail(null);
+    const result = await submitBatchApprove({
+      code: reportCode,
+      docnos: Array.from(selectedDocnos),
+      language,
+    });
+    setSubmitting(false);
+    setNoticeKey(result.messageKey);
+    setNoticeOk(result.success);
+    if (result.detail) {
+      setActionDetail(result.detail);
+    } else if (result.success) {
+      setActionDetail(
+        tr("ops_batch_approve_summary", "อนุมัติสำเร็จ {0} จาก {1} รายการ")
+          .replace("{0}", String(result.approved))
+          .replace("{1}", String(result.total)),
+      );
+    }
+    setSelectedDocnos(new Set());
+    await loadDocs();
+  }
+
   async function confirmAction() {
     if (!pendingAction) return;
     const actionby = getAuthSession()?.username ?? "";
     setSubmitting(true);
+    setActionDetail(null);
     const result = await submitApprovalAction({
       code: reportCode,
       holdingcode,
       docno: pendingAction.docno,
       action: pendingAction.action,
       actionby,
+      comment: reasonInput.trim(),
+      language,
     });
     setSubmitting(false);
     setNoticeKey(result.messageKey);
     setNoticeOk(result.success);
+    setActionDetail(result.detail ?? null);
     setPendingAction(null);
-    if (result.success) await loadDocs();
+    setReasonInput("");
+    if (result.success) {
+      setSelectedDocnos((prev) => {
+        const next = new Set(prev);
+        next.delete(pendingAction.docno);
+        return next;
+      });
+      await loadDocs();
+    }
   }
 
   const unavailable = !approvalReady;
@@ -140,7 +212,13 @@ export function OperationsWorkbench({
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             {config.category === "approval" ? (
-              <ShieldCheck className="h-6 w-6" />
+              actionType === "cancel" ? (
+                <Ban className="h-6 w-6 text-destructive" />
+              ) : actionType === "unapprove" ? (
+                <Undo2 className="h-6 w-6 text-amber-500" />
+              ) : (
+                <ShieldCheck className="h-6 w-6" />
+              )
             ) : config.category === "bom" ? (
               <Boxes className="h-6 w-6" />
             ) : (
@@ -162,17 +240,31 @@ export function OperationsWorkbench({
           </div>
         </div>
 
-        {approvalReady && (
-          <Button
-            variant="outline"
-            onClick={() => void loadDocs()}
-            disabled={loading}
-            className="gap-2 min-h-[44px]"
-          >
-            <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            {tr("ops_refresh", "โหลดรายการใหม่")}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {actionType === "approve" && selectedDocnos.size > 0 && (
+            <Button
+              variant="default"
+              onClick={() => void handleBatchApprove()}
+              disabled={submitting || loading}
+              className="gap-2 min-h-[44px]"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {tr("ops_batch_approve", "อนุมัติรายการที่เลือก")} ({selectedDocnos.size})
+            </Button>
+          )}
+
+          {approvalReady && (
+            <Button
+              variant="outline"
+              onClick={() => void loadDocs()}
+              disabled={loading}
+              className="gap-2 min-h-[44px]"
+            >
+              <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              {tr("ops_refresh", "โหลดรายการใหม่")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Availability Notice */}
@@ -183,7 +275,7 @@ export function OperationsWorkbench({
         </div>
       )}
 
-      {/* Action Result */}
+      {/* Action Result Notice */}
       {noticeKey && (
         <div
           className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
@@ -193,13 +285,21 @@ export function OperationsWorkbench({
           }`}
           role={noticeOk ? "status" : "alert"}
         >
-          <span className="flex items-center gap-2">
-            {noticeOk ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-            {messageText(noticeKey, tr)}
-          </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-2">
+              {noticeOk ? <CheckCircle className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
+              {messageText(noticeKey, tr)}
+            </span>
+            {actionDetail && (
+              <span className="text-xs font-normal pl-7 opacity-90">{actionDetail}</span>
+            )}
+          </div>
           <button
             type="button"
-            onClick={() => setNoticeKey(null)}
+            onClick={() => {
+              setNoticeKey(null);
+              setActionDetail(null);
+            }}
             className="rounded-md px-2 py-1 text-xs underline"
             aria-label={tr("ops_dismiss_message", "ปิดข้อความแจ้งเตือน")}
             title={tr("ops_dismiss_message", "ปิดข้อความแจ้งเตือน")}
@@ -217,17 +317,27 @@ export function OperationsWorkbench({
         </div>
       )}
 
-      {/* Pending Approvals */}
+      {/* Document List */}
       {approvalReady && (
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between border-b p-4 bg-muted/40">
             <div className="flex items-center gap-2 font-semibold text-sm">
               <Clock className="h-4 w-4 text-primary" />
               <span>
-                {tr("ops_pending_approvals_count", "รายการรอการอนุมัติ ({0} รายการ)").replace(
-                  "{0}",
-                  String(filteredDocs.length),
-                )}
+                {actionType === "approve"
+                  ? tr("ops_pending_approvals_count", "รายการรอการอนุมัติ ({0} รายการ)").replace(
+                      "{0}",
+                      String(filteredDocs.length),
+                    )
+                  : actionType === "unapprove"
+                  ? tr("ops_approved_docs_count", "รายการที่อนุมัติแล้ว ({0} รายการ)").replace(
+                      "{0}",
+                      String(filteredDocs.length),
+                    )
+                  : tr("ops_active_docs_count", "รายการเอกสารที่ใช้งานอยู่ ({0} รายการ)").replace(
+                      "{0}",
+                      String(filteredDocs.length),
+                    )}
               </span>
             </div>
             <div className="relative w-64">
@@ -245,6 +355,17 @@ export function OperationsWorkbench({
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
+                  {actionType === "approve" && (
+                    <th className="px-3 py-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredDocs.length > 0 && selectedDocnos.size === filteredDocs.length}
+                        onChange={toggleSelectAll}
+                        aria-label={tr("ops_select_all", "เลือกทั้งหมด")}
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-3">{tr("document_no", "เลขที่เอกสาร")}</th>
                   <th className="px-4 py-3">{tr("date", "วันที่")}</th>
                   <th className="px-4 py-3">{tr("ops_requested_by", "ผู้ขออนุมัติ")}</th>
@@ -256,7 +377,7 @@ export function OperationsWorkbench({
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={actionType === "approve" ? 7 : 6} className="py-12 text-center text-muted-foreground">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         {tr("ops_loading_data", "กำลังโหลดข้อมูลจากระบบ...")}
@@ -265,15 +386,26 @@ export function OperationsWorkbench({
                   </tr>
                 ) : filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={actionType === "approve" ? 7 : 6} className="py-12 text-center text-muted-foreground">
                       {errorKey
                         ? messageText(errorKey, tr)
-                        : tr("ops_no_pending_documents", "ไม่มีเอกสารค้างรอการอนุมัติ")}
+                        : tr("ops_no_pending_documents", "ไม่มีเอกสารในรายการ")}
                     </td>
                   </tr>
                 ) : (
                   filteredDocs.map((doc) => (
                     <tr key={doc.docno} className="hover:bg-muted/30 transition-colors">
+                      {actionType === "approve" && (
+                        <td className="px-3 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedDocnos.has(doc.docno)}
+                            onChange={() => toggleSelectDoc(doc.docno)}
+                            aria-label={`Select ${doc.docno}`}
+                            className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3 font-semibold text-primary font-mono">{doc.docno}</td>
                       <td className="px-4 py-3 font-mono text-xs">{doc.docdate || "-"}</td>
                       <td className="px-4 py-3">{doc.requestorname || "-"}</td>
@@ -284,35 +416,63 @@ export function OperationsWorkbench({
                       </td>
                       <td className="px-4 py-3 text-center">
                         {pendingAction?.docno === doc.docno ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <span className="text-xs font-semibold text-foreground">
-                              {(pendingAction.action === "approve"
+                          <div className="flex flex-col items-center gap-2 min-w-[260px] p-2 bg-muted/60 rounded-xl border border-border">
+                            <span className="text-xs font-semibold text-foreground text-center">
+                              {pendingAction.action === "approve"
                                 ? tr(
                                     "ops_confirm_approve_doc",
-                                    "ยืนยันอนุมัติเอกสาร {0} ใช่หรือไม่? เมื่ออนุมัติแล้วเอกสารจะถูกส่งต่อตามขั้นตอนทันที",
-                                  )
+                                    "ยืนยันอนุมัติเอกสาร {0} ใช่หรือไม่?",
+                                  ).replace("{0}", doc.docno)
+                                : pendingAction.action === "unapprove"
+                                ? tr(
+                                    "ops_confirm_unapprove_doc",
+                                    "ยืนยันยกเลิกการอนุมัติเอกสาร {0} ใช่หรือไม่?",
+                                  ).replace("{0}", doc.docno)
                                 : tr(
-                                    "ops_confirm_reject_doc",
-                                    "ยืนยันไม่อนุมัติเอกสาร {0} ใช่หรือไม่? ผู้ขอจะต้องแก้ไขและส่งใหม่",
-                                  )
-                              ).replace("{0}", doc.docno)}
+                                    "ops_confirm_cancel_doc",
+                                    "ยืนยันยกเลิกเอกสาร {0} ใช่หรือไม่?",
+                                  ).replace("{0}", doc.docno)}
                             </span>
+
+                            {pendingAction.action !== "approve" && (
+                              <Input
+                                placeholder={
+                                  pendingAction.action === "cancel"
+                                    ? tr("ops_cancel_reason_required", "ระบุเหตุผลในการยกเลิก (จำเป็น)...")
+                                    : tr("ops_enter_reason", "ระบุเหตุผล (ถ้ามี)...")
+                                }
+                                value={reasonInput}
+                                onChange={(e) => setReasonInput(e.target.value)}
+                                className="h-8 text-xs bg-background"
+                              />
+                            )}
+
                             <div className="flex items-center justify-center gap-2">
                               <Button
                                 size="sm"
-                                variant="default"
-                                disabled={submitting}
+                                variant={pendingAction.action === "cancel" ? "destructive" : "default"}
+                                disabled={
+                                  submitting ||
+                                  (pendingAction.action === "cancel" && reasonInput.trim() === "")
+                                }
                                 onClick={() => void confirmAction()}
                                 className="h-8 gap-1 text-xs"
                               >
-                                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                                {submitting ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                )}
                                 {tr("confirm", "ยืนยัน")}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 disabled={submitting}
-                                onClick={() => setPendingAction(null)}
+                                onClick={() => {
+                                  setPendingAction(null);
+                                  setReasonInput("");
+                                }}
                                 className="h-8 gap-1 text-xs"
                               >
                                 {tr("cancel", "ยกเลิก")}
@@ -321,24 +481,50 @@ export function OperationsWorkbench({
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => setPendingAction({ docno: doc.docno, action: "approve" })}
-                              className="h-8 gap-1 text-xs"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                              {tr("approve", "อนุมัติ")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setPendingAction({ docno: doc.docno, action: "reject" })}
-                              className="h-8 gap-1 text-xs text-destructive"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                              {tr("reject", "ไม่อนุมัติ")}
-                            </Button>
+                            {actionType === "approve" && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => {
+                                  setPendingAction({ docno: doc.docno, action: "approve" });
+                                  setReasonInput("");
+                                }}
+                                className="h-8 gap-1 text-xs"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                {tr("approve", "อนุมัติ")}
+                              </Button>
+                            )}
+
+                            {actionType === "unapprove" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setPendingAction({ docno: doc.docno, action: "unapprove" });
+                                  setReasonInput("");
+                                }}
+                                className="h-8 gap-1 text-xs text-amber-600 hover:text-amber-700"
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                                {tr("ops_unapprove_action", "ยกเลิกการอนุมัติ")}
+                              </Button>
+                            )}
+
+                            {actionType === "cancel" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setPendingAction({ docno: doc.docno, action: "cancel" });
+                                  setReasonInput("");
+                                }}
+                                className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                {tr("ops_cancel_action", "ยกเลิกเอกสาร")}
+                              </Button>
+                            )}
                           </div>
                         )}
                       </td>
@@ -350,7 +536,6 @@ export function OperationsWorkbench({
           </div>
         </Card>
       )}
-
     </div>
   );
 }

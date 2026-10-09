@@ -155,7 +155,15 @@ func ByFlag(flag int) (DocType, bool) {
 }
 
 // screenAliases คือ menu id เพิ่มเติมที่เปิดจอของประเภทเดียวกัน (จอใบตรวจนับและจอผลตรวจนับใช้ stock-count ร่วมกัน)
-var screenAliases = map[string][]string{"stock-count": {"stock-count-sheet"}}
+var screenAliases = map[string][]string{
+	"stock-count":            {"stock-count-sheet"},
+	"purchase-requisition":   {"purchase-requisition-approve", "purchase-requisition-cancel", "purchase-requisition-approve-cancel"},
+	"purchase-order":         {"purchase-order-approve", "purchase-order-cancel"},
+	"quotation":              {"quotation-approve", "quotation-cancel"},
+	"sale-order":             {"sale-order-approve", "sale-order-cancel"},
+	"stock-issue-request":    {"stock-issue-request-cancel"},
+	"stock-transfer-request": {"stock-transfer-request-cancel"},
+}
 
 // Screens คืน menu id ที่เปิดประเภทเอกสารนี้ได้ (ตัวแรกคือเมนูหลัก) ถ้าไม่รู้จัก key คืน nil
 func Screens(key string) []string {

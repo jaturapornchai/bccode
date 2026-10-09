@@ -73,13 +73,27 @@ describe("approval workflow API", () => {
     vi.restoreAllMocks();
   });
 
-  it("only exposes screens that have a real approval endpoint", () => {
-    // backend ไม่มี endpoint อนุมัติ (pr-status/pending ไม่มีจริง) จึงไม่มีจอใดพร้อม
-    expect(isApprovalApiReady("pr_approval")).toBe(false);
-    expect(isApprovalApiReady("po_cancellation")).toBe(false);
-    expect(isApprovalApiReady("qt_approval")).toBe(false);
-    expect(isApprovalApiReady("so_approval")).toBe(false);
-    for (const code of ["pr_cancellation", "pr_approval_cancellation", "po_approval", "stock_issue_request_cancellation", "stock_transfer_request_cancellation"]) {
+  it("exposes all 11 Tier A approval and cancellation screens with real endpoints", () => {
+    const activeApprovalCodes = [
+      "pr_approval",
+      "po_approval",
+      "qt_approval",
+      "so_approval",
+      "pr_approval_cancellation",
+      "pr_cancellation",
+      "po_cancellation",
+      "qt_cancellation",
+      "so_cancellation",
+      "stock_issue_request_cancellation",
+      "stock_transfer_request_cancellation",
+    ];
+
+    for (const code of activeApprovalCodes) {
+      expect(isApprovalApiReady(code), code).toBe(true);
+    }
+
+    // Screens without an approval endpoint remain inactive
+    for (const code of ["sales_reservations", "order_dates", "delivery_dates", "set_assembly", "serial_registry", "selling_prices"]) {
       expect(isApprovalApiReady(code), code).toBe(false);
     }
   });
@@ -88,11 +102,11 @@ describe("approval workflow API", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const list = await fetchPendingApprovals({ code: "qt_approval", holdingcode: "H01" });
+    const list = await fetchPendingApprovals({ code: "sales_reservations", holdingcode: "H01" });
     const action = await submitApprovalAction({
-      code: "qt_approval",
+      code: "sales_reservations",
       holdingcode: "H01",
-      docno: "QT-1",
+      docno: "SO-1",
       action: "approve",
       actionby: "user1",
     });
@@ -102,18 +116,74 @@ describe("approval workflow API", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  // pr_approval ถูกถอดจาก APPROVAL_KINDS: backend ไม่มี endpoint อนุมัติ จึงห้ามยิง API ที่ไม่มีอยู่
-  it("does not call the backend for pr_approval while no approval endpoint exists", async () => {
-    const fetchMock = vi.fn();
+  it("calls the real backend endpoint for active approval screens", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, _init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes("/list")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              data: [
+                {
+                  docno: "PR-202610-001",
+                  docdatetime: "2026-10-10",
+                  custname: "ผู้จำหน่าย ก",
+                  totalamount: 1500,
+                  createdby: "staff",
+                  approval_status: 0,
+                  status: 0,
+                  iscancel: false,
+                },
+              ],
+              pagination: { total: 1 },
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true }),
+      });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
+    // List pending
     const list = await fetchPendingApprovals({ code: "pr_approval", holdingcode: "H01" });
-    const approved = await submitApprovalAction({
-      code: "pr_approval", holdingcode: "H01", docno: "PR-1", action: "approve", actionby: "user1",
-    });
+    expect(list.docs).toHaveLength(1);
+    expect(list.docs[0].docno).toBe("PR-202610-001");
+    expect(list.docs[0].totalamount).toBe(1500);
 
-    expect(list).toEqual({ docs: [], error: "approval_not_available" });
-    expect(approved).toEqual({ success: false, messageKey: "approval_not_available" });
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Approve
+    const approved = await submitApprovalAction({
+      code: "pr_approval",
+      docno: "PR-202610-001",
+      action: "approve",
+      actionby: "manager",
+    });
+    expect(approved.success).toBe(true);
+    expect(approved.messageKey).toBe("approve_success");
+
+    // Cancel
+    const cancelled = await submitApprovalAction({
+      code: "pr_cancellation",
+      docno: "PR-202610-001",
+      action: "cancel",
+      comment: "ยกเลิกเพราะขอซ้ำ",
+    });
+    expect(cancelled.success).toBe(true);
+    expect(cancelled.messageKey).toBe("cancel_success");
+
+    // Unapprove
+    const unapproved = await submitApprovalAction({
+      code: "pr_approval_cancellation",
+      docno: "PR-202610-001",
+      action: "unapprove",
+      comment: "ขอทบทวนยอดใหม่",
+    });
+    expect(unapproved.success).toBe(true);
+    expect(unapproved.messageKey).toBe("unapprove_success");
   });
 });

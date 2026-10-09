@@ -80,6 +80,21 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 
 	var docID int
 	if isEdit {
+		var currentCancel bool
+		var currentApproval string
+		err := tx.QueryRowContext(ctx, `SELECT COALESCE(iscancel, false), COALESCE(approval_status, '')
+			FROM doc WHERE businesscode = $1 AND transflag = $2 AND docno = $3 AND NOT COALESCE(isdelete, false) FOR UPDATE`,
+			company, transflag, docNo).Scan(&currentCancel, &currentApproval)
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("update doc %s: %w", docNo, sql.ErrNoRows)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("check doc status: %w", err)
+		}
+		if currentCancel || currentApproval == "approved" {
+			return nil, docLockedError()
+		}
+
 		if doctype.PostsToGL(transflag) {
 			if err = s.releasePosting(ctx, tx, scope, dt, docNo, reasonEdit, now); err != nil {
 				return nil, err
@@ -242,8 +257,29 @@ func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 		args = append(args, docIdOrNo)
 	}
 	var docNo string
-	if err = tx.QueryRowContext(ctx, "SELECT docno FROM doc "+where, args...).Scan(&docNo); err != nil {
+	var currentCancel bool
+	var currentApproval string
+	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, '') FROM doc %s FOR UPDATE", where)
+	if err = tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &currentCancel, &currentApproval); err != nil {
 		return err
+	}
+	if currentCancel || currentApproval == "approved" {
+		return docLockedError()
+	}
+
+	// Reject if any live downstream document exists
+	var hasDownstream bool
+	checkDownstreamQuery := `SELECT EXISTS(
+		SELECT 1 FROM docref r
+		JOIN doc d ON d.businesscode = r.businesscode AND d.docno = r.docno AND d.transflag = r.docnotransflag
+		WHERE r.businesscode = $1 AND r.docnoref = $2 AND (r.docnoreftransflag = $3 OR r.docnoreftransflag = 0)
+		  AND NOT COALESCE(d.isdelete, false) AND NOT COALESCE(d.iscancel, false)
+	)`
+	if err := tx.QueryRowContext(ctx, checkDownstreamQuery, scope.Company, docNo, dt.Flag).Scan(&hasDownstream); err != nil {
+		return fmt.Errorf("check downstream: %w", err)
+	}
+	if hasDownstream {
+		return docHasDownstreamError()
 	}
 
 	now := time.Now().UTC()

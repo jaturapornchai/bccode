@@ -37,18 +37,26 @@ func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 
 func (h *Http) RegisterHttp() {
 	h.ms.GET("/transaction/:module/list", h.list)
+	h.ms.POST("/transaction/:module/approve-batch", h.approveBatch)
 	h.ms.GET("/transaction/:module/:id", h.get)
 	h.ms.POST("/transaction/:module", h.create)
 	h.ms.PUT("/transaction/:module/:id", h.update)
 	h.ms.DELETE("/transaction/:module/:id", h.delete)
+
+	h.ms.POST("/transaction/:module/:id/approve", h.approve)
+	h.ms.POST("/transaction/:module/:id/unapprove", h.unapprove)
+	h.ms.POST("/transaction/:module/:id/cancel", h.cancel)
+	h.ms.GET("/transaction/:module/:id/events", h.getEvents)
 }
 
 // การกระทำที่ตรวจสิทธิ์: "" = เข้าจอ/อ่าน, อื่นๆ ต้องมีทั้ง <เมนู> และ <เมนู>:<action> (กฎเดียวกับ GL)
 const (
-	actionRead   = ""
-	actionCreate = "create"
-	actionUpdate = "update"
-	actionDelete = "delete"
+	actionRead    = ""
+	actionCreate  = "create"
+	actionUpdate  = "update"
+	actionDelete  = "delete"
+	actionApprove = "approve"
+	actionCancel  = "cancel"
 )
 
 // docAccess คือผลของ authorize: ประเภทเอกสารที่ถูกต้อง session ที่ยืนยันแล้ว และฐานข้อมูลของ holding
@@ -178,10 +186,11 @@ func (h *Http) list(request microservice.IContext) error {
 	transflag := access.dt.Flag
 
 	q := request.QueryParam("q")
+	status := request.QueryParam("status")
 	limit, _ := strconv.Atoi(request.QueryParam("limit"))
 	offset, _ := strconv.Atoi(request.QueryParam("offset"))
 
-	docs, total, err := h.store.ListDocs(ctx, db, scope.Company, transflag, q, offset, limit)
+	docs, total, err := h.store.ListDocs(ctx, db, scope.Company, transflag, q, status, offset, limit)
 	if err != nil {
 		return fail(request, http.StatusInternalServerError, fmt.Sprintf("โหลดข้อมูลไม่สำเร็จ: %v", err))
 	}
@@ -314,5 +323,130 @@ func (h *Http) delete(request microservice.IContext) error {
 	return success(request, map[string]any{
 		"success": true,
 		"message": "delete_success",
+	})
+}
+
+type reasonPayload struct {
+	Reason string `json:"reason"`
+}
+
+type batchApprovePayload struct {
+	IDs []string `json:"ids"`
+}
+
+func (h *Http) approve(request microservice.IContext) error {
+	access := h.authorize(request, actionApprove)
+	if access == nil {
+		return nil
+	}
+	id := request.Param("id")
+	if strings.TrimSpace(id) == "" {
+		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+	}
+
+	doc, err := h.store.ApproveDoc(access.ctx, access.db, access.scope, access.dt, id)
+	if err != nil {
+		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการอนุมัติ", "อนุมัติเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, DocItemResponse{
+		Success: true,
+		Data:    *doc,
+		Message: "erp_msg_approved",
+	})
+}
+
+func (h *Http) unapprove(request microservice.IContext) error {
+	access := h.authorize(request, actionApprove)
+	if access == nil {
+		return nil
+	}
+	id := request.Param("id")
+	if strings.TrimSpace(id) == "" {
+		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+	}
+
+	var payload reasonPayload
+	_ = json.NewDecoder(request.Request().Body).Decode(&payload)
+
+	doc, err := h.store.UnapproveDoc(access.ctx, access.db, access.scope, access.dt, id, payload.Reason)
+	if err != nil {
+		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการยกเลิกการอนุมัติ", "ยกเลิกการอนุมัติไม่สำเร็จ")
+	}
+
+	return success(request, DocItemResponse{
+		Success: true,
+		Data:    *doc,
+		Message: "erp_msg_unapproved",
+	})
+}
+
+func (h *Http) cancel(request microservice.IContext) error {
+	access := h.authorize(request, actionCancel)
+	if access == nil {
+		return nil
+	}
+	id := request.Param("id")
+	if strings.TrimSpace(id) == "" {
+		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+	}
+
+	var payload reasonPayload
+	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
+		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+	}
+
+	doc, err := h.store.CancelDoc(access.ctx, access.db, access.scope, access.dt, id, payload.Reason)
+	if err != nil {
+		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการยกเลิก", "ยกเลิกเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, DocItemResponse{
+		Success: true,
+		Data:    *doc,
+		Message: "erp_msg_cancelled",
+	})
+}
+
+func (h *Http) approveBatch(request microservice.IContext) error {
+	access := h.authorize(request, actionApprove)
+	if access == nil {
+		return nil
+	}
+
+	var payload batchApprovePayload
+	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
+		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+	}
+
+	results, err := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.IDs)
+	if err != nil {
+		return docFailure(request, err, "", "อนุมัติเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, BatchApproveResponse{
+		Success: true,
+		Data:    results,
+	})
+}
+
+func (h *Http) getEvents(request microservice.IContext) error {
+	access := h.authorize(request, actionRead)
+	if access == nil {
+		return nil
+	}
+	id := request.Param("id")
+	if strings.TrimSpace(id) == "" {
+		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+	}
+
+	events, err := h.store.GetDocEvents(access.ctx, access.db, access.scope.Company, access.dt.Flag, id)
+	if err != nil {
+		return docFailure(request, err, "ไม่พบเอกสาร", "ดึงประวัติเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, DocEventsResponse{
+		Success: true,
+		Data:    events,
 	})
 }

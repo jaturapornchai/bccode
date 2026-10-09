@@ -93,9 +93,10 @@ describe("menu screen availability", () => {
       expect(isMenuScreenPending(route), route).toBe(true);
     }
     expect(flattenMenuItems().map((item) => item.route)).toEqual(expect.arrayContaining(NO_BACKEND_DOCUMENT_ROUTES));
+    // 2026-10-10: 11 Tier A approval/cancellation screens now connected to PostgreSQL backend
     for (const route of CHAMP_OPERATIONS_ROUTES) {
-      expect(isMenuScreenPending(route), route).toBe(true);
-      expect(isMenuDataPending(route), route).toBe(true);
+      expect(isMenuScreenPending(route), route).toBe(false);
+      expect(isMenuDataPending(route), route).toBe(false);
     }
     expect(isRetiredBackendScreen("/product")).toBe(true);
     expect(isRetiredBackendScreen("/productbarcodeshelf?x=1")).toBe(true);
@@ -144,9 +145,9 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/tools/ar-recalculate")).toBe(true);
     expect(isMenuDataPending("/gl/reprocess")).toBe(false);
 
-    // งานอนุมัติ: backend ยังไม่มี endpoint อนุมัติเลย (pr_approval ถูกถอดจาก APPROVAL_KINDS)
-    expect(isMenuDataPending("/procurement/requisition-approval")).toBe(true);
-    expect(isMenuDataPending("/sales/quotation-approval")).toBe(true);
+    // งานอนุมัติ: 11 จอ Tier A ต่อ API บน PostgreSQL แล้ว (isApprovalApiReady = true)
+    expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);
+    expect(isMenuDataPending("/sales/quotation-approval")).toBe(false);
 
     // ภาษี (2026-09-23): รายงานภาษีหัก ณ ที่จ่าย/50 ทวิ และภาษีขาย/ซื้อ อ่านจาก GL จริง (details.vats);
     // แบบยื่นทุกแบบเป็นจอกรอกแบบ (TaxFormEditor) — แบบที่ยังไม่มีข้อมูลต้นทาง (ภ.พ.36) กรอกเองได้ จึงไม่ "รอเชื่อมข้อมูล"

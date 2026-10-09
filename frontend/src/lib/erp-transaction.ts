@@ -34,6 +34,12 @@ export interface ErpTransactionDoc {
   vattype?: number;
   vatrate?: number;
   status?: number; // 0=Draft, 1=Approved/Completed, 2=Cancelled
+  approval_status?: number; // 0=Draft/Pending, 1=Approved, 2=Cancelled
+  approved_by?: string;
+  approved_at?: string;
+  cancelled_by?: string;
+  cancelled_at?: string;
+  cancelreason?: string;
   isclosed?: boolean;
   iscancel?: boolean;
   branchcode?: string;
@@ -752,12 +758,13 @@ function userDetail(body: { message?: unknown }): string | undefined {
 
 export async function fetchErpTransactions(
   config: ErpModuleConfig,
-  params: { q?: string; offset?: number; limit?: number } = {},
+  params: { q?: string; offset?: number; limit?: number; status?: string } = {},
 ): Promise<{ items: ErpTransactionDoc[]; total: number; error?: string }> {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);
   if (params.offset !== undefined) query.set("offset", String(params.offset));
   if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.status) query.set("status", params.status);
 
   try {
     const res = await apiFetch(`/api/erp-transaction/${config.apiPath}/list?${query.toString()}`);
@@ -828,5 +835,146 @@ export async function deleteErpTransaction(
     return { success: true, message: "delete_success" };
   } catch {
     return { success: false, message: "connection_error" };
+  }
+}
+
+export interface ErpDocEvent {
+  id: number;
+  docno: string;
+  transflag: number;
+  action: string;
+  fromstatus: number;
+  tostatus: number;
+  reason?: string;
+  createdby: string;
+  createdat: string;
+}
+
+export interface BatchApproveItemResult {
+  docno: string;
+  success: boolean;
+  message?: string;
+}
+
+export async function approveErpDoc(
+  module: string,
+  id: string,
+  language = "th",
+): Promise<{ success: boolean; message?: string; detail?: string }> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    return { success: true, message: "approve_success" };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
+export async function unapproveErpDoc(
+  module: string,
+  id: string,
+  reason = "",
+  language = "th",
+): Promise<{ success: boolean; message?: string; detail?: string }> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/${encodeURIComponent(id)}/unapprove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    return { success: true, message: "unapprove_success" };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
+export async function cancelErpDoc(
+  module: string,
+  id: string,
+  reason: string,
+  language = "th",
+): Promise<{ success: boolean; message?: string; detail?: string }> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/${encodeURIComponent(id)}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    return { success: true, message: "cancel_success" };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
+export async function approveBatchErpDocs(
+  module: string,
+  docnos: string[],
+  language = "th",
+): Promise<{
+  success: boolean;
+  items?: BatchApproveItemResult[];
+  total?: number;
+  approved?: number;
+  message?: string;
+  detail?: string;
+}> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/approve-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ docnos }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    return {
+      success: true,
+      items: data?.data?.items ?? [],
+      total: data?.data?.total ?? docnos.length,
+      approved: data?.data?.approved ?? 0,
+      message: "approve_success",
+    };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
+export async function fetchErpDocEvents(
+  module: string,
+  id: string,
+  language = "th",
+): Promise<{ success: boolean; events: ErpDocEvent[]; error?: string }> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/${encodeURIComponent(id)}/events`, {
+      headers: languageHeader(language),
+    });
+    if (!res.ok) {
+      return { success: false, events: [], error: statusErrorKey(res.status, "load_failed", "erp_err_read_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, events: [], error: "load_failed" };
+    return { success: true, events: data?.data?.events ?? [] };
+  } catch {
+    return { success: false, events: [], error: "connection_error" };
   }
 }

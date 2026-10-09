@@ -1,6 +1,11 @@
-// SME Operations, Approvals, BOM Kits, Serial Registry & Data Import Engine
-
 import { apiFetch } from "./client-auth-session";
+import {
+  approveErpDoc,
+  unapproveErpDoc,
+  cancelErpDoc,
+  approveBatchErpDocs,
+  type BatchApproveItemResult,
+} from "./erp-transaction";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
@@ -240,20 +245,44 @@ export function getOperationsConfig(route: string): OperationsConfig | undefined
 // --- การอนุมัติเอกสารจริงผ่าน backend (ไม่มีข้อมูลจำลอง) ---
 
 export interface PendingApprovalDoc {
+  id?: string;
   docno: string;
   docdate: string;
   requestorname: string;
   counterpartyname: string;
   totalamount: number;
-  requiredlevelname: string;
+  requiredlevelname?: string;
+  approval_status?: number;
+  status?: number;
+  iscancel?: boolean;
 }
 
-// จอที่ backend มี endpoint อนุมัติจริงรองรับแล้วเท่านั้น — ตอนนี้ backend ไม่มี endpoint อนุมัติเลย
-// (pr-status/pending ที่เคยผูกไว้ไม่มีใน backend) จึงว่าง; เมื่อสร้าง endpoint จริงแล้วค่อยเพิ่ม code -> kind ที่นี่
-const APPROVAL_KINDS: Record<string, string> = {};
+export interface ApprovalOperationMeta {
+  module: string;
+  actionType: "approve" | "unapprove" | "cancel";
+  statusFilter: "pending" | "approved" | "active";
+}
+
+export const APPROVAL_OPERATIONS: Record<string, ApprovalOperationMeta> = {
+  pr_approval: { module: "purchase-requisition", actionType: "approve", statusFilter: "pending" },
+  po_approval: { module: "purchase-order", actionType: "approve", statusFilter: "pending" },
+  qt_approval: { module: "quotation", actionType: "approve", statusFilter: "pending" },
+  so_approval: { module: "sale-order", actionType: "approve", statusFilter: "pending" },
+  pr_approval_cancellation: { module: "purchase-requisition", actionType: "unapprove", statusFilter: "approved" },
+  pr_cancellation: { module: "purchase-requisition", actionType: "cancel", statusFilter: "active" },
+  po_cancellation: { module: "purchase-order", actionType: "cancel", statusFilter: "active" },
+  qt_cancellation: { module: "quotation", actionType: "cancel", statusFilter: "active" },
+  so_cancellation: { module: "sale-order", actionType: "cancel", statusFilter: "active" },
+  stock_issue_request_cancellation: { module: "stock-issue-request", actionType: "cancel", statusFilter: "active" },
+  stock_transfer_request_cancellation: { module: "stock-transfer-request", actionType: "cancel", statusFilter: "active" },
+};
 
 export function isApprovalApiReady(code: string): boolean {
-  return code in APPROVAL_KINDS;
+  return code in APPROVAL_OPERATIONS;
+}
+
+export function getApprovalOperationMeta(code: string): ApprovalOperationMeta | undefined {
+  return APPROVAL_OPERATIONS[code];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -275,84 +304,146 @@ function toText(value: unknown): string {
 
 function errorKeyFor(status: number): string {
   if (status === 401 || status === 403) return "unauthorized";
-  // 404 = this approval kind has no endpoint in the backend build, not a
-  // transient failure the user should retry.
   if (status === 404) return "module_not_available";
   return "load_failed";
 }
 
+function mapDocItem(item: Record<string, unknown>): PendingApprovalDoc {
+  return {
+    id: toText(item.id || item.docno),
+    docno: toText(item.docno),
+    docdate: toText(item.docdatetime) || toText(item.createdat),
+    requestorname: toText(item.createdbyname) || toText(item.createdby),
+    counterpartyname: toText(item.custname) || toText(item.custcode),
+    totalamount: toNumber(item.totalamount),
+    requiredlevelname: toText(item.requiredlevelname),
+    approval_status: toNumber(item.approval_status),
+    status: toNumber(item.status),
+    iscancel: Boolean(item.iscancel),
+  };
+}
+
 export async function fetchPendingApprovals(params: {
   code: string;
-  holdingcode: string;
-}): Promise<{ docs: PendingApprovalDoc[]; error?: string }> {
-  const kind = APPROVAL_KINDS[params.code];
-  if (!kind) return { docs: [], error: "approval_not_available" };
-  if (!params.holdingcode) return { docs: [], error: "holding_required" };
+  holdingcode?: string;
+  q?: string;
+  offset?: number;
+  limit?: number;
+}): Promise<{ docs: PendingApprovalDoc[]; total: number; error?: string }> {
+  const meta = APPROVAL_OPERATIONS[params.code];
+  if (!meta) return { docs: [], total: 0, error: "approval_not_available" };
 
   try {
-    const res = await apiFetch(`/api/goapi/api/approval/${kind}-status/pending`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ holdingcode: params.holdingcode }),
-    });
-    if (!res.ok) return { docs: [], error: errorKeyFor(res.status) };
+    const query = new URLSearchParams();
+    query.set("status", meta.statusFilter);
+    if (params.q) query.set("q", params.q);
+    if (params.offset !== undefined) query.set("offset", String(params.offset));
+    if (params.limit !== undefined) query.set("limit", String(params.limit));
+
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(meta.module)}/list?${query.toString()}`);
+    if (!res.ok) return { docs: [], total: 0, error: errorKeyFor(res.status) };
+
     const payload: unknown = await res.json();
-    if (!isRecord(payload) || !Array.isArray(payload.data)) return { docs: [], error: "load_failed" };
-    const docs = payload.data.filter(isRecord).map((item) => ({
-      docno: toText(item.docno),
-      docdate: toText(item.docdatetime) || toText(item.createdat),
-      requestorname: toText(item.createdbyname) || toText(item.createdby),
-      counterpartyname: toText(item.custname) || toText(item.custcode),
-      totalamount: toNumber(item.totalamount),
-      requiredlevelname: toText(item.requiredlevelname),
-    }));
-    return { docs };
+    if (!isRecord(payload) || !Array.isArray(payload.data)) {
+      if (Array.isArray(payload)) {
+        const docs = payload.filter(isRecord).map(mapDocItem);
+        return { docs, total: docs.length };
+      }
+      return { docs: [], total: 0, error: "load_failed" };
+    }
+
+    const docs = payload.data.filter(isRecord).map(mapDocItem);
+    const pagination = isRecord(payload.pagination) ? payload.pagination : undefined;
+    const total = typeof pagination?.total === "number" ? pagination.total : docs.length;
+    return { docs, total };
   } catch {
-    return { docs: [], error: "connection_error" };
+    return { docs: [], total: 0, error: "connection_error" };
   }
 }
 
 export async function submitApprovalAction(params: {
   code: string;
-  holdingcode: string;
+  holdingcode?: string;
   docno: string;
-  action: "approve" | "reject";
-  actionby: string;
+  action: "approve" | "unapprove" | "cancel" | "reject";
+  actionby?: string;
   comment?: string;
-}): Promise<{ success: boolean; messageKey: string }> {
-  const kind = APPROVAL_KINDS[params.code];
-  if (!kind) return { success: false, messageKey: "approval_not_available" };
-  if (!params.holdingcode) return { success: false, messageKey: "holding_required" };
+  language?: string;
+}): Promise<{ success: boolean; messageKey: string; detail?: string }> {
+  const meta = APPROVAL_OPERATIONS[params.code];
+  if (!meta) return { success: false, messageKey: "approval_not_available" };
   if (!params.docno) return { success: false, messageKey: "docno_required" };
-  if (!params.actionby) return { success: false, messageKey: "unauthorized" };
 
-  try {
-    const res = await apiFetch(`/api/goapi/api/approval/${kind}-status/${params.action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        holdingcode: params.holdingcode,
-        docno: params.docno,
-        actionby: params.actionby,
-        actionbyname: params.actionby,
-        comment: params.comment ?? "",
-        source: "app",
-      }),
-    });
-    if (!res.ok) {
-      return {
-        success: false,
-        messageKey: res.status === 401 || res.status === 403 ? "unauthorized" : "action_failed",
-      };
-    }
-    const payload: unknown = await res.json();
-    if (!isRecord(payload) || payload.success === false) {
-      return { success: false, messageKey: "action_failed" };
-    }
-    return { success: true, messageKey: params.action === "approve" ? "approve_success" : "reject_success" };
-  } catch {
-    return { success: false, messageKey: "connection_error" };
+  const lang = params.language || "th";
+
+  if (params.action === "approve") {
+    const res = await approveErpDoc(meta.module, params.docno, lang);
+    return {
+      success: res.success,
+      messageKey: res.success ? "approve_success" : res.message || "action_failed",
+      detail: res.detail,
+    };
   }
+
+  if (params.action === "unapprove") {
+    const res = await unapproveErpDoc(meta.module, params.docno, params.comment || "", lang);
+    return {
+      success: res.success,
+      messageKey: res.success ? "unapprove_success" : res.message || "action_failed",
+      detail: res.detail,
+    };
+  }
+
+  if (params.action === "cancel") {
+    const res = await cancelErpDoc(meta.module, params.docno, params.comment || "", lang);
+    return {
+      success: res.success,
+      messageKey: res.success ? "cancel_success" : res.message || "action_failed",
+      detail: res.detail,
+    };
+  }
+
+  // legacy "reject" maps to unapprove or cancel depending on meta.actionType
+  if (meta.actionType === "unapprove") {
+    const res = await unapproveErpDoc(meta.module, params.docno, params.comment || "", lang);
+    return {
+      success: res.success,
+      messageKey: res.success ? "unapprove_success" : res.message || "action_failed",
+      detail: res.detail,
+    };
+  }
+
+  const res = await cancelErpDoc(meta.module, params.docno, params.comment || "", lang);
+  return {
+    success: res.success,
+    messageKey: res.success ? "cancel_success" : res.message || "action_failed",
+    detail: res.detail,
+  };
+}
+
+export async function submitBatchApprove(params: {
+  code: string;
+  docnos: string[];
+  language?: string;
+}): Promise<{
+  success: boolean;
+  approved: number;
+  total: number;
+  messageKey: string;
+  detail?: string;
+  items?: BatchApproveItemResult[];
+}> {
+  const meta = APPROVAL_OPERATIONS[params.code];
+  if (!meta) return { success: false, approved: 0, total: 0, messageKey: "approval_not_available" };
+  const res = await approveBatchErpDocs(meta.module, params.docnos, params.language || "th");
+  return {
+    success: res.success,
+    approved: res.approved ?? 0,
+    total: res.total ?? params.docnos.length,
+    messageKey: res.success ? "approve_success" : res.message || "action_failed",
+    detail: res.detail,
+    items: res.items,
+  };
 }
 
 // 2026-09-16: every user-visible string above also lives in languages.tsv,

@@ -71,6 +71,30 @@ func duplicateDocError(docNo string) *gl.UserError {
 	return erpError("erp_doc_duplicate", "docno", fmt.Sprintf("เลขที่เอกสาร %s ถูกใช้ไปแล้ว (รวมเอกสารที่ลบแล้ว) กรุณาใช้เลขที่อื่น หรือปล่อยว่างให้ระบบออกเลขให้", docNo), docNo)
 }
 
+func docLockedError() *gl.UserError {
+	return erpError("erp_doc_locked", "", "เอกสารนี้ได้รับการอนุมัติหรือยกเลิกแล้ว ไม่สามารถแก้ไขหรือลบได้")
+}
+
+func docHasDownstreamError() *gl.UserError {
+	return erpError("erp_doc_has_downstream", "", "เอกสารนี้ถูกนำไปอ้างอิงในเอกสารอื่นแล้ว ไม่สามารถยกเลิกได้")
+}
+
+func docNotPendingError() *gl.UserError {
+	return erpError("erp_doc_not_pending", "", "เอกสารนี้ไม่ได้อยู่ในสถานะรออนุมัติ")
+}
+
+func docNotApprovedError() *gl.UserError {
+	return erpError("erp_doc_not_approved", "", "เอกสารนี้ยังไม่ได้รับการอนุมัติ")
+}
+
+func docAlreadyCancelledError() *gl.UserError {
+	return erpError("erp_doc_already_cancelled", "", "เอกสารนี้ถูกยกเลิกไปแล้ว")
+}
+
+func cancelReasonRequiredError() *gl.UserError {
+	return erpError("erp_cancel_reason_required", "reason", "กรุณาระบุเหตุผลในการยกเลิก")
+}
+
 // thText คือข้อความไทยจาก languages.tsv แทนค่า {0}, {1}, … — ใช้กับข้อความที่ลงในใบสำคัญ (ไทยเป็นต้นฉบับของบัญชี)
 func thText(key string, args ...string) string {
 	text := language.Text(key, "th")
