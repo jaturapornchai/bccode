@@ -40,9 +40,13 @@ func (s *PostgresStore) pgYearAt(ctx context.Context, tx *sql.Tx, scope Scope, d
 	}
 	return s.openPGYear(ctx, tx, scope, code)
 }
-func (s *PostgresStore) checkOpenDate(ctx context.Context, tx *sql.Tx, scope Scope, date string) error {
+func periodLocked(ctx context.Context, tx *sql.Tx, company, date string) (bool, error) {
 	var locked bool
-	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND kind='periods' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND COALESCE((payload->>'locked')::boolean,false) AND NOT COALESCE((payload->>'isdeleted')::boolean,false))`, scope.Company, date).Scan(&locked)
+	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND kind='periods' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND COALESCE((payload->>'locked')::boolean,false) AND NOT COALESCE((payload->>'isdeleted')::boolean,false))`, company, date).Scan(&locked)
+	return locked, err
+}
+func (s *PostgresStore) checkOpenDate(ctx context.Context, tx *sql.Tx, scope Scope, date string) error {
+	locked, err := periodLocked(ctx, tx, scope.Company, date)
 	if err != nil {
 		return err
 	}

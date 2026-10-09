@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-09 @ commit b905c117 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-09 @ commit 7b0d333d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -732,7 +732,7 @@ Files indexed: 32
 | 1520 | function | `postStockMovement` |
 | 1629 | function | `DeleteDoc` |
 
-## frontend/src/app/gl/gl-masters.tsx (1543 lines)
+## frontend/src/app/gl/gl-masters.tsx (1560 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -777,11 +777,11 @@ Files indexed: 32
 | 1222 | const-arrow | `handleTypeChange` |
 | 1232 | const-arrow | `handleParentChange` |
 | 1417 | function | `FiscalYearFields` |
-| 1438 | function | `champMasterLabels` |
-| 1445 | function | `MasterFields` |
-| 1470 | function | `UntypedJournalBooksNotice` |
-| 1490 | function | `JournalBookTypeBadge` |
-| 1502 | function | `JournalBookFields` |
+| 1454 | function | `champMasterLabels` |
+| 1461 | function | `MasterFields` |
+| 1487 | function | `UntypedJournalBooksNotice` |
+| 1507 | function | `JournalBookTypeBadge` |
+| 1519 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 

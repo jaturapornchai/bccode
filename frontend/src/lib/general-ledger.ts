@@ -60,7 +60,7 @@ export type GLMaster = GLIdentity & {
   code: string; name: string; isactive: boolean; accountcode: string; fiscalyear: string;
   startdate: string; enddate: string; locked: boolean; amount: string;
   branchcode: string; departmentcode: string; projectcode: string; direction: string;
-  bookcode: string; rules: GLRule[]; itemaccount: string; costaccount: string; revenueaccount: string;
+  bookcode: string; sourcedoc?: string; rules: GLRule[]; itemaccount: string; costaccount: string; revenueaccount: string;
   allocatemode: string; allocaterules: GLAllocationRule[];
   accountentries?: GLAccountEntry[];
 };

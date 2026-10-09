@@ -545,22 +545,22 @@ func main() {
 
 	// 14) รูปแบบการเชื่อมบัญชีตามสมุดรายวัน
 	mappings := []struct {
-		code, name, book string
-		rules            []gl.MappingRule
+		code, name, sourceDoc, book string
+		rules                       []gl.MappingRule
 	}{
-		{"MAP-" + purchase, "รูปแบบการเชื่อมบัญชี สมุดรายวันซื้อเชื่อ", purchase, []gl.MappingRule{
-			{AccountCode: goods, Side: "debit", Source: "สินค้า"},
-			{AccountCode: inputVAT, Side: "debit", Source: "ภาษีซื้อ"},
-			{AccountCode: ap, Side: "credit", Source: "ยอดรวมเอกสาร"},
+		{"MAP-" + purchase, "รูปแบบการเชื่อมบัญชี สมุดรายวันซื้อเชื่อ", "purchase", purchase, []gl.MappingRule{
+			{AccountCode: goods, Side: gl.MappingSideDebit, Source: gl.MappingSourceGoods},
+			{AccountCode: inputVAT, Side: gl.MappingSideDebit, Source: gl.MappingSourceVat},
+			{AccountCode: ap, Side: gl.MappingSideCredit, Source: gl.MappingSourceTotal},
 		}},
-		{"MAP-" + sales, "รูปแบบการเชื่อมบัญชี สมุดรายวันขายเชื่อ", sales, []gl.MappingRule{
-			{AccountCode: ar, Side: "debit", Source: "ยอดรวมเอกสาร"},
-			{AccountCode: salesVAT, Side: "credit", Source: "รายได้"},
-			{AccountCode: outputVAT, Side: "credit", Source: "ภาษีขาย"},
+		{"MAP-" + sales, "รูปแบบการเชื่อมบัญชี สมุดรายวันขายเชื่อ", "sale-invoice", sales, []gl.MappingRule{
+			{AccountCode: ar, Side: gl.MappingSideDebit, Source: gl.MappingSourceTotal},
+			{AccountCode: salesVAT, Side: gl.MappingSideCredit, Source: gl.MappingSourceGoods},
+			{AccountCode: outputVAT, Side: gl.MappingSideCredit, Source: gl.MappingSourceVat},
 		}},
-		{"MAP-" + receipt, "รูปแบบการเชื่อมบัญชี สมุดรายวันรับเงิน", receipt, []gl.MappingRule{
-			{AccountCode: bank, Side: "debit", Source: "ยอดรับจริง"},
-			{AccountCode: ar, Side: "credit", Source: "ยอดตัดลูกหนี้"},
+		{"MAP-" + receipt, "รูปแบบการเชื่อมบัญชี สมุดรายวันรับเงิน", "paid", receipt, []gl.MappingRule{
+			{AccountCode: bank, Side: gl.MappingSideDebit, Source: gl.MappingSourceTotal},
+			{AccountCode: ar, Side: gl.MappingSideCredit, Source: gl.MappingSourceTotal},
 		}},
 	}
 	for _, m := range mappings {
@@ -576,7 +576,7 @@ func main() {
 			continue
 		}
 		cmd := gl.Command{Resource: "mappings", Action: "create", RequestID: "seed-gl-screens-" + m.code,
-			Master: &gl.Master{Kind: "mappings", Code: m.code, Name: m.name, IsActive: true, BookCode: m.book, Rules: m.rules}}
+			Master: &gl.Master{Kind: "mappings", Code: m.code, Name: m.name, IsActive: true, SourceDoc: m.sourceDoc, BookCode: m.book, Rules: m.rules}}
 		if _, err := store.Execute(ctx, scope, cmd); err != nil {
 			fatal("สร้างรูปแบบการเชื่อม %s ไม่ได้: %v", m.code, err)
 		}

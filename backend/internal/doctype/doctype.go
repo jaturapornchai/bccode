@@ -196,6 +196,29 @@ func StockFlags() []int {
 	return flags
 }
 
+// postingFlags คือประเภทเอกสารที่ลงบัญชีตอนบันทึก (ประเภทอื่นบันทึกเอกสารอย่างเดียว)
+// บัญชีและสมุดรายวันของแต่ละประเภทมาจากรูปแบบลงบัญชี (GL mappings) ที่ผู้ใช้ตั้งไว้ ไม่ได้ฝังในโค้ด
+var postingFlags = map[int]bool{
+	Purchase: true, PurchaseReturn: true, Expense: true, Paid: true, Pay: true, SaleInvoice: true, SaleInvoiceReturn: true,
+}
+
+// PostsToGL บอกว่าเอกสารประเภทนี้ลงบัญชีตอนบันทึกหรือไม่
+func PostsToGL(flag int) bool { return postingFlags[flag] }
+
+// PostingKeys คืน key ของประเภทเอกสารที่ลงบัญชีได้ เรียงตามเลข transflag
+func PostingKeys() []string {
+	flags := make([]int, 0, len(postingFlags))
+	for flag := range postingFlags {
+		flags = append(flags, flag)
+	}
+	sort.Ints(flags)
+	keys := make([]string, 0, len(flags))
+	for _, flag := range flags {
+		keys = append(keys, byFlag[flag].Key)
+	}
+	return keys
+}
+
 func isUpperLetter(c byte) bool {
 	return c >= 'A' && c <= 'Z'
 }

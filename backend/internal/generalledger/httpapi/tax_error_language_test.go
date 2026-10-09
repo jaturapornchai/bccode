@@ -31,7 +31,8 @@ func TestGLUserErrorCodesHaveEnglishRows(t *testing.T) {
 	if err != nil || len(files) == 0 {
 		t.Fatalf("glob generalledger sources: %v", err)
 	}
-	pattern := regexp.MustCompile(`\b(?:userError|fieldError)\("([a-z0-9_]+)"`)
+	pattern := regexp.MustCompile(`\b(?:userError|fieldError|conflictError|mappingRuleError)\("([a-z0-9_]+)"`)
+	constPattern := regexp.MustCompile(`\bcodeSource[A-Za-z]+\s*=\s*"([a-z0-9_]+)"`)
 	seen := map[string]bool{}
 	for _, file := range files {
 		if strings.HasSuffix(file, "_test.go") {
@@ -44,8 +45,11 @@ func TestGLUserErrorCodesHaveEnglishRows(t *testing.T) {
 		for _, m := range pattern.FindAllStringSubmatch(string(raw), -1) {
 			seen[m[1]] = true
 		}
+		for _, m := range constPattern.FindAllStringSubmatch(string(raw), -1) {
+			seen[m[1]] = true
+		}
 	}
-	for _, code := range []string{"vat_rate_invalid", "wht_payment_date_invalid", "reverse_reason_required", "reconcile_requires_posted"} {
+	for _, code := range []string{"vat_rate_invalid", "wht_payment_date_invalid", "reverse_reason_required", "reconcile_requires_posted", "mapping_rule_side_invalid", "mapping_source_doc_duplicate", "source_fiscal_year_closed"} {
 		if !seen[code] {
 			t.Fatalf("scanner missed %s — pattern out of date", code)
 		}

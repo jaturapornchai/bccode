@@ -285,7 +285,7 @@ func TestJournalBookInUseByMapping(t *testing.T) {
 	if book.ID != created.ID {
 		t.Fatalf("book id = %s, want %s", book.ID, created.ID)
 	}
-	mapping := f.run(Command{Resource: "mappings", Action: "create", Master: &Master{Code: "MAP-SALE-01", Name: "ขายวัสดุก่อสร้างเงินเชื่อ", BookCode: "สมุดขายส่ง", IsActive: true}})
+	mapping := f.run(Command{Resource: "mappings", Action: "create", Master: &Master{Code: "MAP-SALE-01", Name: "ขายวัสดุก่อสร้างเงินเชื่อ", SourceDoc: "sale-invoice", BookCode: "สมุดขายส่ง", IsActive: true, Rules: saleRules()}})
 	user := f.failCode(Command{Resource: "journal-books", Action: "delete", ID: book.ID, Version: book.Version}, "journal_book_in_use_delete", "code")
 	if user.HTTPStatus() != http.StatusConflict || !strings.Contains(user.Message, "รูปแบบการเชื่อมบัญชี") {
 		t.Fatalf("in-use by mapping: status %d message %q", user.HTTPStatus(), user.Message)

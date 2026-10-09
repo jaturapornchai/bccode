@@ -117,7 +117,21 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	}
 	defer tx.Rollback()
 
-	if err = lockCompany(ctx, tx, scope.Company); err != nil {
+	result, err := s.executeInTx(ctx, tx, scope, cmd)
+	if err != nil {
+		return Result{}, err
+	}
+	if err = tx.Commit(); err != nil {
+		return Result{}, err
+	}
+	return result, nil
+}
+
+// executeInTx runs one validated command in the caller's transaction: company lock, request and source
+// idempotency, the mutation and its audit event. The caller owns Commit/Rollback, so a module that posts on
+// behalf of its own document can make the document and the ledger commit or roll back together.
+func (s *PostgresStore) executeInTx(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command) (Result, error) {
+	if err := lockCompany(ctx, tx, scope.Company); err != nil {
 		return Result{}, err
 	}
 
@@ -165,9 +179,6 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		return Result{}, err
 	}
 
-	if err = tx.Commit(); err != nil {
-		return Result{}, err
-	}
 	return commandResult(cmd, event.Sequence, event.Changes), nil
 }
 
@@ -419,6 +430,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := s.validateMasterAccountGroup(ctx, tx, scope, &m); err != nil {
 			return nil, err
 		}
+		if err := s.validateMasterMapping(ctx, tx, scope, &m, ""); err != nil {
+			return nil, err
+		}
 		if cmd.Action == "lock" {
 			m.Locked = true
 		}
@@ -490,6 +504,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 			return nil, err
 		}
 		if err := s.validateMasterAccountGroup(ctx, tx, scope, &next); err != nil {
+			return nil, err
+		}
+		if err := s.validateMasterMapping(ctx, tx, scope, &next, old.ID); err != nil {
 			return nil, err
 		}
 		if kind == "account-groups" {

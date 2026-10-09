@@ -138,6 +138,7 @@ type Master struct {
 	CostAccount    string                `json:"costaccount,omitempty" bson:"costaccount,omitempty"`
 	RevenueAccount string                `json:"revenueaccount,omitempty" bson:"revenueaccount,omitempty"`
 	Rules          []MappingRule         `json:"rules,omitempty" bson:"rules,omitempty"`
+	SourceDoc      string                `json:"sourcedoc,omitempty" bson:"sourcedoc,omitempty"` // mappings: key ประเภทเอกสาร ERP ที่ลงบัญชีตามรูปแบบนี้ (doctype.PostingKeys)
 	AllocateMode   string                `json:"allocatemode,omitempty" bson:"allocatemode,omitempty"`
 	AllocateRules  []AllocationRule      `json:"allocaterules,omitempty" bson:"allocaterules,omitempty"`
 	StatementType  string                `json:"statementtype,omitempty" bson:"statementtype,omitempty"`
