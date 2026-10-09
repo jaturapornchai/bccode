@@ -369,6 +369,15 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/pending/system-product-inquiry": "package",
   // Settings screens opened from the menu bar (menu-bars.ts route nodes) that had no explicit icon yet.
   "/debtorgroup": "users",
+  // 2026-10-10: Champ "หน้าต่าง" and "ช่วยเหลือ" pending items
+  "/pending/window-font-screen": "settings",
+  "/pending/window-font-report": "fileText",
+  "/pending/window-font-report-title": "fileText",
+  "/pending/window-font-report-column": "table",
+  "/pending/window-font-report-detail": "list",
+  "/pending/window-font-report-company": "building",
+  "/pending/help-about": "bot",
+  "/pending/help-standard-software": "shield",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

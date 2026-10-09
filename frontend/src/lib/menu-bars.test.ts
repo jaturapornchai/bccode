@@ -28,6 +28,9 @@ const CHAMP_ONLY_PENDING_IDS = [
   // 2026-10-09 (S2): items of the Champ "จัดการระบบ" head BC has no screen for yet
   "system-journal-format", "system-work-date", "system-product-by-warehouse", "system-default-warehouse", "system-currency",
   "system-main-map", "system-credit-debit-reasons", "system-payment-terms", "system-customer-inquiry", "system-product-inquiry",
+  // 2026-10-10: items of the Champ "หน้าต่าง" and "ช่วยเหลือ" heads BC has no screen for yet
+  "window-font-screen", "window-font-report", "window-font-report-title", "window-font-report-column", "window-font-report-detail", "window-font-report-company",
+  "help-about", "help-standard-software",
 ];
 
 const CHAMP_LABELS: Record<string, string> = {
@@ -215,9 +218,22 @@ describe("Champ-style menu bar layout", () => {
   it("only binds system heads to functions the program already has", () => {
     const actions = MENU_BARS.flatMap((bar) => bar.nodes).filter((node) => node.kind === "action").map((node) => (node.kind === "action" ? node.id : ""));
     expect(actions).toEqual(["change-company", "change-password", "exit-program", "create-shortcut", "close-all-tabs", "open-manual"]);
-    for (const id of ["file", "window", "help"]) {
-      expect(menuBarItems(MENU_BARS.find((bar) => bar.id === id)?.nodes ?? [])).toEqual([]);
-    }
+    expect(menuBarItems(MENU_BARS.find((bar) => bar.id === "file")?.nodes ?? [])).toEqual([]);
+  });
+
+  it("lays out the หน้าต่าง head like Champ with the font submenu (2026-10-10)", () => {
+    expect(topLevelOutline("window")).toEqual(["ปิดหน้าจอทั้งหมด", "▸ เลือกตัวอักษรในการแสดงผลต่าง"]);
+    const fonts = MENU_BARS.find((bar) => bar.id === "window")?.nodes.find((node) => node.kind === "submenu" && node.id === "window-fonts");
+    expect(fonts?.kind === "submenu" ? menuBarItems(fonts.nodes).map((entry) => entry.id) : []).toEqual([
+      "window-font-screen", "window-font-report", "window-font-report-title",
+      "window-font-report-column", "window-font-report-detail", "window-font-report-company",
+    ]);
+  });
+
+  it("lays out the ช่วยเหลือ head like Champ (2026-10-10)", () => {
+    expect(topLevelOutline("help")).toEqual([
+      "About", "มาตรฐานซอฟท์แวร์ของกรมสรรพากร (Standard software)", "---", "คู่มือการใช้งาน",
+    ]);
   });
 
   it("lays out the ไฟล์ head like Champ, opening the user and permission settings screens (2026-10-09)", () => {

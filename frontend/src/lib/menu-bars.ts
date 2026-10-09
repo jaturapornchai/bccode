@@ -318,15 +318,27 @@ export const MENU_BARS: MenuBar[] = [
     action("create-shortcut", "menu_action_create_shortcut", "สร้าง Shortcut", "Create Shortcut"),
     items("system-customer-inquiry", "system-product-inquiry"),
   ),
-  // The remaining heads only expose functions the program already has (no new feature).
   bar(
     "window",
     label("menu_bar_window", "หน้าต่าง", "Window"),
     action("close-all-tabs", "menu_action_close_all_tabs", "ปิดหน้าจอทั้งหมด", "Close All Screens"),
+    submenu(
+      "window-fonts", "menu_sub_window_fonts", "เลือกตัวอักษรในการแสดงผลต่าง", "Choose Display Fonts",
+      ...items(
+        "window-font-screen",
+        "window-font-report",
+        "window-font-report-title",
+        "window-font-report-column",
+        "window-font-report-detail",
+        "window-font-report-company",
+      ),
+    ),
   ),
   bar(
     "help",
     label("menu_bar_help", "ช่วยเหลือ", "Help"),
+    items("help-about", "help-standard-software"),
+    DIVIDER,
     action("open-manual", "menu_action_open_manual", "คู่มือการใช้งาน", "User Manual"),
   ),
 ];

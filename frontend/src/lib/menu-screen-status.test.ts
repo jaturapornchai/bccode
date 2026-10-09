@@ -47,6 +47,15 @@ describe("menu screen availability", () => {
     "/pending/system-payment-terms",
     "/pending/system-customer-inquiry",
     "/pending/system-product-inquiry",
+    // 2026-10-10: Champ หน้าต่าง / ช่วยเหลือ items without a screen yet.
+    "/pending/window-font-screen",
+    "/pending/window-font-report",
+    "/pending/window-font-report-title",
+    "/pending/window-font-report-column",
+    "/pending/window-font-report-detail",
+    "/pending/window-font-report-company",
+    "/pending/help-about",
+    "/pending/help-standard-software",
   ];
 
   // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).
@@ -66,7 +75,7 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(230);
+    expect(items).toHaveLength(238);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();

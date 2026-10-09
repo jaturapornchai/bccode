@@ -725,6 +725,40 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
+  // 2026-10-10: หัว "หน้าต่าง" ของ Champ 5.5 — submenu "เลือกตัวอักษรในการแสดงผลต่าง" (6 รายการ /pending/*)
+  {
+    id: "window",
+    title: { key: "menu_bar_window", th: "หน้าต่าง", en: "Window" },
+    groups: [
+      {
+        id: "window-fonts",
+        title: ml("window-fonts", "เลือกตัวอักษรในการแสดงผลต่าง", "Choose Display Fonts"),
+        items: [
+          tx("window-font-screen", "เลือกตัวอักษรสำหรับหน้าจอทั่วไป", "Font for General Screens", "/pending/window-font-screen", "settings"),
+          tx("window-font-report", "เลือกตัวอักษรสำหรับรายงานทั่วไป", "Font for General Reports", "/pending/window-font-report", "settings"),
+          tx("window-font-report-title", "เลือกตัวอักษรสำหรับชื่อของรายงาน", "Font for Report Titles", "/pending/window-font-report-title", "settings"),
+          tx("window-font-report-column", "เลือกตัวอักษรสำหรับคอลัมน์ของรายงาน", "Font for Report Columns", "/pending/window-font-report-column", "settings"),
+          tx("window-font-report-detail", "เลือกตัวอักษรสำหรับรายการย่อยของรายงาน", "Font for Report Details", "/pending/window-font-report-detail", "settings"),
+          tx("window-font-report-company", "เลือกตัวอักษรสำหรับชื่อบริษัทในรายงาน", "Font for Company Name in Reports", "/pending/window-font-report-company", "settings"),
+        ],
+      },
+    ],
+  },
+  // 2026-10-10: หัว "ช่วยเหลือ" ของ Champ 5.5 — About และ มาตรฐานซอฟท์แวร์ของกรมสรรพากร (/pending/*)
+  {
+    id: "help",
+    title: { key: "menu_bar_help", th: "ช่วยเหลือ", en: "Help" },
+    groups: [
+      {
+        id: "help-about-group",
+        title: ml("help-about-group", "เกี่ยวกับโปรแกรม", "About Program"),
+        items: [
+          tx("help-about", "About", "About", "/pending/help-about", "settings"),
+          tx("help-standard-software", "มาตรฐานซอฟท์แวร์ของกรมสรรพากร (Standard software)", "Revenue Department Standard Software", "/pending/help-standard-software", "settings"),
+        ],
+      },
+    ],
+  },
 ];
 export function menuText(label: MenuLabel, language: LanguageCode, dictionary?: BackendLanguageDictionary): string {
   // Thai menu wording is approved in this catalog. A cached backend dictionary
