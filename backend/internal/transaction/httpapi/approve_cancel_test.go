@@ -256,9 +256,27 @@ func TestScreenAliasesForApprovalAndCancellation(t *testing.T) {
 		t.Error("purchase-order-approve:approve must grant approve on purchase-order")
 	}
 
+	// Dedicated approve screen with entry-only permission also grants approve
+	sessionApproveEntryOnly := glhttp.NewSessionAccess(gl.Scope{Holding: "H", Company: "C", Actor: "U"}, "purchase-order-approve")
+	if !allowsDocType(sessionApproveEntryOnly, po, actionApprove) {
+		t.Error("purchase-order-approve entry-only must grant approve on purchase-order")
+	}
+
+	// Update action on screen also grants approve
+	sessionUpdate := glhttp.NewSessionAccess(gl.Scope{Holding: "H", Company: "C", Actor: "U"}, "purchase-order", "purchase-order:update")
+	if !allowsDocType(sessionUpdate, po, actionApprove) {
+		t.Error("purchase-order:update must grant approve on purchase-order")
+	}
+
 	sessionCancel := glhttp.NewSessionAccess(gl.Scope{Holding: "H", Company: "C", Actor: "U"}, "purchase-requisition-cancel", "purchase-requisition-cancel:cancel")
 	if !allowsDocType(sessionCancel, pr, actionCancel) {
 		t.Error("purchase-requisition-cancel:cancel must grant cancel on purchase-requisition")
+	}
+
+	// Dedicated cancel screen with entry-only permission also grants cancel
+	sessionCancelEntryOnly := glhttp.NewSessionAccess(gl.Scope{Holding: "H", Company: "C", Actor: "U"}, "purchase-requisition-cancel")
+	if !allowsDocType(sessionCancelEntryOnly, pr, actionCancel) {
+		t.Error("purchase-requisition-cancel entry-only must grant cancel on purchase-requisition")
 	}
 
 	sessionSIR := glhttp.NewSessionAccess(gl.Scope{Holding: "H", Company: "C", Actor: "U"}, "stock-issue-request-cancel", "stock-issue-request-cancel:cancel")

@@ -56,7 +56,10 @@ export function isMenuBackendRetired(route: string): boolean {
   const clean = route.split("?")[0];
   if (isRetiredBackendScreen(clean)) return true;
   const op = getOperationsConfig(clean);
-  if (op) return !isApprovalApiReady(op.code);
+  if (op) {
+    if (op.code === "delivery_dates" || op.code === "purchase_receipt_dates") return false;
+    return !isApprovalApiReady(op.code);
+  }
   const setting = getSystemSettingConfig(clean);
   return Boolean(setting?.basePath && !POSTGRES_SETTING_BASE_PATHS.has(setting.basePath));
 }

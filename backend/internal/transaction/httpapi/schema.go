@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS erp_doc_events (
 	businesscode text NOT NULL,
 	transflag integer NOT NULL,
 	docno text NOT NULL,
-	action text NOT NULL CHECK (action IN ('approve','unapprove','cancel')),
+	action text NOT NULL CHECK (action IN ('approve','unapprove','cancel','update')),
 	from_status text NOT NULL DEFAULT '',
 	to_status text NOT NULL DEFAULT '',
 	reason text NOT NULL DEFAULT '',
@@ -230,6 +230,15 @@ CREATE TABLE IF NOT EXISTS erp_doc_events (
 	created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_erp_doc_events_doc ON erp_doc_events (businesscode, transflag, docno, id);
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT 1 FROM pg_constraint WHERE conname = 'erp_doc_events_action_check'
+	) THEN
+		ALTER TABLE erp_doc_events DROP CONSTRAINT erp_doc_events_action_check;
+		ALTER TABLE erp_doc_events ADD CONSTRAINT erp_doc_events_action_check CHECK (action IN ('approve','unapprove','cancel','update')) NOT VALID;
+	END IF;
+END $$;
 `
 
 var (

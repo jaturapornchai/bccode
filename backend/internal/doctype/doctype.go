@@ -163,6 +163,8 @@ var screenAliases = map[string][]string{
 	"sale-order":             {"sale-order-approve", "sale-order-cancel"},
 	"stock-issue-request":    {"stock-issue-request-cancel"},
 	"stock-transfer-request": {"stock-transfer-request-cancel"},
+	"sale-invoice":           {"sale-delivery-date"},
+	"purchase":               {"purchase-receipt-date-adjust"},
 }
 
 // Screens คืน menu id ที่เปิดประเภทเอกสารนี้ได้ (ตัวแรกคือเมนูหลัก) ถ้าไม่รู้จัก key คืน nil

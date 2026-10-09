@@ -4,6 +4,8 @@ import {
   unapproveErpDoc,
   cancelErpDoc,
   approveBatchErpDocs,
+  unapproveBatchErpDocs,
+  cancelBatchErpDocs,
   type BatchApproveItemResult,
 } from "./erp-transaction";
 import { catalogText } from "@/lib/catalog-text";
@@ -156,6 +158,14 @@ export const OPERATIONS_CONFIGS: OperationsConfig[] = [
   },
 
   // --- 3. ภาพรวมและจัดการจัดซื้อ (Procurement Intelligence) ---
+  {
+    route: "/procurement/delivery-dates",
+    code: "purchase_receipt_dates",
+    category: "procurement",
+    title: { th: "ปรับปรุงวันที่รับสินค้าจากเจ้าหนี้", en: "Adjust Supplier Receipt Date" },
+    description: { th: "ปรับปรุงวันที่รับสินค้าหรือวันที่วางบิล และคำนวณวันครบกำหนดชำระเงินใหม่", en: "Adjust receipt/billing date and recalculate payment due dates" },
+    primaryActionLabel: { th: "บันทึกการปรับวันที่", en: "Save Scheduled Dates" },
+  },
   {
     route: "/procurement/price-comparison",
     code: "price_comparison",
@@ -441,6 +451,58 @@ export async function submitBatchApprove(params: {
     approved: res.approved ?? 0,
     total: res.total ?? params.docnos.length,
     messageKey: res.success ? "approve_success" : res.message || "action_failed",
+    detail: res.detail,
+    items: res.items,
+  };
+}
+
+export async function submitBatchUnapprove(params: {
+  code: string;
+  docnos: string[];
+  comment?: string;
+  language?: string;
+}): Promise<{
+  success: boolean;
+  unapproved: number;
+  total: number;
+  messageKey: string;
+  detail?: string;
+  items?: BatchApproveItemResult[];
+}> {
+  const meta = APPROVAL_OPERATIONS[params.code];
+  if (!meta) return { success: false, unapproved: 0, total: 0, messageKey: "approval_not_available" };
+  const res = await unapproveBatchErpDocs(meta.module, params.docnos, params.comment, params.language || "th");
+  return {
+    success: res.success,
+    unapproved: res.unapproved ?? 0,
+    total: res.total ?? params.docnos.length,
+    messageKey: res.success ? "unapprove_success" : res.message || "action_failed",
+    detail: res.detail,
+    items: res.items,
+  };
+}
+
+export async function submitBatchCancel(params: {
+  code: string;
+  docnos: string[];
+  comment: string;
+  language?: string;
+}): Promise<{
+  success: boolean;
+  cancelled: number;
+  total: number;
+  messageKey: string;
+  detail?: string;
+  items?: BatchApproveItemResult[];
+}> {
+  const meta = APPROVAL_OPERATIONS[params.code];
+  if (!meta) return { success: false, cancelled: 0, total: 0, messageKey: "approval_not_available" };
+  const res = await cancelBatchErpDocs(meta.module, params.docnos, params.comment, params.language || "th");
+  return {
+    success: res.success,
+    cancelled: res.cancelled ?? 0,
+    total: res.total ?? params.docnos.length,
+    messageKey: res.success ? "cancel_success" : res.message || "action_failed",
     detail: res.detail,
     items: res.items,
   };

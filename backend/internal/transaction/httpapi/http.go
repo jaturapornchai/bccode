@@ -38,6 +38,8 @@ func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 func (h *Http) RegisterHttp() {
 	h.ms.GET("/transaction/:module/list", h.list)
 	h.ms.POST("/transaction/:module/approve-batch", h.approveBatch)
+	h.ms.POST("/transaction/:module/unapprove-batch", h.unapproveBatch)
+	h.ms.POST("/transaction/:module/cancel-batch", h.cancelBatch)
 	h.ms.GET("/transaction/:module/:id", h.get)
 	h.ms.POST("/transaction/:module", h.create)
 	h.ms.PUT("/transaction/:module/:id", h.update)
@@ -47,6 +49,9 @@ func (h *Http) RegisterHttp() {
 	h.ms.POST("/transaction/:module/:id/unapprove", h.unapprove)
 	h.ms.POST("/transaction/:module/:id/cancel", h.cancel)
 	h.ms.GET("/transaction/:module/:id/events", h.getEvents)
+
+	h.ms.GET("/transaction/:module/delivery-dates", h.listDeliveryDates)
+	h.ms.POST("/transaction/:module/delivery-dates", h.saveDeliveryDates)
 }
 
 // การกระทำที่ตรวจสิทธิ์: "" = เข้าจอ/อ่าน, อื่นๆ ต้องมีทั้ง <เมนู> และ <เมนู>:<action> (กฎเดียวกับ GL)
@@ -127,9 +132,26 @@ func allowsDocType(session menuAccess, dt doctype.DocType, action string) bool {
 			if action == actionCancel && session.Allows(screen, actionDelete) {
 				return true
 			}
+			if action == actionApprove && session.Allows(screen, actionUpdate) {
+				return true
+			}
+			if action == actionApprove && isApproveScreen(screen) && session.Allows(screen, "") {
+				return true
+			}
+			if action == actionCancel && isCancelScreen(screen) && session.Allows(screen, "") {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+func isApproveScreen(screen string) bool {
+	return strings.HasSuffix(screen, "-approve") || strings.Contains(screen, "approve")
+}
+
+func isCancelScreen(screen string) bool {
+	return strings.HasSuffix(screen, "-cancel") || strings.Contains(screen, "cancel")
 }
 
 func requestLanguage(request microservice.IContext) string {
@@ -335,8 +357,17 @@ type reasonPayload struct {
 	Reason string `json:"reason"`
 }
 
-type batchApprovePayload struct {
-	IDs []string `json:"ids"`
+type batchActionPayload struct {
+	IDs    []string `json:"ids"`
+	DocNos []string `json:"docnos"`
+	Reason string   `json:"reason"`
+}
+
+func (p *batchActionPayload) docIDs() []string {
+	if len(p.IDs) > 0 {
+		return p.IDs
+	}
+	return p.DocNos
 }
 
 func (h *Http) approve(request microservice.IContext) error {
@@ -419,14 +450,62 @@ func (h *Http) approveBatch(request microservice.IContext) error {
 		return nil
 	}
 
-	var payload batchApprovePayload
+	var payload batchActionPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
 		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
 	}
 
-	results, err := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.IDs)
+	results, err := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs())
 	if err != nil {
 		return docFailure(request, err, "", "อนุมัติเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, BatchApproveResponse{
+		Success: true,
+		Data:    results,
+	})
+}
+
+func (h *Http) unapproveBatch(request microservice.IContext) error {
+	access := h.authorize(request, actionApprove)
+	if access == nil {
+		return nil
+	}
+
+	var payload batchActionPayload
+	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
+		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+	}
+
+	results, err := h.store.UnapproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), payload.Reason)
+	if err != nil {
+		return docFailure(request, err, "", "ยกเลิกการอนุมัติเอกสารไม่สำเร็จ")
+	}
+
+	return success(request, BatchApproveResponse{
+		Success: true,
+		Data:    results,
+	})
+}
+
+func (h *Http) cancelBatch(request microservice.IContext) error {
+	access := h.authorize(request, actionCancel)
+	if access == nil {
+		return nil
+	}
+
+	var payload batchActionPayload
+	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
+		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+	}
+	reason := strings.TrimSpace(payload.Reason)
+	if reason == "" {
+		return fail(request, http.StatusBadRequest, "erp_err_cancel_reason_required")
+	}
+
+	results, err := h.store.CancelBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), reason)
+	if err != nil {
+		return docFailure(request, err, "", "ยกเลิกเอกสารไม่สำเร็จ")
 	}
 
 	return success(request, BatchApproveResponse{

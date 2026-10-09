@@ -12,8 +12,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
-  it("registers all 22 operations workflow routes across 6 categories", () => {
-    expect(OPERATIONS_CONFIGS.length).toBe(22);
+  it("registers all 23 operations workflow routes across 6 categories", () => {
+    expect(OPERATIONS_CONFIGS.length).toBe(23);
 
     // Approvals
     expect(isOperationsRoute("/procurement/requisition-approval")).toBe(true);
@@ -35,6 +35,7 @@ describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
     expect(isOperationsRoute("/sales/delivery-dates")).toBe(true);
 
     // Procurement
+    expect(isOperationsRoute("/procurement/delivery-dates")).toBe(true);
     expect(isOperationsRoute("/procurement/price-comparison")).toBe(true);
     expect(isOperationsRoute("/procurement/generate-orders")).toBe(true);
 

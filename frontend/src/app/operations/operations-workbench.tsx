@@ -14,11 +14,14 @@ import {
   fetchPendingApprovals,
   submitApprovalAction,
   submitBatchApprove,
+  submitBatchUnapprove,
+  submitBatchCancel,
   type PendingApprovalDoc,
 } from "@/lib/erp-operations";
 import { getAuthSession } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
 import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
+import { DeliveryDateOverhaulScreen } from "@/components/delivery-date-overhaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -69,6 +72,32 @@ function messageText(key: string, tr: BackendTextFn): string {
 
 export function OperationsWorkbench({
   route,
+  embedded = false,
+  language = "th",
+  holdingcode = "",
+}: OperationsWorkbenchProps) {
+  const config = getOperationsConfig(route);
+  if (config?.code === "delivery_dates" || config?.code === "purchase_receipt_dates") {
+    return (
+      <DeliveryDateOverhaulScreen
+        mode={config.code === "purchase_receipt_dates" ? "vendor" : "customer"}
+        language={language}
+        holdingcode={holdingcode}
+      />
+    );
+  }
+  return (
+    <OperationsApprovalWorkbench
+      route={route}
+      embedded={embedded}
+      language={language}
+      holdingcode={holdingcode}
+    />
+  );
+}
+
+function OperationsApprovalWorkbench({
+  route,
   embedded: _embedded = false,
   language = "th",
   holdingcode = "",
@@ -100,6 +129,7 @@ export function OperationsWorkbench({
     docno: string;
     action: "approve" | "unapprove" | "cancel";
   } | null>(null);
+  const [pendingBatchAction, setPendingBatchAction] = useState<"unapprove" | "cancel" | null>(null);
   const [historyDocNo, setHistoryDocNo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -171,6 +201,57 @@ export function OperationsWorkbench({
           .replace("{1}", String(result.total)),
       );
     }
+    setSelectedDocnos(new Set());
+    await loadDocs();
+  }
+
+  async function confirmBatchAction() {
+    if (!pendingBatchAction || selectedDocnos.size === 0) return;
+    const docnos = Array.from(selectedDocnos);
+    const reason = reasonInput.trim();
+    setSubmitting(true);
+    setActionDetail(null);
+    if (pendingBatchAction === "unapprove") {
+      const result = await submitBatchUnapprove({
+        code: reportCode,
+        docnos,
+        comment: reason,
+        language,
+      });
+      setSubmitting(false);
+      setNoticeKey(result.messageKey);
+      setNoticeOk(result.success);
+      if (result.detail) {
+        setActionDetail(result.detail);
+      } else if (result.success) {
+        setActionDetail(
+          tr("ops_batch_unapprove_summary", "ยกเลิกการอนุมัติสำเร็จ {0} จาก {1} รายการ")
+            .replace("{0}", String(result.unapproved))
+            .replace("{1}", String(result.total)),
+        );
+      }
+    } else {
+      const result = await submitBatchCancel({
+        code: reportCode,
+        docnos,
+        comment: reason,
+        language,
+      });
+      setSubmitting(false);
+      setNoticeKey(result.messageKey);
+      setNoticeOk(result.success);
+      if (result.detail) {
+        setActionDetail(result.detail);
+      } else if (result.success) {
+        setActionDetail(
+          tr("ops_batch_cancel_summary", "ยกเลิกเอกสารสำเร็จ {0} จาก {1} รายการ")
+            .replace("{0}", String(result.cancelled))
+            .replace("{1}", String(result.total)),
+        );
+      }
+    }
+    setPendingBatchAction(null);
+    setReasonInput("");
     setSelectedDocnos(new Set());
     await loadDocs();
   }
@@ -252,6 +333,36 @@ export function OperationsWorkbench({
             >
               <CheckCircle className="h-4 w-4" />
               {tr("ops_batch_approve", "อนุมัติรายการที่เลือก")} ({selectedDocnos.size})
+            </Button>
+          )}
+
+          {actionType === "unapprove" && selectedDocnos.size > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPendingBatchAction("unapprove");
+                setReasonInput("");
+              }}
+              disabled={submitting || loading}
+              className="gap-2 min-h-[44px] text-amber-600 hover:text-amber-700 border-amber-300 dark:border-amber-700"
+            >
+              <Undo2 className="h-4 w-4" />
+              {tr("ops_batch_unapprove", "ยกเลิกการอนุมัติที่เลือก")} ({selectedDocnos.size})
+            </Button>
+          )}
+
+          {actionType === "cancel" && selectedDocnos.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setPendingBatchAction("cancel");
+                setReasonInput("");
+              }}
+              disabled={submitting || loading}
+              className="gap-2 min-h-[44px]"
+            >
+              <Ban className="h-4 w-4" />
+              {tr("ops_batch_cancel", "ยกเลิกเอกสารที่เลือก")} ({selectedDocnos.size})
             </Button>
           )}
 
@@ -548,6 +659,55 @@ export function OperationsWorkbench({
             </table>
           </div>
         </Card>
+      )}
+
+      {/* Dialog ยืนยันการทำรายการเป็นชุด (ยกเลิกการอนุมัติ / ยกเลิกเอกสาร) */}
+      {pendingBatchAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-bold">
+              {pendingBatchAction === "cancel"
+                ? tr("ops_confirm_batch_cancel", "ยืนยันยกเลิกเอกสารรายการที่เลือก")
+                : tr("ops_confirm_batch_unapprove", "ยืนยันยกเลิกการอนุมัติรายการที่เลือก")}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {tr("ops_batch_count_hint", "จำนวนที่เลือก {0} รายการ").replace("{0}", String(selectedDocnos.size))}
+            </p>
+            <div className="mt-4">
+              <label className="text-xs font-semibold text-foreground">
+                {tr("ops_reason_label", "เหตุผล")}
+                {pendingBatchAction === "cancel" && <span className="text-destructive"> *</span>}
+              </label>
+              <Input
+                value={reasonInput}
+                onChange={(e) => setReasonInput(e.target.value)}
+                placeholder={tr("ops_reason_placeholder", "ระบุเหตุผล...")}
+                className="mt-1 text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPendingBatchAction(null);
+                  setReasonInput("");
+                }}
+                disabled={submitting}
+              >
+                {tr("cancel", "ยกเลิก")}
+              </Button>
+              <Button
+                variant={pendingBatchAction === "cancel" ? "destructive" : "default"}
+                disabled={submitting || (pendingBatchAction === "cancel" && !reasonInput.trim())}
+                onClick={() => void confirmBatchAction()}
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                {tr("confirm", "ยืนยัน")}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Dialog ประวัติการอนุมัติ/ยกเลิก */}

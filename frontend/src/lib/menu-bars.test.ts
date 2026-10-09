@@ -23,7 +23,7 @@ const CHAMP_ONLY_PENDING_IDS = [
   "billing-note-auto", "billing-note-auto-print", "customer-label-print",
   "product-status-report", "product-price-setting-report",
   // 2026-10-09 (S1): items the transaction heads of the real Champ 5.5 dropdowns have and BC lacked
-  "purchase-receipt-date-adjust", "sale-reservation", "sale-dispatch", "ap-payment-prepare", "cheque-issued-prepare",
+  "sale-reservation", "sale-dispatch", "ap-payment-prepare", "cheque-issued-prepare",
   "cheque-movement", "bank-service", "product-supplier-update", "stock-count-handheld", "transaction-lock",
   // 2026-10-09 (S2): items of the Champ "จัดการระบบ" head BC has no screen for yet
   "system-journal-format", "system-work-date", "system-product-by-warehouse", "system-default-warehouse", "system-currency",
@@ -174,6 +174,10 @@ describe("Champ-style menu bar layout", () => {
       expect(item?.route, id).toBe(`/pending/${id}`);
       expect(isMenuScreenPending(item?.route ?? ""), id).toBe(true);
     }
+    const adj = items.get("purchase-receipt-date-adjust");
+    expect(adj?.route).toBe("/procurement/delivery-dates");
+    expect(isMenuScreenPending("/procurement/delivery-dates")).toBe(false);
+
     // ยกเลิกเอกสารที่ผ่านรายการแล้ว: Champ 5.5 dropdown "บัญชี" มีเป็นเมนูของตัวเองต่อจาก "ผ่านรายการ"
     // (docs/kms/champ/11-menu-parity-audit-2026-10-09.md) → เปิดจอกลับรายการ (GLJournals mode=reverse) ที่ route เดิม
     const unpost = items.get("gl-unpost");

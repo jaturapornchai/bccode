@@ -226,7 +226,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("purchase-landed-cost", "บันทึกต้นทุนแฝง (Weight cost)", "Landed Cost Allocation", "/transaction/landedcost", "transaction"),
           tx("purchase-receipt-adjustment", "ปรับปรุงใบรับสินค้า", "Adjust Purchase Receipt", "/transaction/purchasereceiptadjustment", "transaction"),
-          tx("purchase-receipt-date-adjust", "ปรับปรุงวันที่รับสินค้าจากเจ้าหนี้", "Adjust Supplier Receipt Date", "/pending/purchase-receipt-date-adjust"),
+          tx("purchase-receipt-date-adjust", "ปรับปรุงวันที่รับสินค้าจากเจ้าหนี้", "Adjust Supplier Receipt Date", "/procurement/delivery-dates", "transaction"),
         ],
       },
       {

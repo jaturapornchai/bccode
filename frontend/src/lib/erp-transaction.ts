@@ -961,6 +961,80 @@ export async function approveBatchErpDocs(
   }
 }
 
+export async function unapproveBatchErpDocs(
+  module: string,
+  docnos: string[],
+  reason?: string,
+  language = "th",
+): Promise<{
+  success: boolean;
+  items?: BatchApproveItemResult[];
+  total?: number;
+  unapproved?: number;
+  message?: string;
+  detail?: string;
+}> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/unapprove-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ docnos, reason }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    const items: BatchApproveItemResult[] = Array.isArray(data?.data) ? data.data : (data?.data?.items ?? []);
+    return {
+      success: true,
+      items,
+      total: items.length || docnos.length,
+      unapproved: items.filter((item) => item.success).length,
+      message: "unapprove_success",
+    };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
+export async function cancelBatchErpDocs(
+  module: string,
+  docnos: string[],
+  reason: string,
+  language = "th",
+): Promise<{
+  success: boolean;
+  items?: BatchApproveItemResult[];
+  total?: number;
+  cancelled?: number;
+  message?: string;
+  detail?: string;
+}> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/cancel-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ docnos, reason }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    const items: BatchApproveItemResult[] = Array.isArray(data?.data) ? data.data : (data?.data?.items ?? []);
+    return {
+      success: true,
+      items,
+      total: items.length || docnos.length,
+      cancelled: items.filter((item) => item.success).length,
+      message: "cancel_success",
+    };
+  } catch {
+    return { success: false, message: "connection_error" };
+  }
+}
+
 export async function fetchErpDocEvents(
   module: string,
   id: string,
@@ -979,5 +1053,66 @@ export async function fetchErpDocEvents(
     return { success: true, events: list };
   } catch {
     return { success: false, events: [], error: "connection_error" };
+  }
+}
+
+export type DeliveryDateItem = {
+  docno: string;
+  docdate: string;
+  custcode: string;
+  custname: string;
+  credit_of_bill: number;
+  old_duedate: string;
+  delivery_date: string;
+  credit_delivery: number;
+  new_duedate: string;
+};
+
+export async function fetchDeliveryDateInvoices(
+  module: string,
+  partner = "",
+  language = "th",
+): Promise<{ success: boolean; items: DeliveryDateItem[]; error?: string }> {
+  try {
+    const query = partner ? `?partner=${encodeURIComponent(partner)}` : "";
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/delivery-dates${query}`, {
+      headers: languageHeader(language),
+    });
+    if (!res.ok) {
+      return { success: false, items: [], error: statusErrorKey(res.status, "load_failed", "erp_err_read_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, items: [], error: "load_failed" };
+    const list = Array.isArray(data?.data) ? data.data : [];
+    return { success: true, items: list };
+  } catch {
+    return { success: false, items: [], error: "connection_error" };
+  }
+}
+
+export async function saveDeliveryDates(
+  module: string,
+  items: Array<{
+    docno: string;
+    delivery_date: string;
+    credit_delivery: number;
+    new_duedate: string;
+  }>,
+  language = "th",
+): Promise<{ success: boolean; count?: number; message?: string; detail?: string }> {
+  try {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/delivery-dates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) {
+      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
+    }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    return { success: true, count: data?.count ?? items.length, message: "ops_save_delivery_dates_success" };
+  } catch {
+    return { success: false, message: "connection_error" };
   }
 }

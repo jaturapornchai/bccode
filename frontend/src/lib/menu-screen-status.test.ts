@@ -26,7 +26,6 @@ describe("menu screen availability", () => {
     "/pending/customer-label-print",
     "/pending/product-status-report", "/pending/product-price-setting-report",
     // 2026-10-09 (S1): Champ items of the transaction heads without a screen yet.
-    "/pending/purchase-receipt-date-adjust",
     "/pending/sale-reservation",
     "/pending/sale-dispatch",
     "/pending/ap-payment-prepare",

@@ -347,7 +347,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/pending/customer-label-print": "print",
   "/pending/product-status-report": "list",
   "/pending/product-price-setting-report": "tag",
-  "/pending/purchase-receipt-date-adjust": "calendarCheck",
+  "/procurement/delivery-dates": "calendarCheck",
   "/pending/sale-reservation": "fileText",
   "/pending/sale-dispatch": "truck",
   "/pending/ap-payment-prepare": "payment",

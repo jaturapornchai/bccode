@@ -522,6 +522,70 @@ func (s *Store) ApproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope
 	return results, nil
 }
 
+// UnapproveBatchDocs ยกเลิกการอนุมัติเอกสารหลายใบพร้อมกันแบบทีละใบ
+func (s *Store) UnapproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason string) ([]BatchApproveItemResult, error) {
+	results := make([]BatchApproveItemResult, 0, len(ids))
+	for _, id := range ids {
+		trimmedID := strings.TrimSpace(id)
+		if trimmedID == "" {
+			continue
+		}
+		_, err := s.UnapproveDoc(ctx, db, scope, dt, trimmedID, reason)
+		if err == nil {
+			results = append(results, BatchApproveItemResult{
+				ID:      trimmedID,
+				Success: true,
+			})
+		} else {
+			code := "error"
+			msg := err.Error()
+			if uerr, isUser := gl.AsUserError(err); isUser {
+				code = uerr.Code
+				msg = uerr.Message
+			}
+			results = append(results, BatchApproveItemResult{
+				ID:      trimmedID,
+				Success: false,
+				Code:    code,
+				Message: msg,
+			})
+		}
+	}
+	return results, nil
+}
+
+// CancelBatchDocs ยกเลิกเอกสารหลายใบพร้อมกันแบบทีละใบ (คืนค่าสต็อกและกลับรายการบัญชีถ้ามี)
+func (s *Store) CancelBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason string) ([]BatchApproveItemResult, error) {
+	results := make([]BatchApproveItemResult, 0, len(ids))
+	for _, id := range ids {
+		trimmedID := strings.TrimSpace(id)
+		if trimmedID == "" {
+			continue
+		}
+		_, err := s.CancelDoc(ctx, db, scope, dt, trimmedID, reason)
+		if err == nil {
+			results = append(results, BatchApproveItemResult{
+				ID:      trimmedID,
+				Success: true,
+			})
+		} else {
+			code := "error"
+			msg := err.Error()
+			if uerr, isUser := gl.AsUserError(err); isUser {
+				code = uerr.Code
+				msg = uerr.Message
+			}
+			results = append(results, BatchApproveItemResult{
+				ID:      trimmedID,
+				Success: false,
+				Code:    code,
+				Message: msg,
+			})
+		}
+	}
+	return results, nil
+}
+
 // GetDocEvents ดึงประวัติการอนุมัติ/ยกเลิกของเอกสาร
 func (s *Store) GetDocEvents(ctx context.Context, db *sql.DB, company string, transflag int, docIdOrNo string) ([]ErpDocEvent, error) {
 	doc, err := s.GetDoc(ctx, db, company, transflag, docIdOrNo)
