@@ -77,7 +77,9 @@ describe("menu language labels", () => {
     // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
     // +6 เมนูหลักแบบ Champ (รอพัฒนา)
     // +1 กำหนดรหัสต่างๆ (แผนก/โครงการ) ใต้บัญชีแยกประเภท: ทะเบียนแผนกและโครงการ
-    expect(items).toHaveLength(204);
+    // +16 รายการที่หัวเมนูธุรกรรมของ Champ 5.5 มีแต่ BC ขาด (S1, 2026-10-09): 5 จอยกเลิก/อนุมัติ + 10 รอพัฒนา + gl-unpost
+    // +10 รายการหัว "จัดการระบบ" ของ Champ ที่ BC ยังไม่มีจอ (S2, 2026-10-09)
+    expect(items).toHaveLength(230);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
     for (const previous of baseline) {
@@ -93,7 +95,7 @@ describe("menu language labels", () => {
       "cheque-redeposit", "cheque-received-cancel", "cheque-discount",
     ]);
     expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
-      "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
+      "cheque-issued", "cheque-issued-prepare", "cheque-issued-clear", "cheque-issued-cancel",
     ]);
     expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
   });
@@ -208,13 +210,15 @@ describe("menu language labels", () => {
 
     expect(transactions?.items.map((item) => item.id).slice(0, 4)).toEqual([
       "purchase-order",
+      "purchase-order-approve",
       "purchase-order-cancel",
       "purchase-partial",
-      "accrual-receive",
     ]);
     expect(procurement?.items.map((item) => item.id)).toEqual([
       "purchase-requisition",
+      "purchase-requisition-cancel",
       "purchase-requisition-approve",
+      "purchase-requisition-approve-cancel",
       "rfq",
       "rfq-price-table",
       "purchase-order-generate",
@@ -262,6 +266,7 @@ describe("menu language labels", () => {
 
   it("structures menus into the 8 Champ modules with tax inside General Ledger (2026-09-23)", () => {
     const sectionIds = MENU_SECTIONS.map((s) => s.id);
+    // + "system" (2026-10-09): หัว "จัดการระบบ" ของ Champ เฉพาะรายการที่ยังไม่มีจอ
     expect(sectionIds).toEqual([
       "po",
       "bill",
@@ -271,6 +276,7 @@ describe("menu language labels", () => {
       "ic",
       "fa",
       "gl",
+      "system",
     ]);
 
     const glSection = MENU_SECTIONS.find((s) => s.id === "gl");

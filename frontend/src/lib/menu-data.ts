@@ -94,7 +94,7 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "gl-budget": ["กำหนดงบประมาณประจำปี", "Budgeting"],
   "gl-dimensions": ["กำหนดรหัสแผนก", "กำหนดรหัสโครงการ", "รหัสแผนก", "รหัสโครงการ", "Department", "Project"],
   "gl-opening-balance": ["บันทึกข้อมูลรายวันยกมา", "ยอดยกมาทางบัญชี"],
-  // Champ แยกเมนู "ยกเลิกเอกสารที่ผ่านรายการแล้ว" แต่ BC ยุบเป็นแท็บในจอผ่านรายการ (AGENTS.md กฎ Champ parity ข้อ 1) — ชื่อเดิมค้นหาเจอที่นี่
+  // "ยกเลิกเอกสารที่ผ่านรายการแล้ว" เป็นเมนูแยก gl-unpost ตาม Champ 5501 (2026-10-09); ชื่อนี้ยังค้นหาเจอที่ gl-post ด้วย (แท็บกลับรายการในจอผ่านรายการ)
   "gl-post": ["ผ่านรายการบัญชี", "posting", "ผ่านรายการและยกเลิก", "ยกเลิกเอกสารที่ผ่านรายการแล้ว", "ยกเลิกการผ่านรายการบัญชี", "unpost", "กลับรายการ"],
   "gl-product-account-groups": ["กลุ่มบัญชีสินค้า"],
   "gl-journals": ["สมุดรายวันขาย", "สมุดรายวันซื้อ", "สมุดรายวันรับเงิน", "สมุดรายวันจ่ายเงิน", "สมุดรายวันทั่วไป", "UV", "SV", "RV", "PV", "JV", "บันทึกสมุดรายวัน", "รายวัน", "สมุดรายวัน"],
@@ -187,6 +187,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "menu_purchase_expense_transactions", th: "งานซื้อสินค้า", en: "Purchase Transactions" },
         items: [
           tx("purchase-order", "บันทึกใบสั่งซื้อสินค้า", "Purchase Order", "/transaction/purchaseorder"),
+          tx("purchase-order-approve", "อนุมัติใบสั่งซื้อสินค้า", "Approve Purchase Order", "/procurement/order-approval", "approval"),
           tx("purchase-order-cancel", "ยกเลิกใบสั่งซื้อสินค้า", "Cancel Purchase Order", "/procurement/order-cancellation", "approval"),
           tx("purchase-partial", "บันทึกรับสินค้าจากการซื้อ", "Gradual Receipt", "/transaction/purchasepartial"),
           tx("accrual-receive", "บันทึกตั้งหนี้จากการซื้อ", "Set Debt from Receipt", "/transaction/accrualreceive"),
@@ -202,7 +203,9 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "menu_procurement_operations", th: "ใบเสนอซื้อและสืบราคา", en: "Requisitions & Price Inquiry" },
         items: [
           tx("purchase-requisition", "บันทึกใบเสนอซื้อสินค้า", "Purchase Requisition", "/transaction/purchaserequisition"),
+          tx("purchase-requisition-cancel", "ยกเลิกใบเสนอซื้อสินค้า", "Cancel Purchase Requisition", "/procurement/requisition-cancellation", "approval"),
           tx("purchase-requisition-approve", "บันทึกอนุมัติใบเสนอซื้อสินค้า", "Approve Purchase Requisition", "/procurement/requisition-approval", "approval"),
+          tx("purchase-requisition-approve-cancel", "ยกเลิกใบอนุมัติเสนอซื้อสินค้า", "Cancel Requisition Approval", "/procurement/requisition-approval-cancellation", "approval", "purchase_requisition_approval_cancel"),
           tx("rfq", "บันทึกใบสืบราคาสินค้ารวม", "Price Inquiry & Negotiation", "/transaction/rfq"),
           tx("rfq-price-table", "บันทึกใบตารางราคารวม", "Consolidated Price Table", "/transaction/rfqpricetable"),
           tx("purchase-order-generate", "ประมวลผลใบสั่งซื้อสินค้าอัตโนมัติ", "Generate Purchase Orders", "/procurement/generate-orders", "transaction"),
@@ -223,6 +226,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("purchase-landed-cost", "บันทึกต้นทุนแฝง (Weight cost)", "Landed Cost Allocation", "/transaction/landedcost", "transaction"),
           tx("purchase-receipt-adjustment", "ปรับปรุงใบรับสินค้า", "Adjust Purchase Receipt", "/transaction/purchasereceiptadjustment", "transaction"),
+          tx("purchase-receipt-date-adjust", "ปรับปรุงวันที่รับสินค้าจากเจ้าหนี้", "Adjust Supplier Receipt Date", "/pending/purchase-receipt-date-adjust"),
         ],
       },
       {
@@ -248,9 +252,11 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("quotation", "บันทึกใบเสนอราคาสินค้า", "Quotation", "/transaction/quotation"),
           tx("quotation-approve", "อนุมัติใบเสนอราคาสินค้า", "Approve Quotation", "/sales/quotation-approval", "approval"),
           tx("quotation-cancel", "ยกเลิกใบเสนอราคาสินค้า", "Cancel Quotation", "/sales/quotation-cancellation", "approval"),
+          tx("sale-reservation", "ใบสั่งจองสินค้า", "Sales Reservation", "/pending/sale-reservation"),
           tx("sale-order", "ใบสั่งขายสินค้า", "Sale Order / Reservation", "/transaction/saleorder"),
           tx("sale-order-approve", "อนุมัติใบสั่งขาย/สั่งจองสินค้า", "Approve Sales Order / Reservation", "/sales/order-approval", "approval"),
           tx("sale-order-cancel", "ยกเลิกใบสั่งขายสินค้า", "Cancel Sales Order / Reservation", "/sales/order-cancellation", "approval"),
+          tx("sale-dispatch", "ใบสั่งจ่ายสินค้า", "Goods Dispatch Order", "/pending/sale-dispatch", "transaction", "sale_dispatch_order"),
           tx("sale-reservation-flow", "Flow ใบสั่งจองสินค้า", "Sales Reservation Tracking", "/sales/reservations", "transaction"),
           tx("sale-order-date-check", "ตรวจสอบวันที่ใบสั่งขาย/สั่งจองสินค้า", "Check Sales Order / Reservation Dates", "/sales/order-dates", "transaction"),
         ],
@@ -310,6 +316,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("ap-other-debt", "บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ", "Other Payables", "/transaction/apotherdebt", "finance"),
           tx("ap-billing-receipt", "บันทึกใบรับวางบิล", "Supplier Billing Receipt", "/transaction/apbillingreceipt", "finance"),
+          tx("ap-payment-prepare", "บันทึกเตรียมจ่ายชำระหนี้", "Prepare Debt Payment", "/pending/ap-payment-prepare", "finance"),
           tx("pay", "บันทึกจ่ายชำระหนี้", "Pay", "/transaction/pay", "finance"),
           tx("ap-bad-debt", "บันทึกตัดหนี้สูญ(เจ้าหนี้)", "Write Off Payables", "/transaction/apbaddebt", "finance"),
         ],
@@ -405,6 +412,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("cheques-issued", "เช็คจ่าย", "Issued Cheques"),
         items: [
           tx("cheque-issued", "บันทึกเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
+          tx("cheque-issued-prepare", "บันทึกเช็คเตรียมจ่าย", "Prepare Cheques for Payment", "/pending/cheque-issued-prepare", "finance", "cheque_issue_prepare"),
           tx("cheque-issued-clear", "บันทึกเช็คจ่ายผ่าน", "Clear Issued Cheques", "/banking/cheques/issued-clear", "finance"),
           tx("cheque-issued-cancel", "บันทึกยกเลิกเช็คจ่าย", "Cancel Issued Cheques", "/banking/cheques/issued-cancel", "finance"),
         ],
@@ -432,6 +440,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "cash-bank-master",
         title: { key: "menu_bank_accounts", th: "สมุดเงินฝากธนาคาร", en: "Bank Accounts" },
         items: [
+          tx("bank-service", "บริการธนาคาร", "Bank Services", "/pending/bank-service", "finance"),
           tx("bank-contact", "บันทึกรายละเอียดผู้ติดต่อธนาคาร", "Bank Contacts", "/banking/contacts", "master"),
           tx("book-bank", "บันทึกสมุดเงินฝากธนาคาร", "Bank Book", "/bookbankscreen", "master", "book_bank"),
         ],
@@ -451,6 +460,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "bank-utilities",
         title: ml("bank-utilities", "ตรวจและประมวลผลเงินฝากและเช็ค", "Bank & Cheque Utilities"),
         items: [
+          tx("cheque-movement", "ข้อมูลการเคลื่อนไหวเช็ค", "Cheque Movement Inquiry", "/pending/cheque-movement", "finance"),
           tx("cheque-recalculate", "คำนวณยอดคงเหลือของเช็คใหม่", "Recalculate Cheque Balances", "/tools/cheque-balances", "finance"),
           tx("bank-recalculate", "คำนวณยอดคงเหลือของสมุดบัญชีใหม่", "Recalculate Bank Book Balances", "/tools/bank-balances", "finance"),
         ],
@@ -492,6 +502,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("ic-pricing", "ราคาขายและโปรโมชั่น", "Selling Prices & Promotions"),
         items: [
           tx("product-price-adjust", "ปรับปรุงราคาขายสินค้า", "Adjust Selling Prices", "/inventory/price-adjustment", "master"),
+          tx("product-supplier-update", "ปรับปรุง ข้อมูล Supplier ตามสินค้า", "Adjust Supplier Data by Product", "/pending/product-supplier-update", "master", "product_supplier_adjust"),
         ],
       },
       {
@@ -500,10 +511,12 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-balance", "บันทึกสินค้ายกมา", "Stock Balance", "/transaction/stockbalance"),
           tx("stock-issue-request", "บันทึกใบขอเบิกใช้สินค้า,วัตถุดิบ", "Stock / Material Issue Request", "/inventory/issue-request", "transaction"),
+          tx("stock-issue-request-cancel", "ยกเลิกใบขอเบิกใช้สินค้า,วัตถุดิบ", "Cancel Stock Issue Request", "/inventory/issue-request-cancellation", "approval"),
           tx("stock-pickup", "บันทึกเบิกใช้สินค้า,วัตถุดิบ", "Stock Pickup", "/transaction/stockpickupproduct"),
           tx("stock-return", "บันทึกรับคืนสินค้า,วัตถุดิบ", "Stock Return", "/transaction/stockreturnproduct"),
           tx("stock-receive", "บันทึกรับสินค้าสำเร็จรูป", "Stock Receive", "/transaction/stockreceiveproduct"),
           tx("stock-transfer-request", "บันทึกใบขอโอนสินค้า", "Stock Transfer Request", "/inventory/transfer-request", "transaction"),
+          tx("stock-transfer-request-cancel", "ยกเลิกใบขอโอนสินค้า", "Cancel Stock Transfer Request", "/inventory/transfer-request-cancellation", "approval"),
           tx("stock-transfer", "บันทึกโอนสินค้าระหว่างคลัง", "Stock Transfer", "/transaction/stocktransfer"),
           tx("goods-inspection", "ใบตรวจรับสินค้า", "Goods Inspection Note", "/inventory/goods-inspection", "transaction"),
         ],
@@ -515,6 +528,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("stock-count-sheet", "บันทึกเอกสารเพื่อตรวจนับสินค้า", "Stock Count Sheet", "/inventory/count-sheet", "transaction"),
           tx("stock-count", "บันทึกผลการตรวจนับสินค้า", "Stock Count", "/transaction/stockcount"),
           tx("stock-adjust", "บันทึกปรับปรุงสินค้าหลังตรวจนับ", "Stock Adjustment", "/transaction/adjust"),
+          tx("stock-count-handheld", "ตรวจนับสต็อกโดย Hand Held", "Hand Held Stock Count", "/pending/stock-count-handheld"),
         ],
       },
       {
@@ -560,6 +574,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-daily-sequence", "กำหนดลำดับรายวัน", "Inventory Daily Sequence", "/inventory/daily-sequence", "transaction"),
           tx("reprocess", "คำนวณยอดคงเหลือรวมของสินค้าใหม่", "Recalculate Data", "/rebuildstockscreen", "report"),
+          tx("transaction-lock", "Transaction Lock", "Transaction Lock", "/pending/transaction-lock"),
         ],
       },
     ],
@@ -632,6 +647,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("gl-posting", "ผ่านบัญชีและประมวลผลสิ้นปี", "Ledger Posting & Year-End"),
         items: [
           tx("gl-post", "ผ่านรายการ", "Posting & Reversal", "/gl/posting", "finance", "gl_post_and_reverse"),
+          tx("gl-unpost", "ยกเลิกเอกสารที่ผ่านรายการแล้ว", "Reverse General Ledger Posting", "/gl/unposting", "finance"),
           tx("gl-recalculate-posted", "คำนวณยอดผ่านรายการใหม่", "Recalculate Posted Balances", "/gl/recalculate-posted", "finance"),
           tx("gl-reprocess", "ประมวลผลข้อมูลบัญชีใหม่", "Reprocess Accounting Data", "/gl/reprocess", "finance"),
           tx("gl-year-end", "ประมวลผลสิ้นปี", "Year-End Processing", "/gl/year-end", "finance"),
@@ -681,6 +697,30 @@ export const MENU_SECTIONS: MenuSection[] = [
           // 2026-09-23 ลุงจืดสั่ง "เอาให้ครบ" แบบใน mydocs/sample: ภ.ง.ด.2ก/50/51/93/94, ภ.ธ.40 เปิดจากจอเดียวนี้ (ไม่แตกเมนูรายแบบ)
           tx("tax-forms", "แบบยื่นภาษีทั้งหมด", "All Tax Returns", "/report/taxforms", "report"),
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
+        ],
+      },
+    ],
+  },
+  // 2026-10-09 (S2): หัว "จัดการระบบ" ของ Champ 5.5 — เฉพาะรายการที่ BC ยังไม่มีจอ (/pending/*). จอตั้งค่าที่มีอยู่แล้ว
+  // (บริษัท/สาขา, ผู้ใช้, สิทธิ์, พนักงาน, กลุ่มลูกหนี้, คลัง) เปิดจากแถบเมนูโดยตรง (menu-bars.ts route node) ไม่อยู่ในแคตตาล็อกสิทธิ์.
+  {
+    id: "system",
+    title: { key: "menu_bar_system", th: "จัดการระบบ", en: "System" },
+    groups: [
+      {
+        id: "system-setup",
+        title: ml("system-setup", "กำหนดค่าและข้อมูลระบบ", "System Setup"),
+        items: [
+          tx("system-journal-format", "กำหนดรูปแบบรายวัน", "Journal Format", "/pending/system-journal-format", "settings"),
+          tx("system-work-date", "กำหนดวันที่ทำงานเริ่มต้น", "Default Work Date", "/pending/system-work-date", "settings"),
+          tx("system-product-by-warehouse", "กำหนดสินค้าตามคลัง", "Products by Warehouse", "/pending/system-product-by-warehouse", "settings"),
+          tx("system-default-warehouse", "กำหนดคลังที่เก็บสินค้าเริ่มต้น", "Default Warehouse", "/pending/system-default-warehouse", "settings"),
+          tx("system-currency", "กำหนดสกุลเงิน", "Currencies", "/pending/system-currency", "settings"),
+          tx("system-main-map", "กำหนดแผนที่หลัก", "Main Map", "/pending/system-main-map", "settings"),
+          tx("system-credit-debit-reasons", "กำหนดสาเหตุการลดหนี้/เพิ่มหนี้", "Credit and Debit Note Reasons", "/pending/system-credit-debit-reasons", "settings"),
+          tx("system-payment-terms", "เงื่อนไขการชำระเงิน", "Payment Terms", "/pending/system-payment-terms", "settings"),
+          tx("system-customer-inquiry", "แสดงข้อมูลลูกค้า", "Customer Information", "/pending/system-customer-inquiry", "master"),
+          tx("system-product-inquiry", "แสดงข้อมูลสินค้า", "Product Information", "/pending/system-product-inquiry", "master"),
         ],
       },
     ],

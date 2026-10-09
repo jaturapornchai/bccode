@@ -78,7 +78,7 @@ import {
   normalizeMenuSearchText,
   type MenuItem,
 } from "@/lib/menu-data";
-import { MENU_BARS, menuBarItems, type MenuBar, type MenuBarActionId, type MenuBarNode } from "@/lib/menu-bars";
+import { MENU_BARS, isMenuBarRouteItem, menuBarEntries, type MenuBar, type MenuBarActionId, type MenuBarNode } from "@/lib/menu-bars";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type FrequentMenuEntry, type MenuUsageMap } from "@/lib/menu-usage";
 import { MenuPendingBadge } from "./menu-pending-badge";
 import { MenuPlannedCard } from "./menu-planned-card";
@@ -197,7 +197,7 @@ const emptyLineDialog: LineDialogState = {
   expired: false,
 };
 
-const TREE_BARS = MENU_BARS.filter((bar) => menuBarItems(bar.nodes).length > 0);
+const TREE_BARS = MENU_BARS.filter((bar) => menuBarEntries(bar.nodes).length > 0);
 const menuUiKeys = {
   closeTab: "close_tab",
   dashboardRoute: "dashboard",
@@ -444,7 +444,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const changePasswordText = backendText(backendLanguage, "change_password", "เปลี่ยนรหัสผ่าน");
   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
   const loginText = backendText(backendLanguage, "login", "เข้าสู่ระบบ");
-  const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
+  // Menu-bar settings routes (ไฟล์ › กำหนดรหัสผู้ใช้งาน, จัดการระบบ › …) are not in the permission catalog, so the menu never locks them; the backend enforces access on save.
+  const canAccessMenuItem = useCallback((item: MenuItem) => isMenuBarRouteItem(item) || allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
 
   /**
@@ -672,7 +673,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     const productFocusRequest = productCode
       ? { code: productCode, requestId: randomId() }
       : undefined;
-    if (menuUsageKey) {
+    if (menuUsageKey && !isMenuBarRouteItem(item)) {
       setMenuUsage(recordMenuUsage(localStorage, menuUsageKey, item.id));
     }
 
@@ -1090,7 +1091,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     backendLanguage={backendLanguage}
                     bar={bar}
                     canAccessMenuItem={canAccessMenuItem}
-                    count={menuBarItems(bar.nodes).length}
+                    count={menuBarEntries(bar.nodes).length}
                     expanded={expandedSections.includes(bar.id) || Boolean(globalSearch.trim())}
                     key={bar.id}
                     label={menuText(bar.label, language, backendLanguage)}
@@ -1949,10 +1950,10 @@ function getBarTreeNodes(nodes: MenuBarNode[], language: LanguageCode, search: s
   const needle = normalizeMenuSearchText(search);
   const result: MenuTreeNode[] = [];
   nodes.forEach((node, index) => {
-    if (node.kind === "item") {
+    if (node.kind === "item" || node.kind === "route") {
       if (getVisibleItems([node.item], language, search, dictionary).length) result.push({ id: node.item.id, item: node.item, type: "item" });
     } else if (node.kind === "submenu") {
-      const all = menuBarItems(node.nodes);
+      const all = menuBarEntries(node.nodes);
       const children = !needle || menuSearchMatches(node.label, needle, dictionary) ? all : getVisibleItems(all, language, search, dictionary);
       if (children.length) result.push({ children, id: node.id, label: menuText(node.label, language, dictionary), type: "folder" });
     } else if (node.kind === "divider" && !needle) {
@@ -1975,7 +1976,8 @@ function SectionIcon({ sectionId }: { sectionId: string }) {
   if (sectionId === "transactions") return <BriefcaseBusiness className="h-4 w-4" />;
   if (sectionId === "reports") return <BarChart3 className="h-4 w-4" />;
   if (sectionId === "defaults") return <SlidersHorizontal className="h-4 w-4" />;
-  if (sectionId === "settings") return <Settings className="h-4 w-4" />;
+  if (sectionId === "settings" || sectionId === "system") return <Settings className="h-4 w-4" />;
+  if (sectionId === "file") return <KeyRound className="h-4 w-4" />;
   return <Database className="h-4 w-4" />;
 }
 

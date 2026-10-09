@@ -12,8 +12,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
-  it("registers all 27 operations workflow routes across 6 categories", () => {
-    expect(OPERATIONS_CONFIGS.length).toBe(17);
+  it("registers all 22 operations workflow routes across 6 categories", () => {
+    expect(OPERATIONS_CONFIGS.length).toBe(22);
 
     // Approvals
     expect(isOperationsRoute("/procurement/requisition-approval")).toBe(true);
@@ -22,6 +22,12 @@ describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
     expect(isOperationsRoute("/sales/quotation-cancellation")).toBe(true);
     expect(isOperationsRoute("/sales/order-approval")).toBe(true);
     expect(isOperationsRoute("/sales/order-cancellation")).toBe(true);
+    // 2026-10-09 (S1): cancel/approve screens of the real Champ 5.5 dropdowns
+    expect(isOperationsRoute("/procurement/requisition-cancellation")).toBe(true);
+    expect(isOperationsRoute("/procurement/requisition-approval-cancellation")).toBe(true);
+    expect(isOperationsRoute("/procurement/order-approval")).toBe(true);
+    expect(isOperationsRoute("/inventory/issue-request-cancellation")).toBe(true);
+    expect(isOperationsRoute("/inventory/transfer-request-cancellation")).toBe(true);
 
     // Reservations
     expect(isOperationsRoute("/sales/reservations")).toBe(true);
@@ -50,6 +56,12 @@ describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
     expect(prApproval?.category).toBe("approval");
     expect(prApproval?.documentType).toBe("PR");
 
+    expect(getOperationsConfig("/procurement/order-approval")?.documentType).toBe("PO");
+    expect(getOperationsConfig("/procurement/requisition-cancellation")?.documentType).toBe("PR");
+    expect(getOperationsConfig("/procurement/requisition-approval-cancellation")?.documentType).toBe("PR");
+    expect(getOperationsConfig("/inventory/issue-request-cancellation")?.documentType).toBe("SIR");
+    expect(getOperationsConfig("/inventory/transfer-request-cancellation")?.documentType).toBe("STR");
+
     const serial = getOperationsConfig("/productserialregistry");
     expect(serial?.category).toBe("bom");
   });
@@ -67,6 +79,9 @@ describe("approval workflow API", () => {
     expect(isApprovalApiReady("po_cancellation")).toBe(false);
     expect(isApprovalApiReady("qt_approval")).toBe(false);
     expect(isApprovalApiReady("so_approval")).toBe(false);
+    for (const code of ["pr_cancellation", "pr_approval_cancellation", "po_approval", "stock_issue_request_cancellation", "stock_transfer_request_cancellation"]) {
+      expect(isApprovalApiReady(code), code).toBe(false);
+    }
   });
 
   it("never calls the backend for screens without an endpoint", async () => {

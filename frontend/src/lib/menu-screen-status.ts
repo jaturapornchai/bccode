@@ -35,6 +35,8 @@ const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 const RETIRED_BACKEND_ROUTES = new Set<string>([
   "/line-oa", "/product", "/productbarcode", "/productbarcodeshelf",
   "/pricehistory", "/inventory/product-sets", "/productset",
+  // เมนู จัดการระบบ › ที่เก็บสินค้าตามคลัง / กลุ่มลูกหนี้ (2026-10-09) — config ตั้งค่ายังอยู่แต่ API เดิมถูกถอดแล้ว
+  "/productwarehousescreen", "/debtorgroup",
 ]);
 
 // ข้อมูลตั้งค่าที่ backend PostgreSQL ยังให้บริการ

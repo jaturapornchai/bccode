@@ -18,6 +18,9 @@ export type MenuBarActionId =
 
 export type MenuBarNode =
   | { kind: "item"; item: MenuItem }
+  // Opens an existing system-settings screen (src/lib/system-setting-screens.ts) in a work tab. `item` is a synthetic
+  // MenuItem that is NOT in MENU_SECTIONS: no permission id here; real enforcement is the backend (e.g. OWNER/ADMIN on /holding/permission), the menu does not lock these entries.
+  | { kind: "route"; item: MenuItem }
   | { kind: "divider" }
   | { kind: "submenu"; id: string; label: MenuLabel; nodes: MenuBarNode[] }
   | { kind: "action"; id: MenuBarActionId; label: MenuLabel };
@@ -37,6 +40,16 @@ function item(id: string): MenuBarNode {
 }
 
 const items = (...ids: string[]): MenuBarNode[] => ids.map(item);
+
+const routeItemIds = new Set<string>();
+
+function routeNode(id: string, path: string, key: string, th: string, en: string): MenuBarNode {
+  routeItemIds.add(id);
+  return { kind: "route", item: { id, label: label(key, th, en), route: path, category: "settings" } };
+}
+
+/** True for the synthetic items of `route` nodes (they are not catalog items, so no permission id or usage stats). */
+export const isMenuBarRouteItem = (menuItem: MenuItem): boolean => routeItemIds.has(menuItem.id);
 
 const action = (id: MenuBarActionId, key: string, th: string, en: string): MenuBarNode => ({
   kind: "action",
@@ -78,20 +91,22 @@ export const MENU_BARS: MenuBar[] = [
     "file",
     label("menu_bar_file", "ไฟล์", "File"),
     action("change-company", "menu_action_change_company", "เลือกบริษัททำงานใหม่", "Select Company"),
+    routeNode("bar-users", "/user", "menu_route_user_accounts", "กำหนดรหัสผู้ใช้งาน", "User Accounts"),
     action("change-password", "menu_action_change_password", "เปลี่ยนรหัสผ่าน", "Change Password"),
+    routeNode("bar-permissions", "/permissiongroup", "menu_route_permissions", "กำหนดสิทธิ์การใช้งาน", "User Permissions"),
     DIVIDER,
     action("exit-program", "menu_action_exit_program", "ออกจากโปรแกรม", "Exit"),
   ),
   bar(
     "po",
     label("menu_bar_purchase", "จัดซื้อ", "Purchasing"),
-    items("purchase-requisition", "purchase-requisition-approve"),
+    items("purchase-requisition", "purchase-requisition-cancel", "purchase-requisition-approve", "purchase-requisition-approve-cancel"),
     submenu(
       "po-price-inquiry", "menu_sub_price_inquiry", "ระบบสืบราคาซื้อสินค้า", "Price Inquiry System",
       ...items("rfq", "rfq-price-table", "purchase-order-generate"),
     ),
     DIVIDER,
-    items("purchase-order", "purchase-order-cancel"),
+    items("purchase-order", "purchase-order-approve", "purchase-order-cancel"),
     DIVIDER,
     items("deposit", "advance-payment", "advance-payment-refund"),
     DIVIDER,
@@ -101,7 +116,7 @@ export const MENU_BARS: MenuBar[] = [
     ),
     items("purchase", "purchase-debit-note", "purchase-credit-note"),
     DIVIDER,
-    items("purchase-landed-cost", "purchase-receipt-adjustment"),
+    items("purchase-landed-cost", "purchase-receipt-adjustment", "purchase-receipt-date-adjust"),
     DIVIDER,
     submenu("po-reports-daily", ...REPORTS_DAILY, ...items("purchase-report", "gradual-receipt")),
     submenu("po-reports-analysis", ...REPORTS_ANALYSIS, ...items("purchase-by-product", "purchase-price-comparison")),
@@ -111,7 +126,10 @@ export const MENU_BARS: MenuBar[] = [
     label("menu_bar_sales", "จัดขาย", "Sales"),
     items("quotation", "quotation-approve", "quotation-cancel"),
     DIVIDER,
-    items("sale-order", "sale-order-approve", "sale-order-cancel", "receive-deposit", "sale-reservation-flow", "sale-order-date-check"),
+    items(
+      "sale-reservation", "sale-order", "sale-order-approve", "sale-order-cancel", "sale-dispatch", "receive-deposit",
+      "sale-reservation-flow", "sale-order-date-check",
+    ),
     DIVIDER,
     items("receive-advance", "return-advance"),
     DIVIDER,
@@ -133,7 +151,7 @@ export const MENU_BARS: MenuBar[] = [
     label("menu_account_payable_ap", "เจ้าหนี้", "Account Payable (AP)"),
     items("creditor", "creditor-beginning-balance", "ap-other-debt", "ap-billing-receipt"),
     DIVIDER,
-    items("pay", "ap-bad-debt"),
+    items("ap-payment-prepare", "pay", "ap-bad-debt"),
     DIVIDER,
     submenu("ap-balance-tools", ...RECALCULATE, ...items("ap-recalculate", "ap-bill-recalculate")),
     submenu("ap-reports-daily", ...REPORTS_DAILY, ...items("ap-movement", "ap-outstanding", "ap-daily-payment")),
@@ -160,7 +178,10 @@ export const MENU_BARS: MenuBar[] = [
     submenu(
       "cheque-registers", "menu_sub_cheque_registers", "ทะเบียนหลักต่างๆ", "Master Registers",
       ...items("cheque-received", "cheque-issued", "credit-card-receipts"),
+      DIVIDER,
+      ...items("cheque-issued-prepare"),
     ),
+    items("cheque-movement"),
     DIVIDER,
     items("cheque-deposit", "cheque-received-clear", "cheque-received-return", "cheque-redeposit", "cheque-received-cancel", "cheque-discount"),
     DIVIDER,
@@ -168,7 +189,10 @@ export const MENU_BARS: MenuBar[] = [
     DIVIDER,
     items("credit-card-settle", "credit-card-cancel"),
     DIVIDER,
-    submenu("cheque-reports-daily", ...REPORTS_DAILY, ...items("cheque-received-report", "cheque-issued-report", "credit-card-report")),
+    submenu(
+      "cheque-reports-master", "menu_sub_reports_master_data", "รายงานข้อมูลหลัก", "Master Data Reports",
+      ...items("cheque-received-report", "cheque-issued-report", "credit-card-report"),
+    ),
     items("cheque-recalculate"),
   ),
   bar(
@@ -176,7 +200,7 @@ export const MENU_BARS: MenuBar[] = [
     label("menu_bar_bank_cash", "ธนาคาร/เงินสด", "Bank & Cash"),
     items("other-income-receipt", "employee-advance", "expense-record"),
     DIVIDER,
-    items("bank-contact", "book-bank", "petty-cash-limit", "cash-deposit", "cash-withdraw", "bank-charges", "bank-income", "account-transfer"),
+    items("bank-service", "bank-contact", "book-bank", "petty-cash-limit", "cash-deposit", "cash-withdraw", "bank-charges", "bank-income", "account-transfer"),
     DIVIDER,
     items("bank-recalculate"),
     submenu(
@@ -194,21 +218,23 @@ export const MENU_BARS: MenuBar[] = [
       DIVIDER,
       ...items("product-set-components"),
     ),
-    items("product-serial-registry", "barcode", "product-unit", "product-group", "brand", "warehouse"),
+    items("product-serial-registry"),
     DIVIDER,
-    items("product-price-adjust", "goods-inspection"),
+    items("product-price-adjust", "product-supplier-update", "goods-inspection"),
     DIVIDER,
     items("stock-balance", "stock-receive"),
     DIVIDER,
-    items("stock-issue-request", "stock-pickup", "stock-return"),
+    items("stock-issue-request", "stock-issue-request-cancel", "stock-pickup", "stock-return"),
     DIVIDER,
-    items("stock-transfer-request", "stock-transfer"),
+    items("stock-transfer-request", "stock-transfer-request-cancel", "stock-transfer"),
     submenu(
       "ic-counting", "menu_sub_stock_counting", "การตรวจนับสินค้า", "Stock Counting",
       ...items("stock-count-sheet", "stock-count", "stock-adjust"),
+      DIVIDER,
+      ...items("stock-count-handheld"),
     ),
     DIVIDER,
-    items("reprocess", "stock-daily-sequence"),
+    items("reprocess", "stock-daily-sequence", "transaction-lock"),
     DIVIDER,
     submenu(
       "ic-reports-product", "menu_sub_reports_product", "รายงานสินค้า", "Product Reports",
@@ -247,9 +273,9 @@ export const MENU_BARS: MenuBar[] = [
     label("menu_bar_accounting", "บัญชี", "Accounting"),
     items("chart-of-accounts", "gl-journals"),
     DIVIDER,
-    items("gl-reprocess", "gl-post", "gl-recalculate-posted"),
+    items("gl-reprocess", "gl-post", "gl-unpost", "gl-recalculate-posted"),
     DIVIDER,
-    items("gl-account-mapping", "period-lock", "gl-journal-books", "gl-budget", "gl-account-groups", "gl-product-account-groups", "gl-dimensions"),
+    items("gl-account-mapping", "period-lock", "gl-journal-books", "gl-budget", "gl-account-groups", "gl-product-account-groups"),
     DIVIDER,
     items("gl-opening-balance", "financial-close", "purchase-vat-adjust", "withholding-tax-deduction", "gl-fiscal-years", "gl-year-end"),
     DIVIDER,
@@ -269,12 +295,30 @@ export const MENU_BARS: MenuBar[] = [
       ),
     ),
   ),
-  // The remaining heads only expose functions the program already has (no new feature).
+  // จัดการระบบ follows the real Champ dropdown (bcspec หน้าจอเมนูจัดการระบบ/เมนู-ประกอบ.jpg). Omitted on purpose:
+  // ขอดูข้อมูล (raw-SQL viewer, security) and แสดง ToolTip — awaiting the owner's decision.
+  // Champ opens กำหนดรหัสต่างๆ as one screen with a code-type combo; here it is a submenu of the existing code screens.
   bar(
     "system",
     label("menu_bar_system", "จัดการระบบ", "System"),
+    routeNode("bar-company-defaults", "/branch", "menu_route_company_defaults", "กำหนดค่าเริ่มต้นบริษัท", "Company Defaults"),
+    items("system-journal-format", "system-work-date"),
+    DIVIDER,
+    submenu(
+      "system-codes", "menu_sub_system_codes", "กำหนดรหัสต่างๆ", "Master Codes",
+      ...items("gl-dimensions", "product-group", "brand", "warehouse", "product-unit", "barcode"),
+    ),
+    routeNode("bar-warehouse-locations", "/productwarehousescreen", "menu_route_warehouse_locations", "กำหนดที่เก็บสินค้าตามคลัง", "Storage Locations by Warehouse"),
+    items("system-product-by-warehouse", "system-default-warehouse", "system-currency", "system-main-map"),
+    routeNode("bar-employees", "/employee", "menu_route_employees_sellers", "กำหนดพนักงาน/พนักงานขาย", "Employees and Salespeople"),
+    items("system-credit-debit-reasons"),
+    routeNode("bar-debtor-groups", "/debtorgroup", "menu_route_debtor_groups", "กำหนดกลุ่มลูกหนี้", "Debtor Groups"),
+    items("system-payment-terms"),
+    DIVIDER,
     action("create-shortcut", "menu_action_create_shortcut", "สร้าง Shortcut", "Create Shortcut"),
+    items("system-customer-inquiry", "system-product-inquiry"),
   ),
+  // The remaining heads only expose functions the program already has (no new feature).
   bar(
     "window",
     label("menu_bar_window", "หน้าต่าง", "Window"),
@@ -287,11 +331,20 @@ export const MENU_BARS: MenuBar[] = [
   ),
 ];
 
-/** Every catalog item shown in a bar (submenus included), in display order. */
+/** Every catalog item shown in a bar (submenus included), in display order — the permission catalog view, route nodes excluded. */
 export function menuBarItems(nodes: MenuBarNode[]): MenuItem[] {
   return nodes.flatMap((node) => {
     if (node.kind === "item") return [node.item];
     if (node.kind === "submenu") return menuBarItems(node.nodes);
+    return [];
+  });
+}
+
+/** Everything a bar row can open — catalog items plus settings routes — in display order (menu UI only). */
+export function menuBarEntries(nodes: MenuBarNode[]): MenuItem[] {
+  return nodes.flatMap((node) => {
+    if (node.kind === "item" || node.kind === "route") return [node.item];
+    if (node.kind === "submenu") return menuBarEntries(node.nodes);
     return [];
   });
 }

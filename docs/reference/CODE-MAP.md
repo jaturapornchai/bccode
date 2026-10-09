@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-09 @ commit 809d1361 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-09 @ commit 719b2fcc - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 31
 
@@ -432,7 +432,7 @@ Files indexed: 31
 | 1195 | const-arrow | `handleSave` |
 | 2355 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2342 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2344 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -449,45 +449,45 @@ Files indexed: 31
 | 388 | function | `guardsUnsavedRoute` |
 | 392 | function | `MainMenuScreen` |
 | 400 | function | `MainMenuDashboard` |
-| 525 | function | `loadProfile` |
-| 553 | function | `loadMenuPermissions` |
-| 650 | function | `confirmLeaveLedger` |
-| 656 | function | `selectWorkTab` |
-| 661 | function | `openWorkspace` |
-| 665 | function | `openMenuItem` |
-| 712 | function | `openMenuItemInNewTab` |
-| 716 | function | `openManageShortcuts` |
-| 735 | function | `openOverview` |
-| 742 | function | `toggleSection` |
-| 749 | function | `closeAllTabs` |
-| 757 | function | `runMenuAction` |
-| 766 | function | `closeTab` |
-| 776 | function | `reorderTabs` |
-| 792 | function | `stopLinePolling` |
-| 799 | function | `handleLineLink` |
-| 850 | function | `startLinePolling` |
-| 864 | function | `pollLineLink` |
-| 898 | function | `closeLineDialog` |
-| 904 | function | `copyLineLoginUrl` |
-| 914 | function | `handleChangePassword` |
-| 966 | function | `logout` |
-| 975 | function | `handleContentScroll` |
-| 1003 | const-arrow | `onPointerMove` |
-| 1009 | const-arrow | `onPointerUp` |
-| 1693 | function | `SidebarButton` |
-| 1726 | function | `MenuSectionAccordion` |
-| 1820 | function | `MenuTreeFolder` |
-| 1872 | function | `MenuTreeItemButton` |
-| 1938 | function | `getVisibleItems` |
-| 1948 | function | `getBarTreeNodes` |
-| 1965 | function | `SectionIcon` |
-| 1982 | function | `OpenTabs` |
-| 2036 | function | `captureTabRects` |
-| 2047 | function | `getInsertSide` |
-| 2052 | function | `clearDragState` |
-| 2059 | function | `reorderFromPointer` |
-| 2184 | function | `WorkTabPanel` |
-| 2327 | function | `DashboardLoading` |
+| 526 | function | `loadProfile` |
+| 554 | function | `loadMenuPermissions` |
+| 651 | function | `confirmLeaveLedger` |
+| 657 | function | `selectWorkTab` |
+| 662 | function | `openWorkspace` |
+| 666 | function | `openMenuItem` |
+| 713 | function | `openMenuItemInNewTab` |
+| 717 | function | `openManageShortcuts` |
+| 736 | function | `openOverview` |
+| 743 | function | `toggleSection` |
+| 750 | function | `closeAllTabs` |
+| 758 | function | `runMenuAction` |
+| 767 | function | `closeTab` |
+| 777 | function | `reorderTabs` |
+| 793 | function | `stopLinePolling` |
+| 800 | function | `handleLineLink` |
+| 851 | function | `startLinePolling` |
+| 865 | function | `pollLineLink` |
+| 899 | function | `closeLineDialog` |
+| 905 | function | `copyLineLoginUrl` |
+| 915 | function | `handleChangePassword` |
+| 967 | function | `logout` |
+| 976 | function | `handleContentScroll` |
+| 1004 | const-arrow | `onPointerMove` |
+| 1010 | const-arrow | `onPointerUp` |
+| 1694 | function | `SidebarButton` |
+| 1727 | function | `MenuSectionAccordion` |
+| 1821 | function | `MenuTreeFolder` |
+| 1873 | function | `MenuTreeItemButton` |
+| 1939 | function | `getVisibleItems` |
+| 1949 | function | `getBarTreeNodes` |
+| 1966 | function | `SectionIcon` |
+| 1984 | function | `OpenTabs` |
+| 2038 | function | `captureTabRects` |
+| 2049 | function | `getInsertSide` |
+| 2054 | function | `clearDragState` |
+| 2061 | function | `reorderFromPointer` |
+| 2186 | function | `WorkTabPanel` |
+| 2329 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 

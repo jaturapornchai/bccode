@@ -25,6 +25,37 @@ describe("menu screen availability", () => {
     "/pending/billing-note-auto", "/pending/billing-note-auto-print",
     "/pending/customer-label-print",
     "/pending/product-status-report", "/pending/product-price-setting-report",
+    // 2026-10-09 (S1): Champ items of the transaction heads without a screen yet.
+    "/pending/purchase-receipt-date-adjust",
+    "/pending/sale-reservation",
+    "/pending/sale-dispatch",
+    "/pending/ap-payment-prepare",
+    "/pending/cheque-issued-prepare",
+    "/pending/cheque-movement",
+    "/pending/bank-service",
+    "/pending/product-supplier-update",
+    "/pending/stock-count-handheld",
+    "/pending/transaction-lock",
+    // 2026-10-09 (S2): Champ จัดการระบบ items without a screen yet.
+    "/pending/system-journal-format",
+    "/pending/system-work-date",
+    "/pending/system-product-by-warehouse",
+    "/pending/system-default-warehouse",
+    "/pending/system-currency",
+    "/pending/system-main-map",
+    "/pending/system-credit-debit-reasons",
+    "/pending/system-payment-terms",
+    "/pending/system-customer-inquiry",
+    "/pending/system-product-inquiry",
+  ];
+
+  // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).
+  const CHAMP_OPERATIONS_ROUTES = [
+    "/procurement/requisition-cancellation",
+    "/procurement/requisition-approval-cancellation",
+    "/procurement/order-approval",
+    "/inventory/issue-request-cancellation",
+    "/inventory/transfer-request-cancellation",
   ];
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
@@ -35,7 +66,7 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(204);
+    expect(items).toHaveLength(230);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();
@@ -53,6 +84,10 @@ describe("menu screen availability", () => {
       expect(isMenuScreenPending(route), route).toBe(true);
     }
     expect(flattenMenuItems().map((item) => item.route)).toEqual(expect.arrayContaining(NO_BACKEND_DOCUMENT_ROUTES));
+    for (const route of CHAMP_OPERATIONS_ROUTES) {
+      expect(isMenuScreenPending(route), route).toBe(true);
+      expect(isMenuDataPending(route), route).toBe(true);
+    }
     expect(isRetiredBackendScreen("/product")).toBe(true);
     expect(isRetiredBackendScreen("/productbarcodeshelf?x=1")).toBe(true);
     expect(isRetiredBackendScreen("/transaction/sale")).toBe(false);
@@ -73,7 +108,8 @@ describe("menu screen availability", () => {
   it("connects every ledger workflow including the monthly budget entry screen (2026-09-25)", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual([]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(28);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(29);
+    expect(isMenuScreenPending("/gl/unposting")).toBe(false);
     expect(isMenuScreenPending("/gl/budget")).toBe(false);
     expect(isMenuScreenPending("/gl/journal-books")).toBe(false);
     expect(isMenuScreenPending("/report/gljournal")).toBe(false);

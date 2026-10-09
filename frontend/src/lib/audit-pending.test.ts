@@ -23,7 +23,9 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-07: +20 items the real Champ menu has but BC lacks ("รอพัฒนา", routes /pending/*) — see menu-bars.test.ts.
     // 2026-10-08: -15 non-Champ items pruned to align with Champ parity, leaving 5 Champ-only items + 19 original = 24.
     // 2026-10-08: +5 เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (etax, withholdingtax, purchasereceiptadjustment, petty-cash-limit, bank contacts) = 29.
-    expect(pendingList.length).toBe(29);
+    // 2026-10-09 (S1): +10 Champ transaction-head items without a screen yet (/pending/*) = 39.
+    // 2026-10-09 (S2): +10 items of the Champ จัดการระบบ head without a screen yet (/pending/system-*) = 49.
+    expect(pendingList.length).toBe(49);
   });
 });
 
