@@ -841,13 +841,15 @@ export async function deleteErpTransaction(
 export interface ErpDocEvent {
   id: number;
   docno: string;
-  transflag: number;
+  transflag?: number;
   action: string;
-  fromstatus: number;
-  tostatus: number;
+  from_status?: string | number;
+  to_status?: string | number;
   reason?: string;
-  createdby: string;
-  createdat: string;
+  actor?: string;
+  created_at?: string;
+  createdby?: string;
+  createdat?: string;
 }
 
 export interface BatchApproveItemResult {
@@ -973,7 +975,8 @@ export async function fetchErpDocEvents(
     }
     const data = await res.json().catch(() => null);
     if (data?.success === false) return { success: false, events: [], error: "load_failed" };
-    return { success: true, events: data?.data?.events ?? [] };
+    const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.events) ? data.events : (data?.data?.events ?? []);
+    return { success: true, events: list };
   } catch {
     return { success: false, events: [], error: "connection_error" };
   }

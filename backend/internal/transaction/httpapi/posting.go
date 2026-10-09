@@ -39,6 +39,7 @@ const (
 const (
 	reasonEdit   = "erp_gl_reverse_edit"
 	reasonDelete = "erp_gl_reverse_delete"
+	reasonCancel = "erp_gl_reverse_cancel"
 )
 
 // ledgerError ทำเครื่องหมายว่าความผิดพลาดมาจากเครื่องบัญชี/กฎลงบัญชี เพื่อให้ชั้น HTTP ตอบแบบเดียวกับจอบัญชี

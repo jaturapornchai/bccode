@@ -240,14 +240,10 @@ func isApprovableModule(transflag int) bool {
 	}
 }
 
-// isCancellableModule ตรวจสอบประเภทเอกสารที่ยกเลิกได้ในระดับเอกสาร Tier A
+// isCancellableModule ตรวจสอบประเภทเอกสารที่ยกเลิกได้ (รองรับทุกโมดูลในระบบ)
 func isCancellableModule(transflag int) bool {
-	switch transflag {
-	case 2, 6, 34, 36, 430, 431:
-		return true
-	default:
-		return false
-	}
+	_, ok := doctype.ByFlag(transflag)
+	return ok
 }
 
 // ApproveDoc อนุมัติเอกสารหนึ่งใบ (เปลี่ยนสถานะจาก '' เป็น 'approved' พร้อมบันทึกผู้/เวลาอนุมัติ และลง audit log)
@@ -407,6 +403,12 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	}
 	defer tx.Rollback()
 
+	if serialized(dt) {
+		if err = gl.LockCompanyTx(ctx, tx, scope.Company); err != nil {
+			return nil, ledgerFail(err)
+		}
+	}
+
 	where := "WHERE businesscode = $1 AND transflag = $2 AND NOT COALESCE(isdelete, false) AND "
 	args := []any{scope.Company, dt.Flag}
 	if idNum, err := strconv.Atoi(docIdOrNo); err == nil && idNum > 0 {
@@ -450,6 +452,17 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	}
 
 	now := time.Now().UTC()
+	if doctype.PostsToGL(dt.Flag) {
+		if err = s.releasePosting(ctx, tx, scope, dt, docNo, reasonCancel, now); err != nil {
+			return nil, err
+		}
+	}
+	if movesStock(dt) {
+		if err = s.replaceStockMovement(ctx, tx, scope.Company, dt, nil, docNo, time.Time{}, now); err != nil {
+			return nil, err
+		}
+	}
+
 	actor := scope.Actor
 	updateQuery := `UPDATE doc SET
 		iscancel = true,

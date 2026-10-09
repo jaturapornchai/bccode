@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-09 @ commit 719b2fcc - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit f34f913c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 31
 
@@ -1055,6 +1055,22 @@ Files indexed: 31
 | 1161 | function | `DisableUser` |
 | 1205 | function | `authRequestLanguage` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1187 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 55 | function | `glNoticeFor` |
+| 69 | function | `ErpCrudWorkbench` |
+| 166 | const-arrow | `handleSelectRow` |
+| 188 | const-arrow | `handleStartEdit` |
+| 197 | const-arrow | `handleStartCreate` |
+| 245 | const-arrow | `handleCancelEdit` |
+| 263 | const-arrow | `handleDeleteDoc` |
+| 297 | const-arrow | `updateLineItem` |
+| 376 | const-arrow | `handleSaveDoc` |
+| 780 | section | `EDIT MODE FORM` |
+| 1018 | section | `READ-ONLY VIEW MODE` |
+
 ## frontend/src/lib/erp-reports.ts (1187 lines)
 
 | Line | Kind | Name |
@@ -1097,22 +1113,6 @@ Files indexed: 31
 | 203 | const-arrow | `handleDeleteAsset` |
 | 233 | const-arrow | `handlePostGL` |
 | 276 | const-arrow | `handleConfirmDisposal` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1167 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 53 | function | `glNoticeFor` |
-| 67 | function | `ErpCrudWorkbench` |
-| 163 | const-arrow | `handleSelectRow` |
-| 185 | const-arrow | `handleStartEdit` |
-| 194 | const-arrow | `handleStartCreate` |
-| 242 | const-arrow | `handleCancelEdit` |
-| 260 | const-arrow | `handleDeleteDoc` |
-| 294 | const-arrow | `updateLineItem` |
-| 373 | const-arrow | `handleSaveDoc` |
-| 769 | section | `EDIT MODE FORM` |
-| 1007 | section | `READ-ONLY VIEW MODE` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 

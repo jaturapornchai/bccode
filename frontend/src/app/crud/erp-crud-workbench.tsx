@@ -12,7 +12,9 @@ import {
   Search,
   AlertCircle,
   Info,
+  Clock,
 } from "lucide-react";
+import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +109,7 @@ export function ErpCrudWorkbench({
   // Form State
   const [formDoc, setFormDoc] = useState<Partial<ErpTransactionDoc>>({});
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showEventsModal, setShowEventsModal] = useState(false);
 
   const docPrintType: ThaiDocPrintType = useMemo(() => {
     if (route.includes("purchase") || route.includes("rfq")) return "purchase_order";
@@ -450,6 +453,14 @@ export function ErpCrudWorkbench({
         onClose={() => setShowPrintModal(false)}
         doc={selectedDoc}
         docType={docPrintType}
+      />
+
+      <ErpDocEventsDialog
+        module={config.apiPath}
+        docno={selectedDoc?.docno ?? ""}
+        isOpen={showEventsModal}
+        onClose={() => setShowEventsModal(false)}
+        language={language}
       />
 
       {!embedded && <SmartBreadcrumb currentTitle={title} className="mb-3" />}
@@ -1030,6 +1041,15 @@ export function ErpCrudWorkbench({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 text-xs"
+                    onClick={() => setShowEventsModal(true)}
+                  >
+                    <Clock className="mr-1.5 size-3.5" />
+                    {backendText(dictionary, "ops_doc_events", "ประวัติเอกสาร")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

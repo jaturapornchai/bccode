@@ -18,6 +18,7 @@ import {
 } from "@/lib/erp-operations";
 import { getAuthSession } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
+import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -99,6 +100,7 @@ export function OperationsWorkbench({
     docno: string;
     action: "approve" | "unapprove" | "cancel";
   } | null>(null);
+  const [historyDocNo, setHistoryDocNo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const approvalReady = config.category === "approval" && isApprovalApiReady(config.code);
@@ -525,6 +527,17 @@ export function OperationsWorkbench({
                                 {tr("ops_cancel_action", "ยกเลิกเอกสาร")}
                               </Button>
                             )}
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setHistoryDocNo(doc.docno)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              title={tr("ops_doc_events", "ประวัติการอนุมัติ/ยกเลิก")}
+                              aria-label={tr("ops_doc_events", "ประวัติการอนุมัติ/ยกเลิก")}
+                            >
+                              <Clock className="h-4 w-4" />
+                            </Button>
                           </div>
                         )}
                       </td>
@@ -536,6 +549,15 @@ export function OperationsWorkbench({
           </div>
         </Card>
       )}
+
+      {/* Dialog ประวัติการอนุมัติ/ยกเลิก */}
+      <ErpDocEventsDialog
+        module={meta?.module ?? ""}
+        docno={historyDocNo ?? ""}
+        isOpen={!!historyDocNo}
+        onClose={() => setHistoryDocNo(null)}
+        language={language}
+      />
     </div>
   );
 }

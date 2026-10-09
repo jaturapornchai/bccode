@@ -120,8 +120,13 @@ type menuAccess interface {
 // ประเภทที่ไม่มี menu id = ปฏิเสธ (fail-closed)
 func allowsDocType(session menuAccess, dt doctype.DocType, action string) bool {
 	for _, screen := range doctype.Screens(dt.Key) {
-		if screen != "" && session.Allows(screen, action) {
-			return true
+		if screen != "" {
+			if session.Allows(screen, action) {
+				return true
+			}
+			if action == actionCancel && session.Allows(screen, actionDelete) {
+				return true
+			}
 		}
 	}
 	return false

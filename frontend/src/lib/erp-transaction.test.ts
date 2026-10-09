@@ -8,6 +8,7 @@ import {
   fetchErpTransactions,
   saveErpTransaction,
   deleteErpTransaction,
+  fetchErpDocEvents,
   type ErpTransactionDoc,
 } from "./erp-transaction";
 import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
@@ -388,5 +389,44 @@ describe("ERP Transaction domain configs and operations", () => {
     ];
     expect(editInit.method).toBe("PUT");
     expect(editUrl.endsWith("ABC")).toBe(true);
+  });
+
+  it("fetchErpDocEvents correctly parses events list from data array and error states", async () => {
+    // 1. Success with data array
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        mockResponse(true, 200, {
+          success: true,
+          data: [
+            {
+              id: 1,
+              docno: "PO001",
+              action: "approve",
+              from_status: "",
+              to_status: "approved",
+              actor: "manager",
+              created_at: "2026-10-10T08:00:00Z",
+            },
+          ],
+        }),
+      ),
+    );
+
+    const res1 = await fetchErpDocEvents("purchase-order", "PO001");
+    expect(res1.success).toBe(true);
+    expect(res1.events.length).toBe(1);
+    expect(res1.events[0].action).toBe("approve");
+    expect(res1.events[0].actor).toBe("manager");
+
+    // 2. Failed request
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 403, {})),
+    );
+    const res2 = await fetchErpDocEvents("purchase-order", "PO001");
+    expect(res2.success).toBe(false);
+    expect(res2.events.length).toBe(0);
+    expect(res2.error).toBe("erp_err_read_forbidden");
   });
 });
