@@ -67,6 +67,34 @@ func SourceFiscalYear(ctx context.Context, tx *sql.Tx, scope Scope, date string)
 	return code, nil
 }
 
+// SourceJournalInfo is what a module needs to know about the voucher of its document before reversing it.
+type SourceJournalInfo struct {
+	Status  string // draft | posted | reversed
+	Date    string
+	DocNo   string
+	Version int64
+}
+
+// SourceJournal reads the live state of one voucher by id; found is false when it does not exist.
+func SourceJournal(ctx context.Context, tx *sql.Tx, scope Scope, id string) (SourceJournalInfo, bool, error) {
+	var info SourceJournalInfo
+	err := tx.QueryRowContext(ctx, `SELECT version, COALESCE(payload->>'status',''), COALESCE(payload->>'date',''), COALESCE(payload->>'docno','') FROM gl_records WHERE company=$1 AND kind='journals' AND id=$2`, scope.Company, id).Scan(&info.Version, &info.Status, &info.Date, &info.DocNo)
+	if errors.Is(err, sql.ErrNoRows) {
+		return SourceJournalInfo{}, false, nil
+	}
+	return info, err == nil, err
+}
+
+// SourceAccountIsCash reports the chart's own "cash/bank" flag of an account — a module decides from this master
+// attribute, never from the shape of the account code, whether a posting line is a receivable/payable or cash.
+func SourceAccountIsCash(ctx context.Context, tx *sql.Tx, scope Scope, code string) (bool, error) {
+	accounts, err := loadLineAccounts(ctx, tx, scope.Company, []Line{{AccountCode: code}})
+	if err != nil {
+		return false, err
+	}
+	return accounts[code].IsCash, nil
+}
+
 const (
 	codeSourceFiscalYearNotFound = "source_fiscal_year_not_found"
 	codeSourceFiscalYearClosed   = "source_fiscal_year_closed"

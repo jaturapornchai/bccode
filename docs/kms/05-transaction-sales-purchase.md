@@ -1,6 +1,6 @@
 # ธุรกรรมซื้อ–ขาย (Transaction: Sales & Purchase) — module `/transaction/:module` บน PostgreSQL
 
-> ตรวจล่าสุด: 2026-10-08 — module เดิม (พึ่ง MongoDB/Kafka) ถูกลบใน ADR [`decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) แล้วสร้างใหม่บน PostgreSQL อย่างเดียวที่ `backend/internal/transaction/httpapi/` (commit 04341468, f3bd2465, 6c4447f8)
+> ตรวจล่าสุด: 2026-10-09 — module เดิม (พึ่ง MongoDB/Kafka) ถูกลบใน ADR [`decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) แล้วสร้างใหม่บน PostgreSQL อย่างเดียวที่ `backend/internal/transaction/httpapi/` (commit 04341468, f3bd2465, 6c4447f8)
 
 ## 1. สถานะปัจจุบัน
 
@@ -21,13 +21,13 @@
 
 - `frontend/src/lib/erp-transaction.ts` มี `ERP_MODULE_CONFIGS` (64 config) แต่ละตัวมี `apiPath` = key ชั้นเดียวของทะเบียน `doctype.go` (ไม่มี `/` ; ที่ใช้ร่วมกันมีเฉพาะ `stock-count` ซึ่ง `/transaction/stockcount` กับ `/inventory/count-sheet` เปิดเอกสารชนิดเดียวกัน) ; ไม่มี `defaultDocPrefix` แล้ว เพราะ backend ออกเลขที่ให้
 - `frontend/src/lib/erp-transaction-modules.ts` (`ERP_TRANSACTION_MODULES`) = รายการ key 63 ตัวเรียงเหมือน `doctype.go` เป๊ะ และเป็น allowlist ของ BFF `frontend/src/app/api/erp-transaction/[...erpPath]/route.ts` ; `erp-transaction.test.ts` เทียบสองฝั่งโดยอ่าน `doctype.go` จริง (เพิ่ม/ลบประเภทต้องแก้ทะเบียนก่อน แล้วทดสอบจะบังคับให้แก้ฝั่ง frontend ตาม) — **จึง deploy frontend อย่างเดียวไม่ได้ ต้อง `--all` พร้อม mainapi**
-- ประเภทที่ลงบัญชี/สต็อกอัตโนมัติตอนบันทึกมี 8 ตัว (`ERP_AUTO_POSTING_MODULES` ใน `erp-transaction.ts` ตรงกับ `service.go` SaveDoc): GL = purchase, sale-invoice, paid, pay, sale-invoice-return, purchase-return, expense ; `stock_ledger` = purchase, sale-invoice, sale-invoice-return, purchase-return, stock-pickup-product ; ประเภทอื่น "บันทึกเอกสารอย่างเดียว" และจอแสดงข้อความ `erp_store_only_notice`
+- **ลงบัญชี/สต็อกในธุรกรรมเดียว (2026-10-09, ADR [`2026-10-09-erp-posting-reverses-on-edit-delete.md`](decisions/2026-10-09-erp-posting-reverses-on-edit-delete.md)):** `httpapi/save.go` (`SaveDoc`/`DeleteDoc`) + `posting.go` (ใบสำคัญ/บัญชีย่อย/`erp_doc_journals`) + `stock.go` (`stock_ledger` คำนวณสายใหม่). GL ลงเฉพาะ 7 ประเภทของ `doctype.PostingKeys()` (purchase, purchase-return, expense, paid, pay, sale-invoice, sale-invoice-return) ตามรูปแบบลงบัญชี (master `mappings` + `sourcedoc`) ของบริษัท — ไม่มีรูปแบบ = บันทึกแต่ไม่ลงบัญชี (`glstatus: no_mapping`); สต็อกเคลื่อนตามทะเบียน (`Stock = In|Out`) ; แก้/ลบ = กลับรายการใบเดิม + คำนวณสต็อกใหม่; ตัดหนี้แล้วแก้/ลบไม่ได้; `ERP_AUTO_POSTING_MODULES` ใน `erp-transaction-modules.ts` = ชุดเดียวกัน ; ประเภทอื่น "บันทึกเอกสารอย่างเดียว" และจอแสดงข้อความ `erp_store_only_notice`
 - เมนูที่ไม่มี config (5 route: ใบกำกับภาษี/e-Tax, ภาษีหัก ณ ที่จ่าย, ปรับปรุงใบรับสินค้า, วงเงินเงินสดย่อย, ผู้ติดต่อธนาคาร — Champ ไม่มีเอกสารจริงหรือเป็น master) ตกเป็น "ยังไม่พร้อม" ผ่าน fallback ของ `isMenuScreenPending` ; จอสินค้า/บาร์โค้ด/ชุดสินค้า/ประวัติราคา (`RETIRED_BACKEND_ROUTES`) ยังถูกกันด้วย `isRetiredBackendScreen` เพราะ backend ไม่มี `/api/product`
 - ที่เกี่ยวข้อง: `frontend/src/lib/erp-operations.ts` (`OPERATIONS_CONFIGS`, `isOperationsRoute()`) เป็น registry งานอนุมัติ/ยกเลิกเอกสาร/ประกอบ-แยกชุดสินค้า/serial/ปรับราคา — `APPROVAL_KINDS` ว่าง เพราะ goapi ไม่มี route `/api/approval/*` ; โค้ดดึง/อนุมัติรายการรออนุมัติยังอยู่แต่ไม่ทำงานจนกว่าจะมี endpoint จริง
 
 ## 4. ยังไม่ทำ / ยังไม่ตัดสินใจ
 
-- แก้/ลบเอกสารที่ลงบัญชีหรือตัดสต็อกแล้วยังไม่กลับรายการ GL/`stock_ledger` (แก้ไม่ลงบัญชีซ้ำ ลบไม่ย้อน) ; auto-GL ยัง hard-code ผังบัญชีและใช้ `float64`
+- ลงบัญชีย่อยจาก `Details` ของเครื่องยนต์เดิม, รายการต้นทุนขาย/สินค้าคงเหลือของใบขาย, นโยบายสต็อกติดลบ, คลังเริ่มต้น `WH01` ยัง hard-code, ใบที่ลงโดยโค้ดเก่าไม่มีแถวใน `erp_doc_journals` (แก้แล้วลงซ้ำ), ยอดตัดหนี้เกินใบหนี้ยังไม่ถูกจำกัด
 - ประเภท ByLine (`stock-transfer`, `stock-adjustment`) ยังไม่เขียน `calcflag` ลง `docdetail` จึงไม่เคลื่อนสต็อก ; `apdebitnote`/`apcreditnote`/`ardebitnote` ผลต่อสต็อกรอลุงจืดตัดสิน
 - เลขที่เอกสารต่อบริษัทแบบ Champ (`BCSysTRFormat.DocFormat`) ยังไม่ทำ ; ใบเช็ค/บัตรเครดิตเป็นเอกสารบันทึกอย่างเดียว ยังไม่มีวงจรสถานะแบบ Champ
 - โค้ด goapi ใน §2 และสถานะ "API พร้อม" ของรายงานขายจะเก็บ/ปิด/ลบอย่างไรยังไม่มีคำตอบ — ถามลุงจืดก่อนแตะ

@@ -93,6 +93,13 @@ func (h *Http) authorize(request microservice.IContext, action string) *docAcces
 		_ = fail(request, http.StatusInternalServerError, fmt.Sprintf("เตรียมตารางเอกสารล้มเหลว: %v", err))
 		return nil
 	}
+	// เอกสารที่ลงบัญชีเขียนใบสำคัญและบัญชีย่อยในธุรกรรมเดียวกัน ตารางบัญชีต้องพร้อมก่อน (อ่านอย่างเดียวไม่ต้อง)
+	if action != actionRead && doctype.PostsToGL(dt.Flag) {
+		if err := gl.EnsureSchema(ctx, db); err != nil {
+			_ = fail(request, http.StatusInternalServerError, fmt.Sprintf("เตรียมตารางบัญชีล้มเหลว: %v", err))
+			return nil
+		}
+	}
 	return &docAccess{ctx: ctx, scope: session.Scope, db: db, dt: dt}
 }
 
@@ -223,22 +230,34 @@ func (h *Http) get(request microservice.IContext) error {
 	})
 }
 
+// docFailure ตอบความผิดพลาดของการบันทึก/ลบ: ความผิดจากกฎบัญชี/เอกสาร (ปีบัญชีปิด ตัดหนี้แล้ว เลขซ้ำ ...) ตอบแบบเดียวกับจอบัญชี
+// คือข้อความที่ผู้ใช้แก้ได้ตามภาษาของคำขอ; ไม่พบเอกสาร = 404 (notFound ว่าง = ไม่ใช่กรณีนี้); อื่นๆ = 500
+func docFailure(request microservice.IContext, err error, notFound, generic string) error {
+	var ledger *ledgerError
+	if _, isUser := gl.AsUserError(err); isUser || errors.As(err, &ledger) {
+		status, body := glhttp.SessionFailure(err, requestLanguage(request))
+		request.Response(status, body)
+		return nil
+	}
+	if notFound != "" && errors.Is(err, sql.ErrNoRows) {
+		return fail(request, http.StatusNotFound, notFound)
+	}
+	return fail(request, http.StatusInternalServerError, fmt.Sprintf("%s: %v", generic, err))
+}
+
 func (h *Http) create(request microservice.IContext) error {
 	access := h.authorize(request, actionCreate)
 	if access == nil {
 		return nil
 	}
-	ctx, scope, db := access.ctx, access.scope, access.db
-	transflag, prefix := access.dt.Flag, access.dt.Prefix
-
 	var doc ErpTransactionDoc
 	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
 		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
 	}
 
-	saved, err := h.store.SaveDoc(ctx, db, scope.Company, scope.Branch, transflag, prefix, &doc, scope.Actor, false)
+	saved, err := h.store.SaveDoc(access.ctx, access.db, access.scope, access.dt, &doc, false)
 	if err != nil {
-		return fail(request, http.StatusInternalServerError, fmt.Sprintf("บันทึกเอกสารไม่สำเร็จ: %v", err))
+		return docFailure(request, err, "", "บันทึกเอกสารไม่สำเร็จ")
 	}
 
 	return success(request, DocItemResponse{
@@ -253,9 +272,6 @@ func (h *Http) update(request microservice.IContext) error {
 	if access == nil {
 		return nil
 	}
-	ctx, scope, db := access.ctx, access.scope, access.db
-	transflag, prefix := access.dt.Flag, access.dt.Prefix
-
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
 		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
@@ -269,12 +285,9 @@ func (h *Http) update(request microservice.IContext) error {
 		doc.DocNo = id
 	}
 
-	saved, err := h.store.SaveDoc(ctx, db, scope.Company, scope.Branch, transflag, prefix, &doc, scope.Actor, true)
+	saved, err := h.store.SaveDoc(access.ctx, access.db, access.scope, access.dt, &doc, true)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fail(request, http.StatusNotFound, "ไม่พบเอกสารที่ต้องการแก้ไข")
-		}
-		return fail(request, http.StatusInternalServerError, fmt.Sprintf("แก้ไขเอกสารไม่สำเร็จ: %v", err))
+		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการแก้ไข", "แก้ไขเอกสารไม่สำเร็จ")
 	}
 
 	return success(request, DocItemResponse{
@@ -289,19 +302,13 @@ func (h *Http) delete(request microservice.IContext) error {
 	if access == nil {
 		return nil
 	}
-	ctx, scope, db := access.ctx, access.scope, access.db
-	transflag := access.dt.Flag
-
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
 		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
 	}
 
-	if err := h.store.DeleteDoc(ctx, db, scope.Company, transflag, id, scope.Actor); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fail(request, http.StatusNotFound, "ไม่พบเอกสารที่ต้องการลบ")
-		}
-		return fail(request, http.StatusInternalServerError, fmt.Sprintf("ลบเอกสารไม่สำเร็จ: %v", err))
+	if err := h.store.DeleteDoc(access.ctx, access.db, access.scope, access.dt, id); err != nil {
+		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการลบ", "ลบเอกสารไม่สำเร็จ")
 	}
 
 	return success(request, map[string]any{

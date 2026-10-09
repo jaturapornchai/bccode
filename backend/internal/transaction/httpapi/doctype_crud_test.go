@@ -13,10 +13,10 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"smlcloudplatform/internal/doctype"
+	gl "smlcloudplatform/internal/generalledger"
 )
 
-// statementRecorder จดทุกคำสั่ง SQL ที่ส่งถึงฐานข้อมูล รวมคำสั่งที่ sqlmock ไม่ได้คาดไว้
-// SaveDoc กลืน error ของการลงบัญชีและตัดสต็อก ดูแค่ expectation ของ sqlmock จึงไม่รู้ว่ามีการพยายามเขียนหรือไม่
+// statementRecorder จดทุกคำสั่ง SQL ที่ส่งถึงฐานข้อมูล เพื่อยืนยันว่าเอกสารที่ไม่ลงบัญชี/ไม่ตัดสต็อกไม่แตะตารางบัญชีและสต็อกเลย
 type statementRecorder struct {
 	mu         sync.Mutex
 	statements []string
@@ -104,6 +104,17 @@ const (
 	testActor   = "demo"
 )
 
+func testScope() gl.Scope {
+	return gl.Scope{Holding: "rungrueng", Company: testCompany, Branch: testBranch, Actor: testActor}
+}
+
+func userErrorCode(err error) string {
+	if user, ok := gl.AsUserError(err); ok {
+		return user.Code
+	}
+	return ""
+}
+
 func newTestDoc() *ErpTransactionDoc {
 	return &ErpTransactionDoc{
 		DocDateTime: "2026-10-08",
@@ -115,12 +126,15 @@ func newTestDoc() *ErpTransactionDoc {
 	}
 }
 
-// expectCreate คาดคำสั่งของการสร้างเอกสารใหม่: ออกเลขที่เอกสาร หัวเอกสาร และรายการ 1 บรรทัด
+// expectCreate คาดคำสั่งของการสร้างเอกสารใหม่ที่ไม่ลงบัญชี/ไม่ตัดสต็อก: ออกเลขที่ ตรวจเลขซ้ำ หัวเอกสาร และรายการ 1 บรรทัด
 func expectCreate(mock sqlmock.Sqlmock, flag int) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(`SELECT docno FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno LIKE \$3`).
 		WithArgs(testCompany, flag, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"docno"}))
+	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3\)`).
+		WithArgs(testCompany, flag, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery(`INSERT INTO doc \(`).
 		WithArgs(withAny([]driver.Value{testCompany, flag}, 17)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
@@ -148,39 +162,51 @@ func TestParseTransFlagFollowsRegistry(t *testing.T) {
 	}
 }
 
-// เอกสารที่ลงบัญชี/ตัดสต็อกอัตโนมัติตอนบันทึกมีเฉพาะประเภทเดิม 8 ประเภท ที่เหลือบันทึกเอกสารอย่างเดียว
-func TestSaveDocAutoPostsOnlyForLegacyTypes(t *testing.T) {
-	type effect struct{ gl, stock bool }
-	autoPost := map[int]effect{
-		doctype.Purchase:          {gl: true, stock: true},
-		doctype.SaleInvoice:       {gl: true, stock: true},
-		doctype.SaleInvoiceReturn: {gl: true, stock: true},
-		doctype.PurchaseReturn:    {gl: true, stock: true},
-		doctype.StockPickup:       {stock: true},
-		doctype.Expense:           {gl: true},
-		doctype.Paid:              {gl: true},
-		doctype.Pay:               {gl: true},
+// ลงบัญชีและตัดสต็อกตามทะเบียนประเภทเอกสาร (doctype) ที่เดียว: ลงบัญชี 7 ประเภท เคลื่อนไหวสต็อกทุกประเภทที่ทะเบียนระบุรับเข้า/จ่ายออก
+// ประเภทที่ปรับสต็อกตามบรรทัด (โอนคลัง ปรับปรุงสต็อก) ยังไม่ตัด — ทำเมื่อลุงจืดสั่ง
+func TestSideEffectsFollowRegistry(t *testing.T) {
+	posting := map[string]bool{"purchase": true, "purchase-return": true, "expense": true, "paid": true, "pay": true,
+		"sale-invoice": true, "sale-invoice-return": true}
+	stock := map[string]bool{"stock-balance": true, "stock-receive-product": true, "stock-pickup-product": true,
+		"stock-return-product": true, "goodsreceive": true, "purchase": true, "purchase-return": true,
+		"sale-invoice": true, "sale-invoice-return": true}
+	for _, dt := range doctype.All() {
+		if got := doctype.PostsToGL(dt.Flag); got != posting[dt.Key] {
+			t.Errorf("%s: posts to GL = %v, want %v", dt.Key, got, posting[dt.Key])
+		}
+		if got := movesStock(dt); got != stock[dt.Key] {
+			t.Errorf("%s: moves stock = %v, want %v", dt.Key, got, stock[dt.Key])
+		}
+		if got, want := serialized(dt), posting[dt.Key] || stock[dt.Key]; got != want {
+			t.Errorf("%s: serialized = %v, want %v", dt.Key, got, want)
+		}
 	}
+}
+
+// ประเภทที่ไม่ลงบัญชีและไม่ตัดสต็อกบันทึกได้โดยไม่แตะตารางบัญชี/สต็อก และไม่ต้องล็อกบริษัท
+func TestSaveDocStoreOnlyTypesTouchNeitherGLNorStock(t *testing.T) {
 	for _, dt := range doctype.All() {
 		dt := dt
+		if serialized(dt) {
+			continue
+		}
 		t.Run(dt.Key, func(t *testing.T) {
 			db, mock, rec := newRecordedMock(t)
 			expectCreate(mock, dt.Flag)
 			mock.ExpectCommit()
 
-			saved, err := NewStore().SaveDoc(context.Background(), db, testCompany, testBranch, dt.Flag, dt.Prefix, newTestDoc(), testActor, false)
+			saved, err := NewStore().SaveDoc(context.Background(), db, testScope(), dt, newTestDoc(), false)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if !firstDocNoPattern(dt.Prefix).MatchString(saved.DocNo) || saved.TransFlag != dt.Flag {
 				t.Errorf("saved docno %q flag %d; want prefix %q flag %d", saved.DocNo, saved.TransFlag, dt.Prefix, dt.Flag)
 			}
-			want := autoPost[dt.Flag]
-			if got := rec.touched("gl_"); got != want.gl {
-				t.Errorf("GL statements attempted = %v, want %v", got, want.gl)
+			if saved.GLStatus != "" || saved.GLDocNo != "" {
+				t.Errorf("a store-only document must not report a posting result, got %q %q", saved.GLStatus, saved.GLDocNo)
 			}
-			if got := rec.touched("stock_"); got != want.stock {
-				t.Errorf("stock statements attempted = %v, want %v", got, want.stock)
+			if rec.touched("gl_") || rec.touched("stock_") || rec.touched("erp_doc_journals") || rec.touched("pg_advisory") {
+				t.Error("store-only document touched ledger, stock or lock statements")
 			}
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Error(err)
@@ -189,20 +215,58 @@ func TestSaveDocAutoPostsOnlyForLegacyTypes(t *testing.T) {
 	}
 }
 
+func TestSaveDocRejectsReusedDocNoIncludingDeleted(t *testing.T) {
+	dt, _ := doctype.ByKey("cashdeposit")
+	db, mock, _ := newRecordedMock(t)
+	mock.ExpectBegin()
+	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3\)`).
+		WithArgs(testCompany, dt.Flag, "CDP6910-0001").WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+	mock.ExpectRollback()
+
+	doc := newTestDoc()
+	doc.DocNo = "CDP6910-0001"
+	_, err := NewStore().SaveDoc(context.Background(), db, testScope(), dt, doc, false)
+	user, ok := gl.AsUserError(err)
+	if !ok || user.Code != "erp_doc_duplicate" || len(user.Args) != 1 || user.Args[0] != "CDP6910-0001" {
+		t.Fatalf("SaveDoc error = %v, want erp_doc_duplicate with the docno", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestNormalizeLinesGivesEveryLineAUniquePositiveNumber(t *testing.T) {
+	details := []ErpDetailItem{{LineNumber: 0}, {LineNumber: 2}, {LineNumber: 2}, {LineNumber: -4}, {LineNumber: 1}}
+	normalizeLines(details)
+	seen := map[int]bool{}
+	for i, d := range details {
+		if d.LineNumber <= 0 || seen[d.LineNumber] {
+			t.Fatalf("line %d got number %d (all: %+v)", i, d.LineNumber, details)
+		}
+		seen[d.LineNumber] = true
+	}
+	if details[1].LineNumber != 2 {
+		t.Errorf("an unused explicit number must be kept, got %d", details[1].LineNumber)
+	}
+}
+
 func TestSaveDocInfersReferenceTypeFromDocNo(t *testing.T) {
 	cases := []struct {
 		key, ref string
 		refFlag  int
 	}{
-		{"goodsreceive", "PO6910-0007", doctype.PurchaseOrder},
+		{"apdebitnote", "PO6910-0007", doctype.PurchaseOrder},
 		{"apcreditnote", "PUR6910-0003", doctype.Purchase},
-		{"apdebitnote", "PRET6910-0002", doctype.PurchaseReturn},
+		{"cashdeposit", "PRET6910-0002", doctype.PurchaseReturn},
 	}
 	for _, tc := range cases {
 		t.Run(tc.key, func(t *testing.T) {
 			dt, ok := doctype.ByKey(tc.key)
 			if !ok {
 				t.Fatalf("key %q not registered", tc.key)
+			}
+			if serialized(dt) {
+				t.Fatalf("%s posts or moves stock; this test covers store-only types", tc.key)
 			}
 			db, mock, rec := newRecordedMock(t)
 			expectCreate(mock, dt.Flag)
@@ -216,7 +280,7 @@ func TestSaveDocInfersReferenceTypeFromDocNo(t *testing.T) {
 
 			doc := newTestDoc()
 			doc.DocRef = tc.ref
-			if _, err := NewStore().SaveDoc(context.Background(), db, testCompany, testBranch, dt.Flag, dt.Prefix, doc, testActor, false); err != nil {
+			if _, err := NewStore().SaveDoc(context.Background(), db, testScope(), dt, doc, false); err != nil {
 				t.Fatal(err)
 			}
 			if err := mock.ExpectationsWereMet(); err != nil {
@@ -242,7 +306,7 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	// Create
 	expectCreate(mock, dt.Flag)
 	mock.ExpectCommit()
-	saved, err := store.SaveDoc(ctx, db, testCompany, testBranch, dt.Flag, dt.Prefix, newTestDoc(), testActor, false)
+	saved, err := store.SaveDoc(ctx, db, testScope(), dt, newTestDoc(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,16 +369,18 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	edit := newTestDoc()
 	edit.DocNo = docNo
 	edit.Details[0].Price = 5200
-	if _, err := store.SaveDoc(ctx, db, testCompany, testBranch, dt.Flag, dt.Prefix, edit, testActor, true); err != nil {
+	if _, err := store.SaveDoc(ctx, db, testScope(), dt, edit, true); err != nil {
 		t.Fatal(err)
 	}
 
 	// Delete (soft delete)
 	mock.ExpectBegin()
-	mock.ExpectExec(`UPDATE doc SET isdelete = true, modifier_code = \$4, modified_at = \$5 WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
-		WithArgs(testCompany, dt.Flag, docNo, testActor, sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectQuery(`SELECT docno FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3`).
+		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"docno"}).AddRow(docNo))
+	mock.ExpectExec(`UPDATE doc SET isdelete = true, modifier_code = \$1, modified_at = \$2\s+WHERE businesscode = \$3 AND transflag = \$4 AND docno = \$5`).
+		WithArgs(testActor, sqlmock.AnyArg(), testCompany, dt.Flag, docNo).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
-	if err := store.DeleteDoc(ctx, db, testCompany, dt.Flag, docNo, testActor); err != nil {
+	if err := store.DeleteDoc(ctx, db, testScope(), dt, docNo); err != nil {
 		t.Fatal(err)
 	}
 

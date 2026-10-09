@@ -38,6 +38,9 @@ export interface ErpTransactionDoc {
   iscancel?: boolean;
   branchcode?: string;
   remark?: string;
+  // ผลลงบัญชีตอนบันทึก (backend ตั้งให้): posted | no_mapping | no_amount; gldocno = เลขที่ใบสำคัญเมื่อ posted
+  glstatus?: string;
+  gldocno?: string;
   details: ErpDetailItem[];
 }
 
@@ -743,6 +746,10 @@ function statusErrorKey(status: number, fallback: string, forbiddenKey = "unauth
   return fallback;
 }
 
+function userDetail(body: { message?: unknown }): string | undefined {
+  return typeof body.message === "string" && body.message.trim() ? body.message : undefined;
+}
+
 export async function fetchErpTransactions(
   config: ErpModuleConfig,
   params: { q?: string; offset?: number; limit?: number } = {},
@@ -770,23 +777,29 @@ export async function fetchErpTransactions(
   }
 }
 
+// ข้อความปฏิเสธจาก backend แปลตาม Accept-Language ของคำขอ — ส่งภาษาที่ผู้ใช้เลือกในหน้าจอ ไม่ใช่ภาษาของเบราว์เซอร์
+const languageHeader = (language: string) => ({ "Accept-Language": language });
+
 export async function saveErpTransaction(
   config: ErpModuleConfig,
   doc: Partial<ErpTransactionDoc>,
   isEdit: boolean,
-): Promise<{ success: boolean; data?: ErpTransactionDoc; message?: string }> {
+  language = "th",
+): Promise<{ success: boolean; data?: ErpTransactionDoc; message?: string; detail?: string }> {
   try {
     const method = isEdit ? "PUT" : "POST";
     const path = isEdit && doc.id ? `${config.apiPath}/${encodeURIComponent(doc.id)}` : config.apiPath;
     const res = await apiFetch(`/api/erp-transaction/${path}`, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...languageHeader(language) },
       body: JSON.stringify(doc),
     });
     if (!res.ok) {
       return { success: false, message: statusErrorKey(res.status, "save_failed", "erp_err_action_forbidden") };
     }
     const data = await res.json();
+    // เหตุผลทางบัญชี/ข้อมูล (ปีบัญชีปิด เลขที่ซ้ำ ถูกตัดหนี้แล้ว) backend ตอบ success:false พร้อมข้อความแปลแล้ว — ห้ามนับเป็นสำเร็จ
+    if (data?.success === false) return { success: false, message: "save_failed", detail: userDetail(data) };
     return {
       success: true,
       data: data?.data ?? (doc as ErpTransactionDoc),
@@ -800,14 +813,18 @@ export async function saveErpTransaction(
 export async function deleteErpTransaction(
   config: ErpModuleConfig,
   id: string,
-): Promise<{ success: boolean; message?: string }> {
+  language = "th",
+): Promise<{ success: boolean; message?: string; detail?: string }> {
   try {
     const res = await apiFetch(`/api/erp-transaction/${config.apiPath}/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: languageHeader(language),
     });
     if (!res.ok) {
       return { success: false, message: statusErrorKey(res.status, "delete_failed", "erp_err_action_forbidden") };
     }
+    const data = await res.json().catch(() => null);
+    if (data?.success === false) return { success: false, message: "delete_failed", detail: userDetail(data) };
     return { success: true, message: "delete_success" };
   } catch {
     return { success: false, message: "connection_error" };

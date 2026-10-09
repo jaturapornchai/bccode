@@ -3,6 +3,7 @@ package generalledger
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +23,25 @@ const (
 	MappingSideDebit  = "debit"
 	MappingSideCredit = "credit"
 )
+
+// MappingForSourceDoc returns the active posting pattern of an ERP document type (doctype.PostingKeys). found is
+// false when the company has not set one up (or switched it off) — the document then stays unposted rather than
+// posting to accounts the system had to guess.
+func MappingForSourceDoc(ctx context.Context, tx *sql.Tx, scope Scope, sourceDoc string) (Master, bool, error) {
+	var payload []byte
+	err := tx.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='mappings' AND payload->>'sourcedoc'=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) ORDER BY code LIMIT 1`, scope.Company, sourceDoc).Scan(&payload)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Master{}, false, nil
+	}
+	if err != nil {
+		return Master{}, false, err
+	}
+	var m Master
+	if err = json.Unmarshal(payload, &m); err != nil {
+		return Master{}, false, err
+	}
+	return m, m.IsActive, nil
+}
 
 // validateMasterMapping ตรวจรูปแบบลงบัญชีก่อนบันทึก; ชนิดอื่นไม่เก็บ sourcedoc
 // selfID คือ id ของรูปแบบที่กำลังแก้ ("" = สร้างใหม่) เพื่อไม่ให้ชนกับตัวเองตอนตรวจว่าซ้ำ

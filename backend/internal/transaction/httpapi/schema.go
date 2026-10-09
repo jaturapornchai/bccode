@@ -183,6 +183,22 @@ CREATE TABLE IF NOT EXISTS stock_period_balance (
 	updatedat timestamptz NOT NULL DEFAULT now(),
 	CONSTRAINT stock_period_balance_pk PRIMARY KEY (businesscode, itemcode, whcode, periodkey)
 );
+
+-- ใบสำคัญบัญชีของเอกสาร ERP: เอกสารหนึ่งฉบับมีได้หลายฉบับตามรอบแก้ไข (revision) แต่ที่ใช้งานอยู่ (voided_at ว่าง) มีฉบับเดียว
+-- แก้/ลบเอกสาร = กลับรายการใบที่ใช้งานอยู่ (voided_at = เวลากลับรายการ) แล้วแก้ไขจึงลงใบใหม่ของ revision ถัดไป
+CREATE TABLE IF NOT EXISTS erp_doc_journals (
+	businesscode text NOT NULL,
+	transflag integer NOT NULL,
+	docno text NOT NULL,
+	revision integer NOT NULL,
+	journal_id text NOT NULL,
+	journal_docno text NOT NULL,
+	source_record_id text NOT NULL,
+	voided_at timestamptz,
+	created_at timestamptz NOT NULL DEFAULT now(),
+	CONSTRAINT erp_doc_journals_pk PRIMARY KEY (businesscode, transflag, docno, revision)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_erp_doc_journals_active ON erp_doc_journals (businesscode, transflag, docno) WHERE voided_at IS NULL;
 `
 
 var (

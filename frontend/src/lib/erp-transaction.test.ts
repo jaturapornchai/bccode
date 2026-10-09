@@ -121,16 +121,18 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(new Set(ERP_TRANSACTION_MODULES).size).toBe(ERP_TRANSACTION_MODULES.length);
   });
 
-  it("limits the auto-posting list to registry types the backend posts on save", () => {
+  it("limits the auto-posting list to registry types the backend posts or moves stock for on save", () => {
+    const source = readFileSync(resolve(process.cwd(), "../backend/internal/doctype/doctype.go"), "utf8");
+    const stockMovers = [...source.matchAll(/^	{"([a-z-]+)", [A-Za-z0-9]+, "[A-Z]+", (StockIn|StockOut),/gm)].map((match) => match[1]);
+    const posting = ["expense", "paid", "pay", "purchase", "purchase-return", "sale-invoice", "sale-invoice-return"];
     for (const key of ERP_AUTO_POSTING_MODULES) expect(ERP_TRANSACTION_MODULES).toContain(key);
-    expect([...ERP_AUTO_POSTING_MODULES].sort()).toEqual(
-      ["expense", "paid", "pay", "purchase", "purchase-return", "sale-invoice", "sale-invoice-return", "stock-pickup-product"],
-    );
+    expect(stockMovers.length).toBeGreaterThan(0);
+    expect([...ERP_AUTO_POSTING_MODULES].sort()).toEqual([...new Set([...posting, ...stockMovers])].sort());
   });
 
   it("has all-column language rows for the document-number and store-only notices", () => {
     const lines = readFileSync(resolve(process.cwd(), "../backend/assets/language/languages.tsv"), "utf8").split(/\r?\n/);
-    for (const key of ["docno_auto_placeholder", "erp_store_only_notice"]) {
+    for (const key of ["docno_auto_placeholder", "erp_store_only_notice", "erp_gl_notice_posted", "erp_gl_notice_no_mapping", "erp_gl_notice_no_amount"]) {
       const row = lines.find((line) => line.startsWith(key + "\t"));
       expect(row, key).toBeDefined();
       const columns = row!.split("\t");
@@ -203,6 +205,23 @@ describe("ERP Transaction domain configs and operations", () => {
 
     expect(saved).toMatchObject({ success: false, message: "erp_err_action_forbidden" });
     expect(deleted).toMatchObject({ success: false, message: "erp_err_action_forbidden" });
+  });
+
+  it("asks the backend to answer in the language chosen on screen, not the browser's", async () => {
+    const calls: { headers?: HeadersInit }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { headers?: HeadersInit }) => {
+        calls.push({ headers: init?.headers });
+        return mockResponse(true, 200, { success: true, data: {} });
+      }),
+    );
+
+    await saveErpTransaction(config, { docno: "DOC1" }, false, "en");
+    await deleteErpTransaction(config, "DOC1", "en");
+    await saveErpTransaction(config, { docno: "DOC1" }, false);
+
+    expect(calls.map((c) => new Headers(c.headers).get("accept-language"))).toEqual(["en", "en", "th"]);
   });
 
   it("has all-column language rows for both forbidden messages", () => {
@@ -283,6 +302,26 @@ describe("ERP Transaction domain configs and operations", () => {
 
     expect(result.success).toBe(false);
     expect(result.message).toBe("save_failed");
+  });
+
+  it("saveErpTransaction and deleteErpTransaction never count a relayed ledger rejection (HTTP 200 + success:false) as success", async () => {
+    const rejection = { success: false, code: "erp_doc_settled", message: "เอกสาร PUR6910-0001 มีการตัดหนี้แล้ว จึงแก้ไขหรือลบไม่ได้" };
+    vi.stubGlobal("fetch", vi.fn(async () => mockResponse(true, 200, rejection)));
+
+    const saved = await saveErpTransaction(config, makeDoc("PUR6910-0001"), true);
+    expect(saved).toMatchObject({ success: false, message: "save_failed", detail: rejection.message });
+
+    const deleted = await deleteErpTransaction(config, "7");
+    expect(deleted).toMatchObject({ success: false, message: "delete_failed", detail: rejection.message });
+  });
+
+  it("saveErpTransaction passes the posting result of the backend through to the screen", async () => {
+    const doc = { ...makeDoc("PUR6910-0001"), glstatus: "no_mapping" };
+    vi.stubGlobal("fetch", vi.fn(async () => mockResponse(true, 200, { success: true, data: doc })));
+
+    const result = await saveErpTransaction(config, makeDoc("PUR6910-0001"), false);
+    expect(result.success).toBe(true);
+    expect(result.data?.glstatus).toBe("no_mapping");
   });
 
   it("saveErpTransaction returns connection_error when fetch throws", async () => {

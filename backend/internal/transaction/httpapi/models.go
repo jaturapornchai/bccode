@@ -23,31 +23,35 @@ type ErpDetailItem struct {
 }
 
 type ErpTransactionDoc struct {
-	ID              string          `json:"id,omitempty"`
-	DocNo           string          `json:"docno"`
-	DocDateTime     string          `json:"docdatetime"`
-	TransFlag       int             `json:"transflag"`
-	CustCode        string          `json:"custcode,omitempty"`
-	CustName        string          `json:"custname,omitempty"`
-	DocRef          string          `json:"docref,omitempty"`
-	DocRefTransFlag int             `json:"docreftransflag,omitempty"`
-	Description     string          `json:"description,omitempty"`
-	TotalAmount     float64         `json:"totalamount"`
-	TotalValue      float64         `json:"totalvalue,omitempty"`
-	TotalDiscount   float64         `json:"totaldiscount,omitempty"`
-	TotalVatValue   float64         `json:"totalvatvalue,omitempty"`
-	TotalBeforeVat  float64         `json:"totalbeforevat,omitempty"`
-	TotalAfterVat   float64         `json:"totalaftervat,omitempty"`
-	VatType         int             `json:"vattype,omitempty"`
-	VatRate         float64         `json:"vatrate,omitempty"`
-	Status          int             `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
-	IsClosed        bool            `json:"isclosed,omitempty"`
-	IsCancel        bool            `json:"iscancel,omitempty"`
-	BranchCode      string          `json:"branchcode,omitempty"`
-	Remark          string          `json:"remark,omitempty"`
-	Details         []ErpDetailItem `json:"details"`
-	CreatedAt       *time.Time      `json:"created_at,omitempty"`
-	ModifiedAt      *time.Time      `json:"modified_at,omitempty"`
+	ID              string  `json:"id,omitempty"`
+	DocNo           string  `json:"docno"`
+	DocDateTime     string  `json:"docdatetime"`
+	TransFlag       int     `json:"transflag"`
+	CustCode        string  `json:"custcode,omitempty"`
+	CustName        string  `json:"custname,omitempty"`
+	DocRef          string  `json:"docref,omitempty"`
+	DocRefTransFlag int     `json:"docreftransflag,omitempty"`
+	Description     string  `json:"description,omitempty"`
+	TotalAmount     float64 `json:"totalamount"`
+	TotalValue      float64 `json:"totalvalue,omitempty"`
+	TotalDiscount   float64 `json:"totaldiscount,omitempty"`
+	TotalVatValue   float64 `json:"totalvatvalue,omitempty"`
+	TotalBeforeVat  float64 `json:"totalbeforevat,omitempty"`
+	TotalAfterVat   float64 `json:"totalaftervat,omitempty"`
+	VatType         int     `json:"vattype,omitempty"`
+	VatRate         float64 `json:"vatrate,omitempty"`
+	Status          int     `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
+	IsClosed        bool    `json:"isclosed,omitempty"`
+	IsCancel        bool    `json:"iscancel,omitempty"`
+	BranchCode      string  `json:"branchcode,omitempty"`
+	Remark          string  `json:"remark,omitempty"`
+	// GLStatus/GLDocNo answer a save: "posted" with the voucher number, "no_mapping" when the company has not set up
+	// the posting pattern of this document type yet, "no_amount" for a zero-total document; empty = the type does not post.
+	GLStatus   string          `json:"glstatus,omitempty"`
+	GLDocNo    string          `json:"gldocno,omitempty"`
+	Details    []ErpDetailItem `json:"details"`
+	CreatedAt  *time.Time      `json:"created_at,omitempty"`
+	ModifiedAt *time.Time      `json:"modified_at,omitempty"`
 }
 
 type DocListResponse struct {

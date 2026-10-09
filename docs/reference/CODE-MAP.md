@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-09 @ commit 7b0d333d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-09 @ commit 809d1361 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 32
+Files indexed: 31
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (16117 lines)
 
@@ -713,25 +713,6 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## backend/internal/transaction/httpapi/service.go (1665 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 17 | function | `NewStore` |
-| 21 | function | `ListDocs` |
-| 101 | function | `GetDoc` |
-| 189 | function | `NextDocNo` |
-| 213 | function | `SaveDoc` |
-| 435 | function | `postPurchaseToGL` |
-| 588 | function | `postSaleToGL` |
-| 742 | function | `postReceiptToGLAndAR` |
-| 898 | function | `postPaymentToGLAndAP` |
-| 1054 | function | `postSaleReturnToGLAndAR` |
-| 1223 | function | `postPurchaseReturnToGLAndAP` |
-| 1392 | function | `postExpenseToGL` |
-| 1520 | function | `postStockMovement` |
-| 1629 | function | `DeleteDoc` |
-
 ## frontend/src/app/gl/gl-masters.tsx (1560 lines)
 
 | Line | Kind | Name |
@@ -1117,6 +1098,22 @@ Files indexed: 32
 | 233 | const-arrow | `handlePostGL` |
 | 276 | const-arrow | `handleConfirmDisposal` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1167 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 53 | function | `glNoticeFor` |
+| 67 | function | `ErpCrudWorkbench` |
+| 163 | const-arrow | `handleSelectRow` |
+| 185 | const-arrow | `handleStartEdit` |
+| 194 | const-arrow | `handleStartCreate` |
+| 242 | const-arrow | `handleCancelEdit` |
+| 260 | const-arrow | `handleDeleteDoc` |
+| 294 | const-arrow | `updateLineItem` |
+| 373 | const-arrow | `handleSaveDoc` |
+| 769 | section | `EDIT MODE FORM` |
+| 1007 | section | `READ-ONLY VIEW MODE` |
+
 ## backend/pkg/microservice/auth.go (1152 lines)
 
 | Line | Kind | Name |
@@ -1211,21 +1208,6 @@ Files indexed: 32
 | Line | Kind | Name |
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1121 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 52 | function | `ErpCrudWorkbench` |
-| 141 | const-arrow | `handleSelectRow` |
-| 163 | const-arrow | `handleStartEdit` |
-| 172 | const-arrow | `handleStartCreate` |
-| 220 | const-arrow | `handleCancelEdit` |
-| 238 | const-arrow | `handleDeleteDoc` |
-| 271 | const-arrow | `updateLineItem` |
-| 350 | const-arrow | `handleSaveDoc` |
-| 723 | section | `EDIT MODE FORM` |
-| 961 | section | `READ-ONLY VIEW MODE` |
 
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 

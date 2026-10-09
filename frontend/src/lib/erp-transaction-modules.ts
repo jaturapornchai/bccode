@@ -74,16 +74,20 @@ export const ERP_TRANSACTION_MODULES: readonly string[] = [
 ];
 
 /**
- * ประเภทเอกสารที่ backend ลงบัญชี (หรือตัดสต็อก) อัตโนมัติตอนบันทึก — ประเภทอื่นทุกชนิด "เก็บเอกสารอย่างเดียว"
- * ตรงกับค่าคงที่ที่ตั้งชื่อไว้ใน doctype.go (Purchase, SaleInvoice, SaleInvoiceReturn, PurchaseReturn, Paid, Pay, Expense, StockPickup)
+ * ประเภทเอกสารที่ backend ทำอะไรต่อให้ตอนบันทึก — ลงบัญชี (7 ประเภท) หรือเคลื่อนไหวสต็อก (รับเข้า/จ่ายออกตามทะเบียน)
+ * ประเภทอื่นทุกชนิด "เก็บเอกสารอย่างเดียว"; ตรงกับ doctype.go (postingFlags + Stock = StockIn/StockOut) — มีเทสต์เทียบ
  */
 export const ERP_AUTO_POSTING_MODULES: readonly string[] = [
   "purchase",
-  "sale-invoice",
-  "sale-invoice-return",
   "purchase-return",
+  "expense",
   "paid",
   "pay",
-  "expense",
+  "sale-invoice",
+  "sale-invoice-return",
+  "goodsreceive",
+  "stock-balance",
+  "stock-receive-product",
   "stock-pickup-product",
+  "stock-return-product",
 ];

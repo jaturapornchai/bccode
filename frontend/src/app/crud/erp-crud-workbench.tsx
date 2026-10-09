@@ -49,6 +49,21 @@ interface ErpCrudWorkbenchProps {
   workspace?: WorkspaceSession | null;
 }
 
+// ผลลงบัญชีที่ backend แจ้งกลับตอนบันทึก — ข้อความอยู่ใน languages.tsv (erp_gl_notice_*)
+function glNoticeFor(status?: string, docno?: string): { key: string; fallback: string; docno?: string } | null {
+  if (status === "posted") return { key: "erp_gl_notice_posted", fallback: "ลงบัญชีแล้ว เลขที่ใบสำคัญ {0}", docno };
+  if (status === "no_mapping") {
+    return {
+      key: "erp_gl_notice_no_mapping",
+      fallback: "บันทึกเอกสารแล้ว แต่ยังไม่ได้ลงบัญชี เพราะยังไม่ได้ตั้งรูปแบบลงบัญชีของเอกสารประเภทนี้ (ตั้งได้ที่เมนูการจับคู่บัญชี)",
+    };
+  }
+  if (status === "no_amount") {
+    return { key: "erp_gl_notice_no_amount", fallback: "บันทึกเอกสารแล้ว แต่ไม่ได้ลงบัญชี เพราะยอดรวมของเอกสารเป็นศูนย์" };
+  }
+  return null;
+}
+
 export function ErpCrudWorkbench({
   route,
   embedded = false,
@@ -71,6 +86,13 @@ export function ErpCrudWorkbench({
   }, [backendUrl]);
   const dictionary = useBackendLanguage(language, backendUrl || undefined);
   const [alertKey, setAlertKey] = useState<string | null>(null);
+  // ข้อความอธิบายจาก backend (แปลตามภาษาแล้ว) เมื่อบันทึก/ลบถูกปฏิเสธด้วยเหตุผลทางบัญชี เช่น ปีบัญชีปิด เลขที่ซ้ำ ถูกตัดหนี้แล้ว
+  const [alertDetail, setAlertDetail] = useState<string | null>(null);
+  const [glNotice, setGlNotice] = useState<{ key: string; fallback: string; docno?: string } | null>(null);
+  const showAlert = (key: string | null, detail?: string) => {
+    setAlertKey(key);
+    setAlertDetail(detail ?? null);
+  };
   const moduleUnavailable = alertKey === "module_not_available";
   const config = useMemo(() => getErpModuleConfig(route), [route]);
 
@@ -119,12 +141,12 @@ export function ErpCrudWorkbench({
     try {
       const res = await fetchErpTransactions(config, { q: searchQuery });
       if (res.error) {
-        setAlertKey(res.error);
+        showAlert(res.error);
         setItems([]);
         return;
       }
       setItems(res.items);
-      setAlertKey(null);
+      showAlert(null);
       if (res.items.length > 0 && !selectedDoc && !isEditing) {
         setSelectedDoc(res.items[0]);
       }
@@ -252,9 +274,9 @@ export function ErpCrudWorkbench({
     if (!ok) return;
 
     setLoading(true);
-    const res = await deleteErpTransaction(config, doc.id);
+    const res = await deleteErpTransaction(config, doc.id, language);
     if (!res.success) {
-      setAlertKey(res.message ?? "delete_failed");
+      showAlert(res.message ?? "delete_failed", res.detail);
       setLoading(false);
       return;
     }
@@ -263,7 +285,8 @@ export function ErpCrudWorkbench({
       setIsEditing(false);
       setIsDirty(false);
     }
-    setAlertKey(null);
+    showAlert(null);
+    setGlNotice(null);
     await loadData();
   };
 
@@ -352,16 +375,16 @@ export function ErpCrudWorkbench({
     if (!(formDoc.id ? screenActions.update : screenActions.create)) return;
     // เอกสารใหม่ปล่อยว่างได้ — backend ออกเลขที่ให้ตอนบันทึก; เอกสารเดิมต้องมีเลขที่
     if (formDoc.id && !formDoc.docno?.trim()) {
-      setAlertKey("docno_required");
+      showAlert("docno_required");
       return;
     }
 
     setLoading(true);
-    const res = await saveErpTransaction(config, formDoc, Boolean(formDoc.id));
+    const res = await saveErpTransaction(config, formDoc, Boolean(formDoc.id), language);
     setLoading(false);
 
     if (!res.success) {
-      setAlertKey(res.message ?? "save_failed");
+      showAlert(res.message ?? "save_failed", res.detail);
       return;
     }
 
@@ -370,7 +393,8 @@ export function ErpCrudWorkbench({
     }
     setIsEditing(false);
     setIsDirty(false);
-    setAlertKey(null);
+    showAlert(null);
+    setGlNotice(glNoticeFor(res.data?.glstatus, res.data?.gldocno));
     await loadData();
   };
 
@@ -497,6 +521,28 @@ export function ErpCrudWorkbench({
         </div>
       ) : null}
 
+      {glNotice ? (
+        // เอกสารบันทึกแล้วแต่ไม่ได้ลงบัญชี (ยังไม่ตั้งรูปแบบลงบัญชี/ยอดเป็นศูนย์) หรือลงบัญชีแล้ว — บอกผลตรง ๆ ไม่ให้เข้าใจผิด
+        <div
+          role="status"
+          className="mb-3 shrink-0 flex items-start gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[0.95rem] leading-relaxed text-foreground"
+        >
+          <Info className="mt-0.5 size-5 shrink-0" />
+          <p className="flex-1">
+            {backendText(dictionary, glNotice.key, glNotice.fallback).replace("{0}", glNotice.docno ?? "")}
+          </p>
+          <button
+            type="button"
+            aria-label="ปิดข้อความแจ้งเตือน"
+            title="ปิดข้อความแจ้งเตือน"
+            onClick={() => setGlNotice(null)}
+            className="rounded-md p-1 hover:opacity-70 focus:outline-none"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      ) : null}
+
       {alertKey && !moduleUnavailable ? (
         <div
           role="alert"
@@ -504,7 +550,7 @@ export function ErpCrudWorkbench({
         >
           <AlertCircle className="mt-0.5 size-5 shrink-0" />
           <p className="flex-1">
-            {backendText(
+            {alertDetail ?? backendText(
               dictionary,
               alertKey,
               alertKey === "save_failed"
@@ -530,7 +576,7 @@ export function ErpCrudWorkbench({
             type="button"
             aria-label="ปิดข้อความแจ้งเตือน"
             title="ปิดข้อความแจ้งเตือน"
-            onClick={() => setAlertKey(null)}
+            onClick={() => showAlert(null)}
             className="rounded-md p-1 text-destructive hover:opacity-70 focus:outline-none"
           >
             <X className="size-4" />
