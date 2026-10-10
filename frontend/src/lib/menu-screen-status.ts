@@ -34,6 +34,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/work-date",
   "/settings/product-by-warehouse",
   "/settings/default-warehouse",
+  "/settings/currency",
+  "/settings/payment-terms",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

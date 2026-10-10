@@ -380,9 +380,11 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/settings/product-by-warehouse": "warehouse",
   "/settings/default-warehouse": "warehouse",
   "/pending/system-currency": "currency",
+  "/settings/currency": "currency",
   "/pending/system-main-map": "map",
   "/pending/system-credit-debit-reasons": "list",
   "/pending/system-payment-terms": "payment",
+  "/settings/payment-terms": "payment",
   "/pending/system-customer-inquiry": "users",
   "/pending/system-product-inquiry": "package",
   // Settings screens opened from the menu bar (menu-bars.ts route nodes) that had no explicit icon yet.

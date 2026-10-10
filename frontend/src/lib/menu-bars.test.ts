@@ -21,8 +21,7 @@ const CHAMP_HEADS = [
 /** Items the real Champ menu has but BC has no screen for yet — added as "รอพัฒนา" (no real route). */
 const CHAMP_ONLY_PENDING_IDS = [
   // 2026-10-09 (S2): items of the Champ "จัดการระบบ" head BC has no screen for yet
-  "system-currency",
-  "system-main-map", "system-credit-debit-reasons", "system-payment-terms", "system-customer-inquiry", "system-product-inquiry",
+  "system-main-map", "system-credit-debit-reasons", "system-customer-inquiry", "system-product-inquiry",
   // 2026-10-10: items of the Champ "หน้าต่าง" and "ช่วยเหลือ" heads BC has no screen for yet
   "help-about", "help-standard-software",
 ];
@@ -272,7 +271,7 @@ describe("Champ-style menu bar layout", () => {
     // the catalog items of the head are the pending screens plus the six code screens — nothing else
     const catalogIds = menuBarItems(MENU_BARS.find((bar) => bar.id === "system")?.nodes ?? []).map((entry) => entry.id);
     expect(catalogIds.filter((id) => !CHAMP_ONLY_PENDING_IDS.includes(id)).sort()).toEqual(
-      ["barcode", "brand", "gl-dimensions", "product-group", "product-unit", "system-default-warehouse", "system-journal-format", "system-product-by-warehouse", "system-work-date", "warehouse"],
+      ["barcode", "brand", "gl-dimensions", "product-group", "product-unit", "system-currency", "system-default-warehouse", "system-journal-format", "system-payment-terms", "system-product-by-warehouse", "system-work-date", "warehouse"],
     );
   });
 

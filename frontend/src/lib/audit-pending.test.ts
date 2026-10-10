@@ -39,7 +39,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: stock-count-handheld (/inventory/stock-count-handheld) and product-supplier-update (/inventory/product-supplier-update) connected = 28.
     // 2026-10-10: system-journal-format (/settings/journal-format) and system-work-date (/settings/work-date) connected = 26.
     // 2026-10-10: system-product-by-warehouse (/settings/product-by-warehouse) and system-default-warehouse (/settings/default-warehouse) connected = 24.
-    expect(pendingList.length).toBe(24);
+    // 2026-10-10: system-currency (/settings/currency) and system-payment-terms (/settings/payment-terms) connected = 22.
+    expect(pendingList.length).toBe(22);
   });
 });
 

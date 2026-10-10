@@ -151,6 +151,8 @@ import { SystemJournalFormatScreen } from "@/components/system-journal-format-sc
 import { SystemWorkDateScreen } from "@/components/system-work-date-screen";
 import { SystemProductByWarehouseScreen } from "@/components/system-product-by-warehouse-screen";
 import { SystemDefaultWarehouseScreen } from "@/components/system-default-warehouse-screen";
+import { SystemCurrencyScreen } from "@/components/system-currency-screen";
+import { SystemPaymentTermsScreen } from "@/components/system-payment-terms-screen";
 
 type WorkTab = {
   id: string;
@@ -2407,6 +2409,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/settings/default-warehouse") {
     return <SystemDefaultWarehouseScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/currency") {
+    return <SystemCurrencyScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/payment-terms") {
+    return <SystemPaymentTermsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {
