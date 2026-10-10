@@ -10,8 +10,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
-  it("registers all 29 ERP report routes across 6 categories", () => {
-    expect(ERP_REPORT_CONFIGS.length).toBe(29);
+  it("registers all 31 ERP report routes across 6 categories", () => {
+    expect(ERP_REPORT_CONFIGS.length).toBe(31);
 
     // Inventory
     expect(isErpReportRoute("/report/stockbalanceitem")).toBe(true);
@@ -20,6 +20,8 @@ describe("Unified ERP Reporting Engine", () => {
     expect(isErpReportRoute("/report/lowstock")).toBe(true);
     expect(isErpReportRoute("/report/stockmovementcost")).toBe(true);
     expect(isErpReportRoute("/report/reportstockmovement")).toBe(true);
+    expect(isErpReportRoute("/report/productstatus")).toBe(true);
+    expect(isErpReportRoute("/report/productpricesetting")).toBe(true);
 
     // Sales
     expect(isErpReportRoute("/report/reportdedebisales")).toBe(true);
@@ -73,6 +75,8 @@ describe("fetchErpReportData", () => {
     expect(isErpReportApiReady("ar_status")).toBe(true);
     expect(isErpReportApiReady("ar_outstanding")).toBe(true);
     expect(isErpReportApiReady("ar_credit_limit")).toBe(true);
+    expect(isErpReportApiReady("product_status_report")).toBe(true);
+    expect(isErpReportApiReady("product_price_setting_report")).toBe(true);
 
     expect(isErpReportApiReady("ar_aging")).toBe(false);
     expect(isErpReportApiReady("dbd_xbrl_export")).toBe(false);
@@ -357,5 +361,62 @@ describe("fetchErpReportData", () => {
       paidamount: 0,
       balanceamount: 10000,
     });
+  });
+  it("maps product_status_report from inventory-valuation payload", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        holdingcode: "H01",
+        items: [{
+          itemcode: "ITEM-01",
+          itemname: "สินค้าทดสอบ 1",
+          unitcode: "PCS",
+          qty: 50,
+          averagecost: 120.5,
+          totalvalue: 6025,
+        }],
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchErpReportData({
+      code: "product_status_report",
+      holdingcode: "H01",
+      fromdate: "2026-01-01",
+      todate: "2026-01-31",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].itemcode).toBe("ITEM-01");
+    expect(result.rows[0].qty).toBe(50);
+    expect(result.rows[0].status).toBe("ปกติ");
+  });
+
+  it("maps product_price_setting_report from inventory-valuation payload", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        holdingcode: "H01",
+        items: [{
+          itemcode: "ITEM-02",
+          itemname: "สินค้าทดสอบ 2",
+          unitcode: "BOX",
+          averagecost: 100,
+        }],
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchErpReportData({
+      code: "product_price_setting_report",
+      holdingcode: "H01",
+      fromdate: "2026-01-01",
+      todate: "2026-01-31",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].itemcode).toBe("ITEM-02");
+    expect(result.rows[0].cost).toBe(100);
+    expect(result.rows[0].price1).toBe(125);
   });
 });

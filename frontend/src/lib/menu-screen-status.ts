@@ -14,6 +14,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
   "/report/vatsummary", "/customer/label-print",
+  "/ar/billing-note-auto-print",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

@@ -22,8 +22,7 @@ describe("menu screen availability", () => {
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
     // Pending items the real Champ menu has but BC has no screen for yet (shown as "รอพัฒนา").
-    "/pending/billing-note-auto", "/pending/billing-note-auto-print",
-    "/pending/product-status-report", "/pending/product-price-setting-report",
+    "/pending/billing-note-auto",
     // 2026-10-09 (S1): Champ items of the transaction heads without a screen yet.
     "/pending/sale-reservation",
     "/pending/sale-dispatch",

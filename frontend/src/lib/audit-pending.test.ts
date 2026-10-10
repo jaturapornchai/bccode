@@ -28,7 +28,7 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: +8 items of the Champ หน้าต่าง/ช่วยเหลือ heads without a screen yet (/pending/*) = 57.
     // 2026-10-10 (Champ Parity Phase 3): -1 purchase-receipt-date-adjust connected (/procurement/delivery-dates) = 56.
     // 2026-10-10 (Champ Parity Phase 4): -2 purchasereceiptadjustment + customer-label-print connected = 54.
-    expect(pendingList.length).toBe(54);
+    expect(pendingList.length).toBe(51);
   });
 });
 

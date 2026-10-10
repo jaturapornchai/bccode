@@ -132,6 +132,7 @@ import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
 import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
+import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
 
 type WorkTab = {
   id: string;
@@ -2305,6 +2306,10 @@ function WorkTabPanel({
 
   if (activeTab.route === "/customer/label-print") {
     return <CustomerLabelPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/ar/billing-note-auto-print") {
+    return <BillingNoteAutoPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

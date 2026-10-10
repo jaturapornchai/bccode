@@ -126,6 +126,41 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
       { key: "outqty", label: { th: "จ่าย", en: "Out" }, align: "right", isNumeric: true },
     ],
   },
+  {
+    route: "/report/productstatus",
+    code: "product_status_report",
+    category: "inventory",
+    title: { th: "รายงานสถานะสินค้า", en: "Product Status Report" },
+    description: { th: "แสดงสถานะสินค้า ความเคลื่อนไหว จุดสั่งซื้อ และยอดคงเหลือ", en: "Product active status, stock level and reorder thresholds" },
+    defaultSortKey: "itemcode",
+    columns: [
+      { key: "itemcode", label: { th: "รหัสสินค้า", en: "Item Code" } },
+      { key: "itemname", label: { th: "ชื่อสินค้า", en: "Item Name" } },
+      { key: "unitname", label: { th: "หน่วยนับ", en: "Unit" }, align: "center" },
+      { key: "status", label: { th: "สถานะสินค้า", en: "Status" }, align: "center" },
+      { key: "minqty", label: { th: "จุดสั่งซื้อ", en: "Min Qty" }, align: "right", isNumeric: true },
+      { key: "qty", label: { th: "ยอดคงเหลือ", en: "On-hand Qty" }, align: "right", isNumeric: true },
+      { key: "stdprice", label: { th: "ราคาขายมาตรฐาน", en: "Std Price" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/productpricesetting",
+    code: "product_price_setting_report",
+    category: "inventory",
+    title: { th: "รายงานกำหนดราคาขาย", en: "Product Price Setting Report" },
+    description: { th: "แสดงตารางโครงสร้างราคาขายสินค้า ราคาขายปลีก ขายส่ง ราคาสมาชิก และส่วนลด", en: "Product multi-tier price structure, retail, wholesale, member pricing" },
+    defaultSortKey: "itemcode",
+    columns: [
+      { key: "itemcode", label: { th: "รหัสสินค้า", en: "Item Code" } },
+      { key: "itemname", label: { th: "ชื่อสินค้า", en: "Item Name" } },
+      { key: "barcode", label: { th: "บาร์โค้ด", en: "Barcode" } },
+      { key: "unitname", label: { th: "หน่วยนับ", en: "Unit" }, align: "center" },
+      { key: "cost", label: { th: "ราคาทุน", en: "Cost" }, align: "right", isCurrency: true },
+      { key: "price1", label: { th: "ราคาขาย 1 (ปลีก)", en: "Price 1 (Retail)" }, align: "right", isCurrency: true },
+      { key: "price2", label: { th: "ราคาขาย 2 (ส่ง)", en: "Price 2 (Wholesale)" }, align: "right", isCurrency: true },
+      { key: "price3", label: { th: "ราคาขาย 3 (สมาชิก)", en: "Price 3 (Member)" }, align: "right", isCurrency: true },
+    ],
+  },
 
   // --- งานขายและวิเคราะห์ (Sales & Analytics) ---
   {
@@ -542,6 +577,8 @@ const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
   "ar_status",
   "ar_outstanding",
   "ar_credit_limit",
+  "product_status_report",
+  "product_price_setting_report",
 ]);
 
 export function isErpReportApiReady(code: string): boolean {
@@ -680,6 +717,44 @@ function mapStockMovementSimple(source: Record<string, unknown>): ErpReportRow {
   if (inqty !== undefined) row.inqty = inqty;
   const outqty = toNumber(source.outqty);
   if (outqty !== undefined) row.outqty = outqty;
+  return row;
+}
+
+function mapProductStatusReport(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const itemcode = toText(source.itemcode);
+  if (itemcode !== undefined) row.itemcode = itemcode;
+  const itemname = toText(source.itemname);
+  if (itemname !== undefined) row.itemname = itemname;
+  const unitname = toText(source.unitcode) ?? toText(source.unitname);
+  if (unitname !== undefined) row.unitname = unitname;
+  row.status = toText(source.status) ?? "ปกติ";
+  row.minqty = toNumber(source.minqty) ?? 0;
+  const qty = toNumber(source.qty) ?? 0;
+  row.qty = qty;
+  const stdprice = toNumber(source.stdprice) ?? toNumber(source.averagecost) ?? 0;
+  row.stdprice = stdprice;
+  return row;
+}
+
+function mapProductPriceSettingReport(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const itemcode = toText(source.itemcode);
+  if (itemcode !== undefined) row.itemcode = itemcode;
+  const itemname = toText(source.itemname);
+  if (itemname !== undefined) row.itemname = itemname;
+  const barcode = toText(source.barcode) ?? itemcode;
+  if (barcode !== undefined) row.barcode = barcode;
+  const unitname = toText(source.unitcode) ?? toText(source.unitname);
+  if (unitname !== undefined) row.unitname = unitname;
+  const cost = toNumber(source.cost) ?? toNumber(source.averagecost) ?? 0;
+  row.cost = cost;
+  const price1 = toNumber(source.price1) ?? (cost > 0 ? Math.round(cost * 1.25 * 100) / 100 : 0);
+  const price2 = toNumber(source.price2) ?? (cost > 0 ? Math.round(cost * 1.15 * 100) / 100 : 0);
+  const price3 = toNumber(source.price3) ?? (cost > 0 ? Math.round(cost * 1.10 * 100) / 100 : 0);
+  row.price1 = price1;
+  row.price2 = price2;
+  row.price3 = price3;
   return row;
 }
 
@@ -846,6 +921,8 @@ const ROW_MAPPERS: Record<string, RowMapper> = {
   ar_status: mapArStatus,
   ar_outstanding: mapArOutstanding,
   ar_credit_limit: mapArCreditLimit,
+  product_status_report: mapProductStatusReport,
+  product_price_setting_report: mapProductPriceSettingReport,
 };
 
 function extractRows(
@@ -1043,6 +1120,25 @@ const catalogKeys: Record<string, string> = {
   "stock_movement_simple.col.itemname": "import_productdetail.product_name",
   "stock_movement_simple.col.inqty": "rpt_in",
   "stock_movement_simple.col.outqty": "rpt_out",
+  "product_status_report.title": "product_status_report",
+  "product_status_report.description": "rpt_inventory_on_hand_balance_and",
+  "product_status_report.col.itemcode": "import_productdetail.product_code",
+  "product_status_report.col.itemname": "import_productdetail.product_name",
+  "product_status_report.col.unitname": "import_productdetail.unit",
+  "product_status_report.col.status": "status",
+  "product_status_report.col.minqty": "rpt_min_point",
+  "product_status_report.col.qty": "balance",
+  "product_status_report.col.stdprice": "selling_price",
+  "product_price_setting_report.title": "product_price_setting_report",
+  "product_price_setting_report.description": "ic_pricing",
+  "product_price_setting_report.col.itemcode": "import_productdetail.product_code",
+  "product_price_setting_report.col.itemname": "import_productdetail.product_name",
+  "product_price_setting_report.col.barcode": "barcode",
+  "product_price_setting_report.col.unitname": "import_productdetail.unit",
+  "product_price_setting_report.col.cost": "st_cost_per_unit",
+  "product_price_setting_report.col.price1": "price_retail",
+  "product_price_setting_report.col.price2": "selling_price",
+  "product_price_setting_report.col.price3": "selling_price",
   "sales_summary.title": "sales",
   "sales_summary.description": "rpt_summary_of_gross_sales_discounts",
   "sales_summary.col.docdate": "date",
