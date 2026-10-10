@@ -63,34 +63,52 @@ async function run() {
     // Wait until menu
     console.log("Step 4: Checking menu URL:", page.url());
 
-    // 4. Test Cheque Received Report
-    console.log("Step 5: Opening รายงานเช็ครับ via เช็ค/บัตร menu...");
+    // 4. Test Cheque Received Report via Submenu "รายงานข้อมูลหลัก"
+    console.log("Step 5: Opening รายงานเช็ครับ via เช็ค/บัตร -> รายงานข้อมูลหลัก...");
     const chequeMenu = page.getByRole("button", { name: "เช็ค/บัตร" });
     await chequeMenu.click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
+
+    const masterReportsSub1 = page.locator('[role="menuitem"]').filter({ hasText: "รายงานข้อมูลหลัก" }).first();
+    await masterReportsSub1.hover();
+    await page.waitForTimeout(600);
+
     const chqRecItem = page.locator('[role="menuitem"]').filter({ hasText: "รายงานเช็ครับ" }).first();
+    await chqRecItem.waitFor({ state: "visible", timeout: 5000 });
     await chqRecItem.click();
     await page.waitForTimeout(3000);
     const chqRecScreenshot = path.join(OUTPUT_DIR, "cheque-received-report.png");
     await page.screenshot({ path: chqRecScreenshot, fullPage: true });
     console.log("Saved screenshot:", chqRecScreenshot);
 
-    // 5. Test Cheque Issued Report
-    console.log("Step 6: Opening รายงานเช็คจ่าย via เช็ค/บัตร menu...");
+    // 5. Test Cheque Issued Report via Submenu
+    console.log("Step 6: Opening รายงานเช็คจ่าย via เช็ค/บัตร -> รายงานข้อมูลหลัก...");
     await chequeMenu.click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
+
+    const masterReportsSub2 = page.locator('[role="menuitem"]').filter({ hasText: "รายงานข้อมูลหลัก" }).first();
+    await masterReportsSub2.hover();
+    await page.waitForTimeout(600);
+
     const chqIssItem = page.locator('[role="menuitem"]').filter({ hasText: "รายงานเช็คจ่าย" }).first();
+    await chqIssItem.waitFor({ state: "visible", timeout: 5000 });
     await chqIssItem.click();
     await page.waitForTimeout(3000);
     const chqIssScreenshot = path.join(OUTPUT_DIR, "cheque-issued-report.png");
     await page.screenshot({ path: chqIssScreenshot, fullPage: true });
     console.log("Saved screenshot:", chqIssScreenshot);
 
-    // 6. Test Credit Card Report
-    console.log("Step 7: Opening รายงานบัตรเครดิต via เช็ค/บัตร menu...");
+    // 6. Test Credit Card Report via Submenu
+    console.log("Step 7: Opening รายงานบัตรเครดิต via เช็ค/บัตร -> รายงานข้อมูลหลัก...");
     await chequeMenu.click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
+
+    const masterReportsSub3 = page.locator('[role="menuitem"]').filter({ hasText: "รายงานข้อมูลหลัก" }).first();
+    await masterReportsSub3.hover();
+    await page.waitForTimeout(600);
+
     const cardItem = page.locator('[role="menuitem"]').filter({ hasText: "รายงานบัตรเครดิต" }).first();
+    await cardItem.waitFor({ state: "visible", timeout: 5000 });
     await cardItem.click();
     await page.waitForTimeout(3000);
     const cardScreenshot = path.join(OUTPUT_DIR, "credit-card-report.png");

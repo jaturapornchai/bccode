@@ -44,7 +44,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: system-customer-inquiry (/settings/customer-inquiry) and system-product-inquiry (/settings/product-inquiry) connected = 18.
     // 2026-10-10: help-about (/settings/about) and help-standard-software (/settings/standard-software) connected = 16.
     // 2026-10-10 (Champ Parity Phase 8 - Round 10): 3 cheque and credit card reports connected (/report/chequereceived, /report/chequeissued, /report/creditcard) = 13.
-    expect(pendingList.length).toBe(13);
+    // 2026-10-10 (Champ Parity Phase 8 - Round 11): 4 bank and cash reports connected (/report/bankstatement, /report/cashmovement, /report/pettycashmovement, /report/monthlypaymentbook) = 9.
+    expect(pendingList.length).toBe(9);
   });
 });
 

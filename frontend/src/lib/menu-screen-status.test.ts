@@ -16,8 +16,6 @@ describe("menu screen availability", () => {
   // AP/AR debt reports (8 routes) connected to PostgreSQL via /api/report/debt/query on 2026-09-19.
   const CHAMP_PENDING_ROUTES = [
     "/transaction/purchasereducedebt", "/transaction/rfqpricetable",
-    "/report/bankstatement",
-    "/report/cashmovement", "/report/pettycashmovement", "/report/monthlypaymentbook",
     "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
   ];

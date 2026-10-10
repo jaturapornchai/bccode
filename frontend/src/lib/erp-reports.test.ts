@@ -10,8 +10,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
-  it("registers all 34 ERP report routes across 7 categories", () => {
-    expect(ERP_REPORT_CONFIGS.length).toBe(34);
+  it("registers all 38 ERP report routes across 7 categories", () => {
+    expect(ERP_REPORT_CONFIGS.length).toBe(38);
 
     // Inventory
     expect(isErpReportRoute("/report/stockbalanceitem")).toBe(true);
@@ -54,10 +54,14 @@ describe("Unified ERP Reporting Engine", () => {
     // XBRL
     expect(isErpReportRoute("/report/xbrl")).toBe(true);
 
-    // Finance & Cheque
+    // Finance, Cheque & Bank
     expect(isErpReportRoute("/report/chequereceived")).toBe(true);
     expect(isErpReportRoute("/report/chequeissued")).toBe(true);
     expect(isErpReportRoute("/report/creditcard")).toBe(true);
+    expect(isErpReportRoute("/report/bankstatement")).toBe(true);
+    expect(isErpReportRoute("/report/cashmovement")).toBe(true);
+    expect(isErpReportRoute("/report/pettycashmovement")).toBe(true);
+    expect(isErpReportRoute("/report/monthlypaymentbook")).toBe(true);
   });
 });
 
