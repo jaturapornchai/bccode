@@ -44,11 +44,6 @@ describe("menu screen availability", () => {
     "/pending/system-customer-inquiry",
     "/pending/system-product-inquiry",
     // 2026-10-10: Champ หน้าต่าง / ช่วยเหลือ items without a screen yet.
-    "/pending/window-font-report",
-    "/pending/window-font-report-title",
-    "/pending/window-font-report-column",
-    "/pending/window-font-report-detail",
-    "/pending/window-font-report-company",
     "/pending/help-about",
     "/pending/help-standard-software",
   ];
@@ -63,10 +58,9 @@ describe("menu screen availability", () => {
   ];
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
-  // 2026-10-10: /transaction/withholdingtax เชื่อมกับ /report/whtcertificate แล้ว; /banking/contacts เชื่อมกับ BankingContactsScreen แล้ว
+  // 2026-10-10: /transaction/withholdingtax เชื่อมกับ /report/whtcertificate แล้ว; /banking/contacts เชื่อมกับ BankingContactsScreen แล้ว; /banking/petty-cash-limit เชื่อมกับ PettyCashLimitScreen แล้ว
   const NO_BACKEND_DOCUMENT_ROUTES = [
     "/transaction/etax",
-    "/banking/petty-cash-limit",
   ];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {

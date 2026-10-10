@@ -2,18 +2,36 @@ import { describe, expect, it } from "vitest";
 import { isMenuScreenPending } from "@/lib/menu-screen-status";
 import { flattenMenuItems } from "@/lib/menu-data";
 import { appFonts, defaultFontId, normalizeAppFont } from "@/lib/font-data";
+import { FONT_TARGET_CONFIGS, targetFromRoute } from "./screen-font-settings";
 
-describe("Screen Font Settings (Champ parity - Window Font)", () => {
-  it("has active route /settings/font in menu hierarchy under window head", () => {
+describe("Screen Font Settings (Champ parity - Window Fonts)", () => {
+  it("has active routes for all 6 font settings in menu hierarchy under window head", () => {
     const items = flattenMenuItems();
-    const item = items.find((i) => i.id === "window-font-screen");
-    expect(item).toBeDefined();
-    expect(item?.route).toBe("/settings/font");
-    expect(item?.label.th).toContain("เลือกตัวอักษรสำหรับหน้าจอทั่วไป");
+    const targets = [
+      { id: "window-font-screen", route: "/settings/font", label: "เลือกตัวอักษรสำหรับหน้าจอทั่วไป" },
+      { id: "window-font-report", route: "/settings/font-report", label: "เลือกตัวอักษรสำหรับรายงานทั่วไป" },
+      { id: "window-font-report-title", route: "/settings/font-report-title", label: "เลือกตัวอักษรสำหรับชื่อของรายงาน" },
+      { id: "window-font-report-column", route: "/settings/font-report-column", label: "เลือกตัวอักษรสำหรับคอลัมน์ของรายงาน" },
+      { id: "window-font-report-detail", route: "/settings/font-report-detail", label: "เลือกตัวอักษรสำหรับรายการย่อยของรายงาน" },
+      { id: "window-font-report-company", route: "/settings/font-report-company", label: "เลือกตัวอักษรสำหรับชื่อบริษัทในรายงาน" },
+    ];
+
+    for (const t of targets) {
+      const item = items.find((i) => i.id === t.id);
+      expect(item, t.id).toBeDefined();
+      expect(item?.route).toBe(t.route);
+      expect(item?.label.th).toContain(t.label);
+      expect(isMenuScreenPending(t.route)).toBe(false);
+    }
   });
 
-  it("is recognized as an active connected screen (not pending)", () => {
-    expect(isMenuScreenPending("/settings/font")).toBe(false);
+  it("correctly resolves target from route parameter", () => {
+    expect(targetFromRoute("/settings/font")).toBe("screen");
+    expect(targetFromRoute("/settings/font-report")).toBe("report");
+    expect(targetFromRoute("/settings/font-report-title")).toBe("report-title");
+    expect(targetFromRoute("/settings/font-report-column")).toBe("report-column");
+    expect(targetFromRoute("/settings/font-report-detail")).toBe("report-detail");
+    expect(targetFromRoute("/settings/font-report-company")).toBe("report-company");
   });
 
   it("provides available fonts with default Thai typography", () => {
@@ -21,5 +39,6 @@ describe("Screen Font Settings (Champ parity - Window Font)", () => {
     expect(defaultFontId).toBe("inter");
     expect(normalizeAppFont("sarabun")).toBe("sarabun");
     expect(normalizeAppFont("non-existent-font")).toBe(defaultFontId);
+    expect(Object.keys(FONT_TARGET_CONFIGS)).toHaveLength(6);
   });
 });

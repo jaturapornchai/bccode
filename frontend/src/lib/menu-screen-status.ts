@@ -16,6 +16,9 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/report/vatsummary", "/customer/label-print",
   "/ar/billing-note-auto-print",
   "/settings/font", "/banking/contacts",
+  "/settings/font-report", "/settings/font-report-title",
+  "/settings/font-report-column", "/settings/font-report-detail", "/settings/font-report-company",
+  "/banking/petty-cash-limit",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

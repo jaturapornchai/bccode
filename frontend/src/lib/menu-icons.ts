@@ -375,6 +375,11 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/debtorgroup": "users",
   // 2026-10-10: Champ "หน้าต่าง" and "ช่วยเหลือ" pending items
   "/settings/font": "settings",
+  "/settings/font-report": "fileText",
+  "/settings/font-report-title": "fileText",
+  "/settings/font-report-column": "table",
+  "/settings/font-report-detail": "list",
+  "/settings/font-report-company": "building",
   "/pending/window-font-screen": "settings",
   "/pending/window-font-report": "fileText",
   "/pending/window-font-report-title": "fileText",

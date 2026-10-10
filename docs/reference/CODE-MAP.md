@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit 57f20dce - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit afcd11c9 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 32
+Files indexed: 33
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (16117 lines)
 
@@ -432,62 +432,62 @@ Files indexed: 32
 | 1195 | const-arrow | `handleSave` |
 | 2355 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2364 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2376 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 221 | function | `mt` |
-| 226 | function | `isRecord` |
-| 230 | function | `stringValue` |
-| 234 | function | `stringArray` |
-| 247 | function | `normalizeSettingRecords` |
-| 267 | function | `fetchAllowedMenuIds` |
-| 303 | function | `fetchSessionStats` |
-| 350 | function | `sessionTimeText` |
-| 361 | function | `sessionRelativeText` |
-| 371 | function | `sessionStatsTooltip` |
-| 392 | function | `guardsUnsavedRoute` |
-| 396 | function | `MainMenuScreen` |
-| 404 | function | `MainMenuDashboard` |
-| 530 | function | `loadProfile` |
-| 558 | function | `loadMenuPermissions` |
-| 655 | function | `confirmLeaveLedger` |
-| 661 | function | `selectWorkTab` |
-| 666 | function | `openWorkspace` |
-| 670 | function | `openMenuItem` |
-| 717 | function | `openMenuItemInNewTab` |
-| 721 | function | `openManageShortcuts` |
-| 740 | function | `openOverview` |
-| 747 | function | `toggleSection` |
-| 754 | function | `closeAllTabs` |
-| 762 | function | `runMenuAction` |
-| 771 | function | `closeTab` |
-| 781 | function | `reorderTabs` |
-| 797 | function | `stopLinePolling` |
-| 804 | function | `handleLineLink` |
-| 855 | function | `startLinePolling` |
-| 869 | function | `pollLineLink` |
-| 903 | function | `closeLineDialog` |
-| 909 | function | `copyLineLoginUrl` |
-| 919 | function | `handleChangePassword` |
-| 971 | function | `logout` |
-| 980 | function | `handleContentScroll` |
-| 1008 | const-arrow | `onPointerMove` |
-| 1014 | const-arrow | `onPointerUp` |
-| 1698 | function | `SidebarButton` |
-| 1731 | function | `MenuSectionAccordion` |
-| 1825 | function | `MenuTreeFolder` |
-| 1877 | function | `MenuTreeItemButton` |
-| 1943 | function | `getVisibleItems` |
-| 1953 | function | `getBarTreeNodes` |
-| 1970 | function | `SectionIcon` |
-| 1988 | function | `OpenTabs` |
-| 2042 | function | `captureTabRects` |
-| 2053 | function | `getInsertSide` |
-| 2058 | function | `clearDragState` |
-| 2065 | function | `reorderFromPointer` |
-| 2190 | function | `WorkTabPanel` |
-| 2349 | function | `DashboardLoading` |
+| 222 | function | `mt` |
+| 227 | function | `isRecord` |
+| 231 | function | `stringValue` |
+| 235 | function | `stringArray` |
+| 248 | function | `normalizeSettingRecords` |
+| 268 | function | `fetchAllowedMenuIds` |
+| 304 | function | `fetchSessionStats` |
+| 351 | function | `sessionTimeText` |
+| 362 | function | `sessionRelativeText` |
+| 372 | function | `sessionStatsTooltip` |
+| 393 | function | `guardsUnsavedRoute` |
+| 397 | function | `MainMenuScreen` |
+| 405 | function | `MainMenuDashboard` |
+| 531 | function | `loadProfile` |
+| 559 | function | `loadMenuPermissions` |
+| 656 | function | `confirmLeaveLedger` |
+| 662 | function | `selectWorkTab` |
+| 667 | function | `openWorkspace` |
+| 671 | function | `openMenuItem` |
+| 718 | function | `openMenuItemInNewTab` |
+| 722 | function | `openManageShortcuts` |
+| 741 | function | `openOverview` |
+| 748 | function | `toggleSection` |
+| 755 | function | `closeAllTabs` |
+| 763 | function | `runMenuAction` |
+| 772 | function | `closeTab` |
+| 782 | function | `reorderTabs` |
+| 798 | function | `stopLinePolling` |
+| 805 | function | `handleLineLink` |
+| 856 | function | `startLinePolling` |
+| 870 | function | `pollLineLink` |
+| 904 | function | `closeLineDialog` |
+| 910 | function | `copyLineLoginUrl` |
+| 920 | function | `handleChangePassword` |
+| 972 | function | `logout` |
+| 981 | function | `handleContentScroll` |
+| 1009 | const-arrow | `onPointerMove` |
+| 1015 | const-arrow | `onPointerUp` |
+| 1699 | function | `SidebarButton` |
+| 1732 | function | `MenuSectionAccordion` |
+| 1826 | function | `MenuTreeFolder` |
+| 1878 | function | `MenuTreeItemButton` |
+| 1944 | function | `getVisibleItems` |
+| 1954 | function | `getBarTreeNodes` |
+| 1971 | function | `SectionIcon` |
+| 1989 | function | `OpenTabs` |
+| 2043 | function | `captureTabRects` |
+| 2054 | function | `getInsertSide` |
+| 2059 | function | `clearDragState` |
+| 2066 | function | `reorderFromPointer` |
+| 2191 | function | `WorkTabPanel` |
+| 2361 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 
@@ -891,6 +891,24 @@ Files indexed: 32
 | 499 | function | `runCalculation` |
 | 522 | const-arrow | `updateGlobalStyle` |
 | 531 | function | `statementView` |
+
+## frontend/src/components/banking-contacts-screen.tsx (1357 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 174 | function | `BankingContactsScreen` |
+| 235 | const-arrow | `saveToStorage` |
+| 293 | const-arrow | `toggleSelectAll` |
+| 301 | const-arrow | `toggleSelectOne` |
+| 310 | const-arrow | `handleAddNew` |
+| 336 | const-arrow | `handleStartEdit` |
+| 343 | const-arrow | `handleDelete` |
+| 359 | const-arrow | `handleBatchDelete` |
+| 370 | const-arrow | `handleSaveForm` |
+| 411 | const-arrow | `handleResetData` |
+| 422 | const-arrow | `handleExportCsv` |
+| 463 | const-arrow | `handleFileUpload` |
+| 477 | const-arrow | `handleProcessImport` |
 
 ## frontend/src/app/gl/gl-journals.tsx (1354 lines)
 

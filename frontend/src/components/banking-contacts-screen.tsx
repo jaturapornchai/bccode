@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Building2,
   Users,
@@ -18,15 +18,18 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Printer,
-  ChevronRight,
-  ShieldCheck,
+  Upload,
+  CheckSquare,
+  Square,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { useBackendText } from "@/components/backend-text-provider";
-import { thaiBankPresets, type ThaiBankPreset } from "@/lib/thai-banks";
+import { thaiBankPresets } from "@/lib/thai-banks";
 import type { LanguageCode } from "@/lib/i18n";
 
 export interface BankContactRecord {
@@ -52,7 +55,7 @@ const STORAGE_KEY = "bc_banking_contacts_records_v1";
 const SPLIT_STORAGE_KEY = "bc_banking_contacts_split_percent";
 
 // Initial realistic Thai SME data (NO "demo" or "test" strings)
-const INITIAL_BANK_CONTACTS: BankContactRecord[] = [
+export const INITIAL_BANK_CONTACTS: BankContactRecord[] = [
   {
     id: "bc-001",
     bank_code: "KBANK",
@@ -174,7 +177,7 @@ export function BankingContactsScreen({
 }: BankingContactsScreenProps) {
   const tr = useBackendText();
 
-  // Storage
+  // Storage state
   const [contacts, setContacts] = useState<BankContactRecord[]>(INITIAL_BANK_CONTACTS);
   const [selectedBankCode, setSelectedBankCode] = useState<string>("ALL");
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
@@ -182,8 +185,22 @@ export function BankingContactsScreen({
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<BankContactRecord>>({});
 
+  // Batch Selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Modals
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState("");
+
+  // Print Mode
+  const [isPrintPreview, setIsPrintPreview] = useState(false);
+
+  // File input ref for CSV upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Layout splitter
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const {
     splitPercent,
     isResizing,
@@ -272,13 +289,33 @@ export function BankingContactsScreen({
     return contacts.find((c) => c.id === selectedContactId) || filteredContacts[0] || null;
   }, [contacts, filteredContacts, selectedContactId]);
 
+  // Selection toggle
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredContacts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredContacts.map((c) => c.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
   // Start Create New
   const handleAddNew = () => {
     const preset = thaiBankPresets.find((b) => b.code === selectedBankCode) || thaiBankPresets[0];
     setEditFormData({
       id: `bc-${Date.now()}`,
       bank_code: selectedBankCode === "ALL" ? (preset?.code || "KBANK") : selectedBankCode,
-      bank_name: selectedBankCode === "ALL" ? (preset?.nameTh || "ธนาคารกสิกรไทย") : (bankSummary.find((b) => b.bank_code === selectedBankCode)?.bank_name || ""),
+      bank_name:
+        selectedBankCode === "ALL"
+          ? (preset?.nameTh || "ธนาคารกสิกรไทย")
+          : (bankSummary.find((b) => b.bank_code === selectedBankCode)?.bank_name || ""),
       branch_code: "0001",
       branch_name: "สำนักงานใหญ่",
       contact_code: `CT-${String(contacts.length + 1).padStart(2, "0")}`,
@@ -302,16 +339,30 @@ export function BankingContactsScreen({
     setIsEditing(true);
   };
 
-  // Delete Contact
+  // Delete Single Contact
   const handleDelete = (contactId: string) => {
     const c = contacts.find((item) => item.id === contactId);
     if (!c) return;
     if (confirm(`คุณต้องการลบรายชื่อผู้ติดต่อ "${c.name}" (${c.bank_name} ${c.branch_name}) ใช่หรือไม่?`)) {
       const next = contacts.filter((item) => item.id !== contactId);
       saveToStorage(next);
-      if (selectedContactId === contactId) {
-        setSelectedContactId(null);
+      if (selectedContactId === contactId) setSelectedContactId(null);
+      if (selectedIds.has(contactId)) {
+        const nextIds = new Set(selectedIds);
+        nextIds.delete(contactId);
+        setSelectedIds(nextIds);
       }
+    }
+  };
+
+  // Batch Delete
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (confirm(`คุณต้องการลบผู้ติดต่อที่เลือกจำนวน ${selectedIds.size} รายการ ใช่หรือไม่?`)) {
+      const next = contacts.filter((item) => !selectedIds.has(item.id));
+      saveToStorage(next);
+      setSelectedIds(new Set());
+      setSelectedContactId(null);
     }
   };
 
@@ -345,7 +396,9 @@ export function BankingContactsScreen({
       } as BankContactRecord;
       next = [newRec, ...contacts];
       if (newRec.is_primary) {
-        next = next.map((c) => (c.id !== newRec.id && c.bank_code === newRec.bank_code ? { ...c, is_primary: false } : c));
+        next = next.map((c) =>
+          c.id !== newRec.id && c.bank_code === newRec.bank_code ? { ...c, is_primary: false } : c
+        );
       }
     }
 
@@ -360,34 +413,39 @@ export function BankingContactsScreen({
       saveToStorage(INITIAL_BANK_CONTACTS);
       setSelectedBankCode("ALL");
       setSelectedContactId(null);
+      setSelectedIds(new Set());
       setIsEditing(false);
     }
   };
 
   // Export CSV
-  const handleExportCsv = () => {
+  const handleExportCsv = (recordsToExport = filteredContacts) => {
     const headers = [
       "รหัสผู้ติดต่อ",
       "ชื่อผู้ติดต่อ",
       "ตำแหน่ง",
       "ธนาคาร",
+      "รหัสธนาคาร",
       "สาขา",
       "แผนก",
       "โทรศัพท์",
       "มือถือ",
       "อีเมล",
+      "ที่อยู่",
       "ผู้ติดต่อหลัก",
     ];
-    const rows = filteredContacts.map((c) => [
+    const rows = recordsToExport.map((c) => [
       c.contact_code,
       `"${c.name.replace(/"/g, '""')}"`,
       `"${c.position.replace(/"/g, '""')}"`,
       `"${c.bank_name.replace(/"/g, '""')}"`,
+      c.bank_code,
       `"${c.branch_name.replace(/"/g, '""')}"`,
       `"${c.department.replace(/"/g, '""')}"`,
       `"${c.phone}"`,
       `"${c.mobile}"`,
       `"${c.email}"`,
+      `"${c.address.replace(/"/g, '""')}"`,
       c.is_primary ? "ใช่" : "ไม่ใช่",
     ]);
 
@@ -401,10 +459,97 @@ export function BankingContactsScreen({
     URL.revokeObjectURL(url);
   };
 
+  // File Upload Handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setImportText(text);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  // Parse and Import CSV text
+  const handleProcessImport = () => {
+    setImportError("");
+    if (!importText.trim()) {
+      setImportError("กรุณากรอกหรือเลือกไฟล์ CSV");
+      return;
+    }
+
+    try {
+      const lines = importText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length <= 1) {
+        setImportError("ไฟล์ไม่มีข้อมูลเนื้อหา");
+        return;
+      }
+
+      // Check header or parse lines
+      const importedList: BankContactRecord[] = [];
+      const startIndex = lines[0].includes("ชื่อ") || lines[0].includes("name") ? 1 : 0;
+
+      for (let i = startIndex; i < lines.length; i++) {
+        const parts = lines[i].split(",").map((p) => p.replace(/^"|"$/g, "").trim());
+        if (parts.length >= 3) {
+          const contact_code = parts[0] || `CT-${String(contacts.length + i + 1).padStart(2, "0")}`;
+          const name = parts[1];
+          if (!name) continue;
+
+          const position = parts[2] || "";
+          const bank_name = parts[3] || "ธนาคารกสิกรไทย";
+          const bank_code = parts[4] || "KBANK";
+          const branch_name = parts[5] || "สำนักงานใหญ่";
+          const department = parts[6] || "";
+          const phone = parts[7] || "";
+          const mobile = parts[8] || "";
+          const email = parts[9] || "";
+          const address = parts[10] || "";
+          const is_primary = parts[11] === "ใช่" || parts[11]?.toLowerCase() === "true";
+
+          importedList.push({
+            id: `bc-imp-${Date.now()}-${i}`,
+            contact_code,
+            name,
+            position,
+            bank_name,
+            bank_code,
+            branch_code: "0001",
+            branch_name,
+            department,
+            phone,
+            mobile,
+            email,
+            address,
+            note: "นำเข้าจากไฟล์ภายนอก",
+            is_primary,
+            updated_at: new Date().toISOString().replace("T", " ").substring(0, 16),
+          });
+        }
+      }
+
+      if (importedList.length === 0) {
+        setImportError("ไม่พบแถวข้อมูลที่สามารถนำเข้าได้ ตรวจสอบรูปแบบคอลัมน์");
+        return;
+      }
+
+      const next = [...importedList, ...contacts];
+      saveToStorage(next);
+      setIsImportModalOpen(false);
+      setImportText("");
+      alert(`นำเข้าข้อมูลเรียบร้อยแล้ว จำนวน ${importedList.length} รายการ`);
+    } catch {
+      setImportError("เกิดข้อผิดพลาดในการประมวลผลไฟล์ CSV");
+    }
+  };
+
   return (
     <div ref={containerRef} className="flex-1 min-h-0 flex flex-col h-full bg-background overflow-hidden">
       {/* Top Application Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-border bg-card/60 backdrop-blur-xs select-none">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-border bg-card/60 backdrop-blur-xs select-none print:hidden">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs">
             <Building2 className="h-5 w-5" />
@@ -428,14 +573,61 @@ export function BankingContactsScreen({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Batch Actions when items selected */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-1.5 mr-2 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+              <span className="text-xs font-semibold text-primary">เลือก {selectedIds.size} รายการ</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  handleExportCsv(contacts.filter((c) => selectedIds.has(c.id)))
+                }
+                className="h-7 text-xs px-2 gap-1"
+              >
+                <FileSpreadsheet className="h-3 w-3" />
+                ส่งออก
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleBatchDelete}
+                className="h-7 text-xs px-2 gap-1"
+              >
+                <Trash2 className="h-3 w-3" />
+                ลบ
+              </Button>
+            </div>
+          )}
+
           <Button
             variant="outline"
             size="sm"
-            onClick={handleExportCsv}
+            onClick={() => setIsImportModalOpen(true)}
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Upload className="h-3.5 w-3.5 text-blue-600" />
+            <span>นำเข้า CSV</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExportCsv(filteredContacts)}
             className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
             <span>ส่งออก CSV</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPrintPreview(true)}
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Printer className="h-3.5 w-3.5 text-purple-600" />
+            <span>พิมพ์รายงาน</span>
           </Button>
 
           <Button
@@ -461,7 +653,7 @@ export function BankingContactsScreen({
       </div>
 
       {/* Main Split Body */}
-      <div className="flex-1 min-h-0 flex flex-row overflow-hidden relative">
+      <div className="flex-1 min-h-0 flex flex-row overflow-hidden relative print:hidden">
         {/* Left Master Pane: Bank Selector & Tree */}
         <div
           style={{ width: `${splitPercent}%` }}
@@ -535,7 +727,10 @@ export function BankingContactsScreen({
                       <div className="text-[11px] text-muted-foreground">{b.bank_code}</div>
                     </div>
                   </div>
-                  <Badge variant={isSelected ? "default" : "secondary"} className="text-[10px] h-5 px-1.5 shrink-0">
+                  <Badge
+                    variant={isSelected ? "default" : "secondary"}
+                    className="text-[10px] h-5 px-1.5 shrink-0"
+                  >
                     {b.count}
                   </Badge>
                 </button>
@@ -607,7 +802,11 @@ export function BankingContactsScreen({
                     >
                       ยกเลิก
                     </Button>
-                    <Button type="submit" size="sm" className="h-8 text-xs bg-primary text-primary-foreground gap-1.5">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
+                    >
                       <Check className="h-3.5 w-3.5" />
                       บันทึกข้อมูล
                     </Button>
@@ -780,16 +979,30 @@ export function BankingContactsScreen({
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Table Toolbar */}
               <div className="px-4 py-2.5 border-b border-border/80 bg-muted/20 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-foreground font-semibold">
-                  <Users className="h-4 w-4 text-primary" />
-                  <span>
-                    รายการผู้ติดต่อ ({filteredContacts.length} ท่าน)
-                    {selectedBankCode !== "ALL" && (
-                      <span className="text-muted-foreground font-normal ml-1">
-                        — ธนาคาร {bankSummary.find((b) => b.bank_code === selectedBankCode)?.bank_name}
-                      </span>
+                <div className="flex items-center gap-3 text-foreground font-semibold">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {selectedIds.size > 0 && selectedIds.size === filteredContacts.length ? (
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Square className="h-4 w-4 text-muted-foreground" />
                     )}
-                  </span>
+                    <span>เลือกทั้งหมด</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5 text-foreground font-semibold border-l border-border/60 pl-3">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>
+                      รายการผู้ติดต่อ ({filteredContacts.length} ท่าน)
+                      {selectedBankCode !== "ALL" && (
+                        <span className="text-muted-foreground font-normal ml-1">
+                          — ธนาคาร {bankSummary.find((b) => b.bank_code === selectedBankCode)?.bank_name}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   คลิกแถวเพื่อดูรายละเอียด | ดับเบิ้ลคลิกเพื่อแก้ไข
@@ -816,6 +1029,7 @@ export function BankingContactsScreen({
                   <table className="w-full border-collapse text-left text-xs">
                     <thead className="bg-muted/40 sticky top-0 border-b border-border/70 z-10 select-none">
                       <tr>
+                        <th className="py-2.5 px-3 font-semibold text-muted-foreground w-10 text-center"></th>
                         <th className="py-2.5 px-3 font-semibold text-muted-foreground w-12 text-center">หลัก</th>
                         <th className="py-2.5 px-3 font-semibold text-muted-foreground w-20">รหัส</th>
                         <th className="py-2.5 px-3 font-semibold text-muted-foreground">ชื่อ-นามสกุล</th>
@@ -829,6 +1043,7 @@ export function BankingContactsScreen({
                     <tbody className="divide-y divide-border/40">
                       {filteredContacts.map((contact) => {
                         const isSelected = activeContact?.id === contact.id;
+                        const isChecked = selectedIds.has(contact.id);
                         return (
                           <tr
                             key={contact.id}
@@ -840,6 +1055,13 @@ export function BankingContactsScreen({
                                 : "hover:bg-muted/40 text-foreground"
                             }`}
                           >
+                            <td className="py-2.5 px-3 text-center" onClick={(e) => toggleSelectOne(contact.id, e)}>
+                              {isChecked ? (
+                                <CheckSquare className="h-4 w-4 text-primary inline-block" />
+                              ) : (
+                                <Square className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground inline-block" />
+                              )}
+                            </td>
                             <td className="py-2.5 px-3 text-center">
                               {contact.is_primary ? (
                                 <Star className="h-4 w-4 text-amber-500 fill-amber-500 inline-block" />
@@ -850,12 +1072,8 @@ export function BankingContactsScreen({
                             <td className="py-2.5 px-3 font-mono text-[11px] text-muted-foreground">
                               {contact.contact_code}
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-foreground">
-                              {contact.name}
-                            </td>
-                            <td className="py-2.5 px-3 text-muted-foreground">
-                              {contact.position || "—"}
-                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-foreground">{contact.name}</td>
+                            <td className="py-2.5 px-3 text-muted-foreground">{contact.position || "—"}</td>
                             <td className="py-2.5 px-3">
                               <span className="font-medium text-foreground">{contact.bank_name}</span>
                               <span className="text-[11px] text-muted-foreground block">{contact.branch_name}</span>
@@ -866,9 +1084,7 @@ export function BankingContactsScreen({
                                 <div className="text-[11px] text-muted-foreground/70">{contact.mobile}</div>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 text-muted-foreground text-[11px]">
-                              {contact.email || "—"}
-                            </td>
+                            <td className="py-2.5 px-3 text-muted-foreground text-[11px]">{contact.email || "—"}</td>
                             <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100">
                                 <button
@@ -917,7 +1133,9 @@ export function BankingContactsScreen({
                               ผู้ติดต่อหลัก
                             </Badge>
                           )}
-                          <span className="text-xs text-muted-foreground font-mono">({activeContact.contact_code})</span>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            ({activeContact.contact_code})
+                          </span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span className="flex items-center gap-1">
@@ -973,6 +1191,167 @@ export function BankingContactsScreen({
           )}
         </div>
       </div>
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Upload className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">นำเข้าข้อมูลผู้ติดต่อธนาคาร (CSV)</h2>
+                  <p className="text-xs text-muted-foreground">อัปโหลดไฟล์ CSV หรือวางข้อมูลเพื่อนำเข้าสู่ระบบ</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".csv,text/csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-11 border-dashed gap-2 text-xs"
+                >
+                  <FileText className="h-4 w-4" />
+                  เลือกไฟล์ .CSV จากเครื่องคอมพิวเตอร์
+                </Button>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  หรือวางเนื้อหาข้อมูล CSV ด้านล่าง:
+                </label>
+                <textarea
+                  rows={6}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder="รหัสผู้ติดต่อ,ชื่อ-นามสกุล,ตำแหน่ง,ธนาคาร,รหัสธนาคาร,สาขา,แผนก,โทรศัพท์,มือถือ,อีเมล&#10;CT-01,คุณสมชาย พงษ์ไพศาล,ผู้จัดการสาขา,ธนาคารกสิกรไทย,KBANK,สาขาสยามพารากอน,ฝ่ายบริหาร,02-610-9000,081-456-7890,somchai@kbank.co.th"
+                  className="w-full rounded-md border border-input bg-background p-2.5 font-mono text-xs focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {importError && (
+                <div className="flex items-center gap-2 text-xs text-rose-500 bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{importError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsImportModalOpen(false)}
+                className="h-8 text-xs"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleProcessImport}
+                className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
+              >
+                <Check className="h-3.5 w-3.5" />
+                เริ่มนำเข้าข้อมูล
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print View Modal */}
+      {isPrintPreview && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background p-6 overflow-auto">
+          <div className="flex items-center justify-between pb-4 border-b border-border print:hidden">
+            <div className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-bold text-foreground">ตัวอย่างก่อนพิมพ์: ทะเบียนผู้ติดต่อธนาคาร</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPrintPreview(false)}
+                className="h-8 text-xs"
+              >
+                ปิดหน้าต่าง
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => window.print()}
+                className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                สั่งพิมพ์ (Print)
+              </Button>
+            </div>
+          </div>
+
+          <div className="max-w-4xl mx-auto w-full my-6 bg-card border border-border rounded-xl p-8 shadow-sm print:border-none print:shadow-none print:p-0">
+            <div className="text-center pb-6 border-b border-border/80">
+              <h1 className="text-lg font-bold text-foreground">สมุดทะเบียนผู้ติดต่อธนาคารและสถาบันการเงิน</h1>
+              <p className="text-xs text-muted-foreground mt-1">
+                เอกสารสำหรับติดต่อประสานงานธุรกรรมการเงินและสินเชื่อธุรกิจ
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                พิมพ์ ณ วันที่: {new Date().toLocaleDateString("th-TH")} | รวมทั้งสิ้น: {filteredContacts.length} รายการ
+              </p>
+            </div>
+
+            <table className="w-full border-collapse text-xs mt-6">
+              <thead>
+                <tr className="border-b-2 border-border text-left">
+                  <th className="py-2 px-2 font-bold w-8 text-center">#</th>
+                  <th className="py-2 px-2 font-bold">ชื่อ-นามสกุล</th>
+                  <th className="py-2 px-2 font-bold">ตำแหน่ง / แผนก</th>
+                  <th className="py-2 px-2 font-bold">ธนาคาร / สาขา</th>
+                  <th className="py-2 px-2 font-bold">เบอร์โทรศัพท์</th>
+                  <th className="py-2 px-2 font-bold">อีเมล</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filteredContacts.map((c, i) => (
+                  <tr key={c.id}>
+                    <td className="py-2.5 px-2 text-center text-muted-foreground">{i + 1}</td>
+                    <td className="py-2.5 px-2 font-semibold">
+                      {c.name} {c.is_primary && "(หลัก)"}
+                    </td>
+                    <td className="py-2.5 px-2 text-muted-foreground">
+                      {c.position || "—"} {c.department ? `(${c.department})` : ""}
+                    </td>
+                    <td className="py-2.5 px-2">
+                      <div className="font-medium">{c.bank_name}</div>
+                      <div className="text-[11px] text-muted-foreground">{c.branch_name}</div>
+                    </td>
+                    <td className="py-2.5 px-2 text-muted-foreground">
+                      <div>{c.phone || c.mobile || "—"}</div>
+                    </td>
+                    <td className="py-2.5 px-2 text-muted-foreground text-[11px]">{c.email || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -135,6 +135,7 @@ import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
 import { ScreenFontSettings } from "@/components/screen-font-settings";
 import { BankingContactsScreen } from "@/components/banking-contacts-screen";
+import { PettyCashLimitScreen } from "@/components/petty-cash-limit-screen";
 
 type WorkTab = {
   id: string;
@@ -2314,12 +2315,23 @@ function WorkTabPanel({
     return <BillingNoteAutoPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
-  if (activeTab.route === "/settings/font") {
-    return <ScreenFontSettings language={language} />;
+  if (
+    activeTab.route === "/settings/font" ||
+    activeTab.route === "/settings/font-report" ||
+    activeTab.route === "/settings/font-report-title" ||
+    activeTab.route === "/settings/font-report-column" ||
+    activeTab.route === "/settings/font-report-detail" ||
+    activeTab.route === "/settings/font-report-company"
+  ) {
+    return <ScreenFontSettings language={language} route={activeTab.route} />;
   }
 
   if (activeTab.route === "/banking/contacts") {
     return <BankingContactsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/banking/petty-cash-limit") {
+    return <PettyCashLimitScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {
