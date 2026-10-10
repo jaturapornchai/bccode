@@ -22,8 +22,6 @@ describe("menu screen availability", () => {
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     // Pending items the real Champ menu has but BC has no screen for yet (shown as "รอพัฒนา").
     // 2026-10-09 (S2): Champ จัดการระบบ items without a screen yet.
-    "/pending/system-journal-format",
-    "/pending/system-work-date",
     "/pending/system-product-by-warehouse",
     "/pending/system-default-warehouse",
     "/pending/system-currency",

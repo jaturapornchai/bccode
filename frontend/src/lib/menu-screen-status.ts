@@ -30,6 +30,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/sale/dispatch",
   "/inventory/stock-count-handheld",
   "/inventory/product-supplier-update",
+  "/settings/journal-format",
+  "/settings/work-date",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

@@ -37,7 +37,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: cheque-movement (/banking/cheque-movement) and bank-service (/banking/bank-service) connected = 32.
     // 2026-10-10: sale-reservation (/sale/reservation) and sale-dispatch (/sale/dispatch) connected = 30.
     // 2026-10-10: stock-count-handheld (/inventory/stock-count-handheld) and product-supplier-update (/inventory/product-supplier-update) connected = 28.
-    expect(pendingList.length).toBe(28);
+    // 2026-10-10: system-journal-format (/settings/journal-format) and system-work-date (/settings/work-date) connected = 26.
+    expect(pendingList.length).toBe(26);
   });
 });
 

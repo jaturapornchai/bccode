@@ -147,6 +147,8 @@ import { SaleReservationScreen } from "@/components/sale-reservation-screen";
 import { SaleDispatchScreen } from "@/components/sale-dispatch-screen";
 import { StockCountHandheldScreen } from "@/components/stock-count-handheld-screen";
 import { ProductSupplierUpdateScreen } from "@/components/product-supplier-update-screen";
+import { SystemJournalFormatScreen } from "@/components/system-journal-format-screen";
+import { SystemWorkDateScreen } from "@/components/system-work-date-screen";
 
 type WorkTab = {
   id: string;
@@ -2387,6 +2389,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/inventory/product-supplier-update") {
     return <ProductSupplierUpdateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/journal-format") {
+    return <SystemJournalFormatScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/work-date") {
+    return <SystemWorkDateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

@@ -373,6 +373,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/pending/transaction-lock": "shield",
   "/pending/system-journal-format": "fileCog",
   "/pending/system-work-date": "calendarCheck",
+  "/settings/journal-format": "fileCog",
+  "/settings/work-date": "calendarCheck",
   "/pending/system-product-by-warehouse": "warehouse",
   "/pending/system-default-warehouse": "warehouse",
   "/pending/system-currency": "currency",
