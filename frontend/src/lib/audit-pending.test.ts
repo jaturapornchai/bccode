@@ -47,7 +47,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10 (Champ Parity Phase 8 - Round 11): 4 bank and cash reports connected (/report/bankstatement, /report/cashmovement, /report/pettycashmovement, /report/monthlypaymentbook) = 9.
     // 2026-10-10 (Champ Parity Phase 8 - Round 12): 6 inventory parity reports connected (/report/maxstock, /report/nomovementstock, /report/stockcountvariance, /report/pendingreceive, /report/pendingdelivery, /report/serialmovement) = 3.
     // 2026-10-10 (Champ Parity Phase 8 - Round 13): 2 purchase parity transactions connected (/transaction/purchasereducedebt, /transaction/rfqpricetable) = 1.
-    expect(pendingList.length).toBe(1);
+    // 2026-10-10 (Champ Parity Phase 8 - Round 14): etax-invoice (/transaction/etax) connected = 0 (All routes connected!).
+    expect(pendingList.length).toBe(0);
   });
 });
 

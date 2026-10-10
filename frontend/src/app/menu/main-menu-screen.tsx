@@ -159,6 +159,7 @@ import { SystemCustomerInquiryScreen } from "@/components/system-customer-inquir
 import { SystemProductInquiryScreen } from "@/components/system-product-inquiry-screen";
 import { SystemAboutScreen } from "@/components/system-about-screen";
 import { SystemStandardSoftwareScreen } from "@/components/system-standard-software-screen";
+import { ETaxInvoiceScreen } from "@/components/etax-invoice-screen";
 
 type WorkTab = {
   id: string;
@@ -2447,6 +2448,10 @@ function WorkTabPanel({
 
   if (activeTab.route === "/settings/standard-software") {
     return <SystemStandardSoftwareScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/transaction/etax") {
+    return <ETaxInvoiceScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} branchcode={workspace?.branch?.code ?? "00000"} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

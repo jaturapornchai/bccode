@@ -42,6 +42,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/product-inquiry",
   "/settings/about",
   "/settings/standard-software",
+  "/transaction/etax",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

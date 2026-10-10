@@ -49,13 +49,20 @@ async function runUAT() {
   await page.waitForURL("**/menu", { timeout: 15000 });
   console.log("Step 4: Checking menu URL:", page.url());
 
-  // Function to click an item inside "จัดซื้อ" menu dropdown
-  async function openPurchaseMenu(menuLabel, screenshotName) {
-    console.log(`Opening menu: ${menuLabel}...`);
+  // Function to click an item inside "จัดซื้อ" menu dropdown with optional submenu
+  async function openPurchaseMenu(menuLabel, screenshotName, submenuLabel) {
+    console.log(`Opening menu: ${menuLabel}${submenuLabel ? ` (in ${submenuLabel})` : ""}...`);
     // Click top menu tab "จัดซื้อ"
     const poTab = page.locator('button:has-text("จัดซื้อ")').first();
     await poTab.click();
     await page.waitForTimeout(600);
+
+    if (submenuLabel) {
+      const subTrigger = page.locator(`[role="menuitem"]:has-text("${submenuLabel}")`).first();
+      await subTrigger.waitFor({ state: "visible", timeout: 5000 });
+      await subTrigger.hover();
+      await page.waitForTimeout(600);
+    }
 
     // Look for the menu item
     const item = page.locator(`[role="menuitem"]:has-text("${menuLabel}"), button:has-text("${menuLabel}")`).first();
@@ -68,11 +75,11 @@ async function runUAT() {
     console.log(`Saved screenshot: ${path}`);
   }
 
-  // 1. บันทึกลดหนี้ (/transaction/purchasereducedebt)
-  await openPurchaseMenu("บันทึกลดหนี้", "purchase-reduce-debt");
+  // 1. บันทึกลดหนี้ (/transaction/purchasereducedebt) in "บันทึกซื้อสินค้าเชื่อ"
+  await openPurchaseMenu("บันทึกลดหนี้", "purchase-reduce-debt", "บันทึกซื้อสินค้าเชื่อ");
 
-  // 2. บันทึกใบตารางราคารวม (/transaction/rfqpricetable)
-  await openPurchaseMenu("บันทึกใบตารางราคารวม", "rfq-price-table");
+  // 2. บันทึกใบตารางราคารวม (/transaction/rfqpricetable) in "ระบบสืบราคาซื้อสินค้า"
+  await openPurchaseMenu("บันทึกใบตารางราคารวม", "rfq-price-table", "ระบบสืบราคาซื้อสินค้า");
 
   await browser.close();
   console.log(`Console errors detected: ${errorCount}`);

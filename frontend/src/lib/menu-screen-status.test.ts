@@ -25,10 +25,8 @@ describe("menu screen availability", () => {
   ];
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
-  // 2026-10-10: /transaction/withholdingtax เชื่อมกับ /report/whtcertificate แล้ว; /banking/contacts เชื่อมกับ BankingContactsScreen แล้ว; /banking/petty-cash-limit เชื่อมกับ PettyCashLimitScreen แล้ว
-  const NO_BACKEND_DOCUMENT_ROUTES = [
-    "/transaction/etax",
-  ];
+  // 2026-10-10: all routes now connected! /transaction/etax connected to ETaxInvoiceScreen
+  const NO_BACKEND_DOCUMENT_ROUTES: string[] = [];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
@@ -39,17 +37,17 @@ describe("menu screen availability", () => {
     expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual(expected);
     expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(items.length - expected.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
+    expect(isMenuScreenPending("/transaction/etax")).toBe(false);
     // เอกสารธุรกรรมที่ยังมี config ทำงานจริงกับตาราง doc (ไม่ใช่ retired / pending)
     expect(isMenuBackendRetired("/transaction/landedcost")).toBe(false);
     expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(false);
     for (const route of ["/transaction/sale", "/transaction/paid", "/banking/cash-deposit", "/transaction/landedcost"]) {
       expect(isMenuScreenPending(route), route).toBe(false);
     }
-    // เมนูที่ไม่มีประเภทเอกสารใน backend เป็น pending แต่ยังอยู่ในเมนู; จอสินค้า 3 จอไม่มี API
-    for (const route of [...NO_BACKEND_DOCUMENT_ROUTES, "/product", "/productbarcode", "/productbarcodeshelf"]) {
+    // จอสินค้า 3 จอไม่มี API จึงเป็น retired backend screen
+    for (const route of ["/product", "/productbarcode", "/productbarcodeshelf"]) {
       expect(isMenuScreenPending(route), route).toBe(true);
     }
-    expect(flattenMenuItems().map((item) => item.route)).toEqual(expect.arrayContaining(NO_BACKEND_DOCUMENT_ROUTES));
     // 2026-10-10: 11 Tier A approval/cancellation screens now connected to PostgreSQL backend
     for (const route of CHAMP_OPERATIONS_ROUTES) {
       expect(isMenuScreenPending(route), route).toBe(false);
