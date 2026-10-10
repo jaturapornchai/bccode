@@ -251,6 +251,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/ap/payment-prepare": "payment",
   "/banking/cheque-movement": "list",
   "/banking/bank-service": "bank",
+  "/sale/reservation": "fileText",
+  "/sale/dispatch": "truck",
   "/transaction/debitnote": "fileText",
   "/transaction/etax": "globe",
   "/transaction/stockcount": "calculator",

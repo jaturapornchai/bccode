@@ -21,7 +21,6 @@ const CHAMP_HEADS = [
 /** Items the real Champ menu has but BC has no screen for yet — added as "รอพัฒนา" (no real route). */
 const CHAMP_ONLY_PENDING_IDS = [
   // 2026-10-09 (S1): items the transaction heads of the real Champ 5.5 dropdowns have and BC lacked
-  "sale-reservation", "sale-dispatch",
   "product-supplier-update", "stock-count-handheld",
   // 2026-10-09 (S2): items of the Champ "จัดการระบบ" head BC has no screen for yet
   "system-journal-format", "system-work-date", "system-product-by-warehouse", "system-default-warehouse", "system-currency",

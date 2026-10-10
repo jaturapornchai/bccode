@@ -26,6 +26,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/ap/payment-prepare",
   "/banking/cheque-movement",
   "/banking/bank-service",
+  "/sale/reservation",
+  "/sale/dispatch",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
