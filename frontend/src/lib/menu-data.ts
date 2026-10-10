@@ -365,7 +365,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("temporary-receipt", "บันทึกใบเสร็จชั่วคราว", "Temporary Receipt", "/transaction/temporaryreceipt", "finance"),
           tx("paid", "บันทึกใบเสร็จรับเงิน/รับชำระหนี้", "Receive Payment", "/transaction/paid", "finance"),
           tx("ar-bad-debt", "ตัดหนี้สูญ/ปรับปรุง (ลูกหนี้)", "Write Off Receivables", "/transaction/arbaddebt", "finance"),
-          tx("customer-label-print", "พิมพ์ป้ายผนึกชื่อลูกค้า-สมาชิก", "Print Customer Address Labels", "/pending/customer-label-print", "master"),
+          tx("customer-label-print", "พิมพ์ป้ายผนึกชื่อลูกค้า-สมาชิก", "Print Customer Address Labels", "/customer/label-print", "master"),
         ],
       },
       {

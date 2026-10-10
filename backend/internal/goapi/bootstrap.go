@@ -369,6 +369,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, cacher micros
 	authGroup.POST("/api/report/tax/form/load", handlers.TaxFormLoadHandler)
 	authGroup.POST("/api/report/tax/form/delete", handlers.TaxFormDeleteHandler)
 	authGroup.POST("/api/report/debt/query", handlers.DebtReportHandler)
+	authGroup.POST("/api/customer/labels/query", handlers.CustomerLabelsHandler)
 
 	// Product search
 	authGroup.POST("/api/product/search", handlers.ProductSearchHandler)

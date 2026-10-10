@@ -22,6 +22,7 @@ import { getAuthSession } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
 import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
 import { DeliveryDateOverhaulScreen } from "@/components/delivery-date-overhaul";
+import { PurchaseReceiptAdjustmentScreen } from "@/components/purchase-receipt-adjustment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -81,6 +82,14 @@ export function OperationsWorkbench({
     return (
       <DeliveryDateOverhaulScreen
         mode={config.code === "purchase_receipt_dates" ? "vendor" : "customer"}
+        language={language}
+        holdingcode={holdingcode}
+      />
+    );
+  }
+  if (config?.code === "purchase_receipt_adjustment" || route === "/transaction/purchasereceiptadjustment") {
+    return (
+      <PurchaseReceiptAdjustmentScreen
         language={language}
         holdingcode={holdingcode}
       />

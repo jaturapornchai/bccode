@@ -20,7 +20,7 @@ const CHAMP_HEADS = [
 
 /** Items the real Champ menu has but BC has no screen for yet — added as "รอพัฒนา" (no real route). */
 const CHAMP_ONLY_PENDING_IDS = [
-  "billing-note-auto", "billing-note-auto-print", "customer-label-print",
+  "billing-note-auto", "billing-note-auto-print",
   "product-status-report", "product-price-setting-report",
   // 2026-10-09 (S1): items the transaction heads of the real Champ 5.5 dropdowns have and BC lacked
   "sale-reservation", "sale-dispatch", "ap-payment-prepare", "cheque-issued-prepare",

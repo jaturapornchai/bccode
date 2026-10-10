@@ -52,6 +52,11 @@ func (h *Http) RegisterHttp() {
 
 	h.ms.GET("/transaction/:module/delivery-dates", h.listDeliveryDates)
 	h.ms.POST("/transaction/:module/delivery-dates", h.saveDeliveryDates)
+
+	h.ms.GET("/transaction/goodsreceive/receipt-adjustments", h.listReceiptAdjustments)
+	h.ms.POST("/transaction/goodsreceive/receipt-adjustments", h.processReceiptAdjustments)
+	h.ms.GET("/transaction/:module/receipt-adjustments", h.listReceiptAdjustments)
+	h.ms.POST("/transaction/:module/receipt-adjustments", h.processReceiptAdjustments)
 }
 
 // การกระทำที่ตรวจสิทธิ์: "" = เข้าจอ/อ่าน, อื่นๆ ต้องมีทั้ง <เมนู> และ <เมนู>:<action> (กฎเดียวกับ GL)

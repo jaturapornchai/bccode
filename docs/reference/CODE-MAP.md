@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit aeb943f8 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit 80dcb84e - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -432,62 +432,62 @@ Files indexed: 32
 | 1195 | const-arrow | `handleSave` |
 | 2355 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2344 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2349 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 217 | function | `mt` |
-| 222 | function | `isRecord` |
-| 226 | function | `stringValue` |
-| 230 | function | `stringArray` |
-| 243 | function | `normalizeSettingRecords` |
-| 263 | function | `fetchAllowedMenuIds` |
-| 299 | function | `fetchSessionStats` |
-| 346 | function | `sessionTimeText` |
-| 357 | function | `sessionRelativeText` |
-| 367 | function | `sessionStatsTooltip` |
-| 388 | function | `guardsUnsavedRoute` |
-| 392 | function | `MainMenuScreen` |
-| 400 | function | `MainMenuDashboard` |
-| 526 | function | `loadProfile` |
-| 554 | function | `loadMenuPermissions` |
-| 651 | function | `confirmLeaveLedger` |
-| 657 | function | `selectWorkTab` |
-| 662 | function | `openWorkspace` |
-| 666 | function | `openMenuItem` |
-| 713 | function | `openMenuItemInNewTab` |
-| 717 | function | `openManageShortcuts` |
-| 736 | function | `openOverview` |
-| 743 | function | `toggleSection` |
-| 750 | function | `closeAllTabs` |
-| 758 | function | `runMenuAction` |
-| 767 | function | `closeTab` |
-| 777 | function | `reorderTabs` |
-| 793 | function | `stopLinePolling` |
-| 800 | function | `handleLineLink` |
-| 851 | function | `startLinePolling` |
-| 865 | function | `pollLineLink` |
-| 899 | function | `closeLineDialog` |
-| 905 | function | `copyLineLoginUrl` |
-| 915 | function | `handleChangePassword` |
-| 967 | function | `logout` |
-| 976 | function | `handleContentScroll` |
-| 1004 | const-arrow | `onPointerMove` |
-| 1010 | const-arrow | `onPointerUp` |
-| 1694 | function | `SidebarButton` |
-| 1727 | function | `MenuSectionAccordion` |
-| 1821 | function | `MenuTreeFolder` |
-| 1873 | function | `MenuTreeItemButton` |
-| 1939 | function | `getVisibleItems` |
-| 1949 | function | `getBarTreeNodes` |
-| 1966 | function | `SectionIcon` |
-| 1984 | function | `OpenTabs` |
-| 2038 | function | `captureTabRects` |
-| 2049 | function | `getInsertSide` |
-| 2054 | function | `clearDragState` |
-| 2061 | function | `reorderFromPointer` |
-| 2186 | function | `WorkTabPanel` |
-| 2329 | function | `DashboardLoading` |
+| 218 | function | `mt` |
+| 223 | function | `isRecord` |
+| 227 | function | `stringValue` |
+| 231 | function | `stringArray` |
+| 244 | function | `normalizeSettingRecords` |
+| 264 | function | `fetchAllowedMenuIds` |
+| 300 | function | `fetchSessionStats` |
+| 347 | function | `sessionTimeText` |
+| 358 | function | `sessionRelativeText` |
+| 368 | function | `sessionStatsTooltip` |
+| 389 | function | `guardsUnsavedRoute` |
+| 393 | function | `MainMenuScreen` |
+| 401 | function | `MainMenuDashboard` |
+| 527 | function | `loadProfile` |
+| 555 | function | `loadMenuPermissions` |
+| 652 | function | `confirmLeaveLedger` |
+| 658 | function | `selectWorkTab` |
+| 663 | function | `openWorkspace` |
+| 667 | function | `openMenuItem` |
+| 714 | function | `openMenuItemInNewTab` |
+| 718 | function | `openManageShortcuts` |
+| 737 | function | `openOverview` |
+| 744 | function | `toggleSection` |
+| 751 | function | `closeAllTabs` |
+| 759 | function | `runMenuAction` |
+| 768 | function | `closeTab` |
+| 778 | function | `reorderTabs` |
+| 794 | function | `stopLinePolling` |
+| 801 | function | `handleLineLink` |
+| 852 | function | `startLinePolling` |
+| 866 | function | `pollLineLink` |
+| 900 | function | `closeLineDialog` |
+| 906 | function | `copyLineLoginUrl` |
+| 916 | function | `handleChangePassword` |
+| 968 | function | `logout` |
+| 977 | function | `handleContentScroll` |
+| 1005 | const-arrow | `onPointerMove` |
+| 1011 | const-arrow | `onPointerUp` |
+| 1695 | function | `SidebarButton` |
+| 1728 | function | `MenuSectionAccordion` |
+| 1822 | function | `MenuTreeFolder` |
+| 1874 | function | `MenuTreeItemButton` |
+| 1940 | function | `getVisibleItems` |
+| 1950 | function | `getBarTreeNodes` |
+| 1967 | function | `SectionIcon` |
+| 1985 | function | `OpenTabs` |
+| 2039 | function | `captureTabRects` |
+| 2050 | function | `getInsertSide` |
+| 2055 | function | `clearDragState` |
+| 2062 | function | `reorderFromPointer` |
+| 2187 | function | `WorkTabPanel` |
+| 2334 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 

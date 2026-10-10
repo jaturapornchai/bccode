@@ -131,6 +131,7 @@ import { ProductSetScreen } from "./product-set-screen";
 import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
+import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 
 type WorkTab = {
   id: string;
@@ -2300,6 +2301,10 @@ function WorkTabPanel({
 
   if (activeTab.route === "/report/vatsummary") {
     return <VatSummaryReport language={language} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
+  }
+
+  if (activeTab.route === "/customer/label-print") {
+    return <CustomerLabelPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

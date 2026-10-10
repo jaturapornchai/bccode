@@ -13,7 +13,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/shortcuts", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
-  "/report/vatsummary",
+  "/report/vatsummary", "/customer/label-print",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
@@ -57,7 +57,7 @@ export function isMenuBackendRetired(route: string): boolean {
   if (isRetiredBackendScreen(clean)) return true;
   const op = getOperationsConfig(clean);
   if (op) {
-    if (op.code === "delivery_dates" || op.code === "purchase_receipt_dates") return false;
+    if (op.code === "delivery_dates" || op.code === "purchase_receipt_dates" || op.code === "purchase_receipt_adjustment") return false;
     return !isApprovalApiReady(op.code);
   }
   const setting = getSystemSettingConfig(clean);

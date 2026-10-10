@@ -23,7 +23,6 @@ describe("menu screen availability", () => {
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
     // Pending items the real Champ menu has but BC has no screen for yet (shown as "รอพัฒนา").
     "/pending/billing-note-auto", "/pending/billing-note-auto-print",
-    "/pending/customer-label-print",
     "/pending/product-status-report", "/pending/product-price-setting-report",
     // 2026-10-09 (S1): Champ items of the transaction heads without a screen yet.
     "/pending/sale-reservation",
@@ -68,7 +67,7 @@ describe("menu screen availability", () => {
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
   const NO_BACKEND_DOCUMENT_ROUTES = [
-    "/transaction/purchasereceiptadjustment", "/transaction/etax", "/transaction/withholdingtax",
+    "/transaction/etax", "/transaction/withholdingtax",
     "/banking/petty-cash-limit", "/banking/contacts",
   ];
 

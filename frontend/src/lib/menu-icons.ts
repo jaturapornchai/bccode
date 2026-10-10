@@ -344,7 +344,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   // Champ menu bar — pending items
   "/pending/billing-note-auto": "fileText",
   "/pending/billing-note-auto-print": "print",
-  "/pending/customer-label-print": "print",
+  "/customer/label-print": "print",
   "/pending/product-status-report": "list",
   "/pending/product-price-setting-report": "tag",
   "/procurement/delivery-dates": "calendarCheck",

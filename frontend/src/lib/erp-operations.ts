@@ -167,6 +167,14 @@ export const OPERATIONS_CONFIGS: OperationsConfig[] = [
     primaryActionLabel: { th: "บันทึกการปรับวันที่", en: "Save Scheduled Dates" },
   },
   {
+    route: "/transaction/purchasereceiptadjustment",
+    code: "purchase_receipt_adjustment",
+    category: "procurement",
+    title: { th: "ปรับปรุงใบรับสินค้า", en: "Adjust Purchase Receipt" },
+    description: { th: "สืบค้นและปรับปรุงสถานะใบรับสินค้า (GR) ที่มีการตั้งหนี้หรือรับบิลครบแล้ว", en: "Search and adjust Goods Receipt (GR) status to closed after invoice receipt is matched" },
+    primaryActionLabel: { th: "ปรับปรุงสถานะ GR", en: "Adjust GR Status" },
+  },
+  {
     route: "/procurement/price-comparison",
     code: "price_comparison",
     category: "procurement",
