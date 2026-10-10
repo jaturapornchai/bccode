@@ -20,9 +20,6 @@ describe("menu screen availability", () => {
     "/report/cashmovement", "/report/pettycashmovement", "/report/monthlypaymentbook",
     "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
-    // 2026-10-10: Champ หน้าต่าง / ช่วยเหลือ items without a screen yet.
-    "/pending/help-about",
-    "/pending/help-standard-software",
   ];
 
   // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).

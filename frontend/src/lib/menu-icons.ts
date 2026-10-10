@@ -407,7 +407,9 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/pending/window-font-report-detail": "list",
   "/pending/window-font-report-company": "building",
   "/pending/help-about": "bot",
+  "/settings/about": "bot",
   "/pending/help-standard-software": "shield",
+  "/settings/standard-software": "shield",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

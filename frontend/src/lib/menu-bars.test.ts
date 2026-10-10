@@ -19,10 +19,8 @@ const CHAMP_HEADS = [
 ];
 
 /** Items the real Champ menu has but BC has no screen for yet — added as "รอพัฒนา" (no real route). */
-const CHAMP_ONLY_PENDING_IDS = [
-  // 2026-10-10: items of the Champ "หน้าต่าง" and "ช่วยเหลือ" heads BC has no screen for yet
-  "help-about", "help-standard-software",
-];
+// 2026-10-10: All 13 Champ Menu Bar heads are now fully connected!
+const CHAMP_ONLY_PENDING_IDS: string[] = [];
 
 const CHAMP_LABELS: Record<string, string> = {
   "purchase-debit-note": "ใบส่งคืนสินค้า/ลดหนี้",
@@ -175,6 +173,8 @@ describe("Champ-style menu bar layout", () => {
       ["window-font-report-column", "/settings/font-report-column"],
       ["window-font-report-detail", "/settings/font-report-detail"],
       ["window-font-report-company", "/settings/font-report-company"],
+      ["help-about", "/settings/about"],
+      ["help-standard-software", "/settings/standard-software"],
     ]) {
       const f = items.get(id);
       expect(f?.route).toBe(route);

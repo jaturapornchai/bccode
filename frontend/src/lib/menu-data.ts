@@ -753,8 +753,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "help-about-group",
         title: ml("help-about-group", "เกี่ยวกับโปรแกรม", "About Program"),
         items: [
-          tx("help-about", "About", "About", "/pending/help-about", "settings"),
-          tx("help-standard-software", "มาตรฐานซอฟท์แวร์ของกรมสรรพากร (Standard software)", "Revenue Department Standard Software", "/pending/help-standard-software", "settings"),
+          tx("help-about", "About", "About", "/settings/about", "settings"),
+          tx("help-standard-software", "มาตรฐานซอฟท์แวร์ของกรมสรรพากร (Standard software)", "Revenue Department Standard Software", "/settings/standard-software", "settings"),
         ],
       },
     ],

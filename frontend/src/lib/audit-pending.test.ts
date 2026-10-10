@@ -42,7 +42,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: system-currency (/settings/currency) and system-payment-terms (/settings/payment-terms) connected = 22.
     // 2026-10-10: system-credit-debit-reasons (/settings/credit-debit-reasons) and system-main-map (/settings/main-map) connected = 20.
     // 2026-10-10: system-customer-inquiry (/settings/customer-inquiry) and system-product-inquiry (/settings/product-inquiry) connected = 18.
-    expect(pendingList.length).toBe(18);
+    // 2026-10-10: help-about (/settings/about) and help-standard-software (/settings/standard-software) connected = 16.
+    expect(pendingList.length).toBe(16);
   });
 });
 

@@ -157,6 +157,8 @@ import { SystemCreditDebitReasonsScreen } from "@/components/system-credit-debit
 import { SystemMainMapScreen } from "@/components/system-main-map-screen";
 import { SystemCustomerInquiryScreen } from "@/components/system-customer-inquiry-screen";
 import { SystemProductInquiryScreen } from "@/components/system-product-inquiry-screen";
+import { SystemAboutScreen } from "@/components/system-about-screen";
+import { SystemStandardSoftwareScreen } from "@/components/system-standard-software-screen";
 
 type WorkTab = {
   id: string;
@@ -2437,6 +2439,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/settings/product-inquiry") {
     return <SystemProductInquiryScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/about") {
+    return <SystemAboutScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/standard-software") {
+    return <SystemStandardSoftwareScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

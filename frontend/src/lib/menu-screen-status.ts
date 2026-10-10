@@ -40,6 +40,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/main-map",
   "/settings/customer-inquiry",
   "/settings/product-inquiry",
+  "/settings/about",
+  "/settings/standard-software",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
