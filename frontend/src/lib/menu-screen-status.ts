@@ -38,6 +38,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/payment-terms",
   "/settings/credit-debit-reasons",
   "/settings/main-map",
+  "/settings/customer-inquiry",
+  "/settings/product-inquiry",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

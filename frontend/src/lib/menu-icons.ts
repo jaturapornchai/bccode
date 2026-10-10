@@ -388,7 +388,9 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/pending/system-payment-terms": "payment",
   "/settings/payment-terms": "payment",
   "/pending/system-customer-inquiry": "users",
+  "/settings/customer-inquiry": "users",
   "/pending/system-product-inquiry": "package",
+  "/settings/product-inquiry": "package",
   // Settings screens opened from the menu bar (menu-bars.ts route nodes) that had no explicit icon yet.
   "/debtorgroup": "users",
   // 2026-10-10: Champ "หน้าต่าง" and "ช่วยเหลือ" pending items
