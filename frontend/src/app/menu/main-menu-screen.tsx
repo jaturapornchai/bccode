@@ -2296,6 +2296,10 @@ function WorkTabPanel({
   }
 
 
+  if (activeTab.route === "/transaction/receivedeposit") {
+    return <DepositReceiptScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
   if (isErpTransactionRoute(activeTab.route)) {
     return <ErpCrudWorkbench embedded language={language} route={activeTab.route} auth={auth} workspace={workspace} />;
   }
@@ -2338,10 +2342,6 @@ function WorkTabPanel({
 
   if (activeTab.route === "/banking/cheque-issued-prepare") {
     return <ChequeIssuedPrepareScreen language={language} />;
-  }
-
-  if (activeTab.route === "/transaction/receivedeposit") {
-    return <DepositReceiptScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {
