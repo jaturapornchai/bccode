@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { LanguageCode } from "@/lib/i18n";
+import { apiFetch } from "@/lib/client-auth-session";
 import {
   FileText,
   Send,
@@ -188,7 +189,7 @@ export function ETaxInvoiceScreen({ language, holdingcode, branchcode = "00000" 
         },
       };
 
-      const res = await fetch("/api/goapi/report/tax/etax/generate-xml", {
+      const res = await apiFetch("/api/goapi/api/report/tax/etax/generate-xml", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
