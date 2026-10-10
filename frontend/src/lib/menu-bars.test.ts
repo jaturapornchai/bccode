@@ -132,7 +132,7 @@ describe("Champ-style menu bar layout", () => {
     ) as { id: string; route: string }[];
     const shown = new Map(MENU_BARS.flatMap((bar) => menuBarItems(bar.nodes)).map((item) => [item.id, item.route]));
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
-    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
+    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) expect(shown.get(previous.id), previous.id).toBe(moved[previous.id] ?? previous.route);
   });
 

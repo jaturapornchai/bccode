@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit e3ee18e7 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit 8b543c08 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -713,7 +713,7 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1560 lines)
+## frontend/src/app/gl/gl-masters.tsx (1569 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -740,29 +740,29 @@ Files indexed: 32
 | 197 | function | `confirmSubject` |
 | 204 | function | `TreeNodeRow` |
 | 381 | function | `GLMasters` |
-| 416 | function | `showFormError` |
-| 438 | function | `openView` |
-| 454 | function | `openEdit` |
-| 470 | function | `openCreate` |
-| 481 | function | `handleAddChild` |
-| 499 | function | `cancelEdit` |
-| 513 | function | `save` |
-| 544 | function | `deleteItem` |
-| 572 | function | `runAction` |
-| 594 | function | `loadStandardChart` |
-| 638 | const-arrow | `toggleCategory` |
-| 642 | const-arrow | `toggleNode` |
-| 672 | const-arrow | `handleExportCsv` |
-| 1199 | function | `CodeInput` |
-| 1216 | function | `AccountFields` |
-| 1222 | const-arrow | `handleTypeChange` |
-| 1232 | const-arrow | `handleParentChange` |
-| 1417 | function | `FiscalYearFields` |
-| 1454 | function | `champMasterLabels` |
-| 1461 | function | `MasterFields` |
-| 1487 | function | `UntypedJournalBooksNotice` |
-| 1507 | function | `JournalBookTypeBadge` |
-| 1519 | function | `JournalBookFields` |
+| 425 | function | `showFormError` |
+| 447 | function | `openView` |
+| 463 | function | `openEdit` |
+| 479 | function | `openCreate` |
+| 490 | function | `handleAddChild` |
+| 508 | function | `cancelEdit` |
+| 522 | function | `save` |
+| 553 | function | `deleteItem` |
+| 581 | function | `runAction` |
+| 603 | function | `loadStandardChart` |
+| 647 | const-arrow | `toggleCategory` |
+| 651 | const-arrow | `toggleNode` |
+| 681 | const-arrow | `handleExportCsv` |
+| 1208 | function | `CodeInput` |
+| 1225 | function | `AccountFields` |
+| 1231 | const-arrow | `handleTypeChange` |
+| 1241 | const-arrow | `handleParentChange` |
+| 1426 | function | `FiscalYearFields` |
+| 1463 | function | `champMasterLabels` |
+| 1470 | function | `MasterFields` |
+| 1496 | function | `UntypedJournalBooksNotice` |
+| 1516 | function | `JournalBookTypeBadge` |
+| 1528 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
@@ -1205,6 +1205,49 @@ Files indexed: 32
 | 1069 | function | `ImageGalleryReadOnlyDetail` |
 | 1107 | function | `GalleryReadOnlyItem` |
 
+## backend/internal/generalledger/reports.go (1141 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 36 | function | `parseReportCodeList` |
+| 50 | function | `parseReportDimensions` |
+| 62 | function | `Report` |
+| 139 | function | `finish` |
+| 147 | function | `newReportContext` |
+| 226 | function | `accountRangeFilter` |
+| 230 | function | `textColumn` |
+| 231 | function | `amountColumn` |
+| 236 | function | `debitCreditColumns` |
+| 245 | function | `run` |
+| 256 | function | `runWithTotals` |
+| 350 | function | `setTotals` |
+| 366 | function | `base` |
+| 374 | function | `breakdown` |
+| 386 | function | `dimColumns` |
+| 394 | function | `trialCTE` |
+| 407 | function | `trialBalance` |
+| 448 | function | `workingPaperFooter` |
+| 475 | function | `accountBalanceReport` |
+| 572 | function | `ledger` |
+| 631 | function | `ledgerSummary` |
+| 642 | function | `pnlCTE` |
+| 645 | function | `profitLoss` |
+| 658 | function | `balanceSheet` |
+| 674 | function | `annualBalances` |
+| 686 | function | `allocation` |
+| 733 | function | `withDocNoRange` |
+| 739 | function | `vatDetailText` |
+| 743 | function | `glJournal` |
+| 812 | function | `glJournalSummary` |
+| 850 | function | `budgetComparison` |
+| 915 | function | `newBudgetDetailContext` |
+| 951 | function | `budgetDetail` |
+| 1002 | function | `budgetPeriodsInRange` |
+| 1013 | function | `newMasterReportContext` |
+| 1040 | function | `chartOfAccounts` |
+| 1080 | function | `journalBooks` |
+| 1116 | function | `dimensionList` |
+
 ## frontend/src/lib/product-barcode/language.ts (1141 lines)
 
 | Line | Kind | Name |
@@ -1475,43 +1518,4 @@ Files indexed: 32
 | 1001 | function | `upsertRateEntry` |
 | 1007 | function | `validateForm` |
 | 1016 | function | `formatCount` |
-
-## backend/internal/generalledger/reports.go (1002 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 36 | function | `parseReportCodeList` |
-| 50 | function | `parseReportDimensions` |
-| 62 | function | `Report` |
-| 131 | function | `finish` |
-| 139 | function | `newReportContext` |
-| 218 | function | `accountRangeFilter` |
-| 222 | function | `textColumn` |
-| 223 | function | `amountColumn` |
-| 228 | function | `debitCreditColumns` |
-| 237 | function | `run` |
-| 248 | function | `runWithTotals` |
-| 342 | function | `setTotals` |
-| 358 | function | `base` |
-| 366 | function | `breakdown` |
-| 378 | function | `dimColumns` |
-| 386 | function | `trialCTE` |
-| 399 | function | `trialBalance` |
-| 440 | function | `workingPaperFooter` |
-| 467 | function | `accountBalanceReport` |
-| 564 | function | `ledger` |
-| 623 | function | `ledgerSummary` |
-| 634 | function | `pnlCTE` |
-| 637 | function | `profitLoss` |
-| 650 | function | `balanceSheet` |
-| 666 | function | `annualBalances` |
-| 678 | function | `allocation` |
-| 725 | function | `withDocNoRange` |
-| 731 | function | `vatDetailText` |
-| 735 | function | `glJournal` |
-| 804 | function | `glJournalSummary` |
-| 842 | function | `budgetComparison` |
-| 907 | function | `newBudgetDetailContext` |
-| 943 | function | `budgetDetail` |
-| 994 | function | `budgetPeriodsInRange` |
 

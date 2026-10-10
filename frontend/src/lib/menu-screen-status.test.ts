@@ -65,8 +65,9 @@ describe("menu screen availability", () => {
   ];
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
+  // 2026-10-10: /transaction/withholdingtax เชื่อมกับ /report/whtcertificate แล้ว
   const NO_BACKEND_DOCUMENT_ROUTES = [
-    "/transaction/etax", "/transaction/withholdingtax",
+    "/transaction/etax",
     "/banking/petty-cash-limit", "/banking/contacts",
   ];
 

@@ -140,7 +140,7 @@ export type GLCommand = {
   postbatch?: GLPostBatchInput;
   vatadjust?: GLVatAdjustInput;
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement", "chartofaccounts", "journalbooks", "departments", "projects"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items.filter((item) => group.id.startsWith("gl-") || item.route.startsWith("/gl/")));
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }

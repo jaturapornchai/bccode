@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLDimension, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLDimension, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates, fillText } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate } from "@/lib/date-time";
 import { glAllRecords, glRequest } from "@/lib/general-ledger-api";
@@ -16,8 +16,8 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; budgetcodeto: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; docnofrom: string; docnoto: string; orderby: string; bydepartment: string; byproject: string; dimtotals: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", budgetcodeto: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", docnofrom: "", docnoto: "", orderby: "", bydepartment: "", byproject: "", dimtotals: "" };
+export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; codefrom: string; codeto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; budgetcodeto: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; docnofrom: string; docnoto: string; orderby: string; bydepartment: string; byproject: string; dimtotals: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", codefrom: "", codeto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", budgetcodeto: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", docnofrom: "", docnoto: "", orderby: "", bydepartment: "", byproject: "", dimtotals: "" };
 // ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
 // แยกแผนก / แยกโครงการ / มียอดรวม (Champ 5506/5499/5535): หนึ่งแถวต่อบัญชี × รหัสมิติ — แยกประเภทใช้เฉพาะแบบสรุป
 const BREAKDOWN_KEYS: readonly (keyof ReportFilters)[] = ["bydepartment", "byproject", "dimtotals"];
@@ -120,6 +120,8 @@ function reportRows(report: GLReport) { return report.rows ?? []; }
 function totalRank(report: GLReport, key: string) { const index = report.columns.findIndex((column) => column.key === key); return index < 0 ? report.columns.length : index; }
 // ยอดคงค้างลูกหนี้/เจ้าหนี้/Statement เป็นยอด ณ วันที่ (backend อ่านแค่ to + branchcode) จึงไม่ต้องเลือกปีบัญชี
 const AS_OF_REPORTS: ReadonlySet<string> = new Set(["ar-outstanding", "ap-outstanding", "bank-unmatched"]);
+// รายงานข้อมูลหลัก (Champ 5520, 5531, 5538, 5521) ดูข้อมูลผัง/สมุด/แผนก/โครงการ ไม่ขึ้นกับปีบัญชี
+export const MASTER_REPORTS: ReadonlySet<string> = new Set(["chartofaccounts", "journalbooks", "departments", "projects"]);
 function localToday() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -489,6 +491,10 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
   </>;
 }
 function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, books: GLJournalBook[], accounts: GLAccount[], language: LanguageCode) {
+  if (name === "chartofaccounts") return tr("gl_coa_report_title", "รายงานรายละเอียดผังบัญชี");
+  if (name === "journalbooks") return tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี");
+  if (name === "departments") return tr("gl_department_report_title", "รายงานรายละเอียดแผนก");
+  if (name === "projects") return tr("gl_project_report_title", "รายงานรายละเอียดโครงการ");
   const item = GL_MENU_ITEMS.find((menu) => menu.route === `/report/${name}`);
   const base = item ? (item.label.key ? tr(item.label.key, item.label.th) : item.label.th) : name;
   // บัญชีเดียว (เจาะจากงบทดลอง หรือช่วงที่ต้นเท่ากับท้าย) แสดงชื่อบัญชีในหัวรายงาน; ช่วงหลายบัญชีอยู่ในบรรทัดเงื่อนไข
@@ -515,6 +521,19 @@ function periodHeading(filters: ReportFilters, cumulative: boolean, date: (value
   return tr("gl_print_period_range", "ตั้งแต่งวดที่ {0} ถึงงวดที่ {1}").replace("{0}", from).replace("{1}", to);
 }
 function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, volume: string, tr: GLTextFn, language: LanguageCode): ReportPrintMeta {
+  if (MASTER_REPORTS.has(name)) {
+    return {
+      description: [tr("gl_master_data_report", "รายงานข้อมูลหลัก")],
+      conditions: [
+        filters.accountfrom ? `${tr("gl_account_from", "จากรหัสบัญชี")} ${filters.accountfrom}` : "",
+        filters.accountto ? `${tr("gl_account_to", "ถึงรหัสบัญชี")} ${filters.accountto}` : "",
+        filters.codefrom ? `${fillText(tr("gl_dimension_filter_from", "จาก{0}"), tr("gl_code", "รหัส"))} ${filters.codefrom}` : "",
+        filters.codeto ? `${fillText(tr("gl_dimension_filter_to", "ถึง{0}"), tr("gl_code", "รหัส"))} ${filters.codeto}` : "",
+      ].filter(Boolean),
+      printedBy: printUserName(),
+      printedAt: printedAtText(language),
+    };
+  }
   const date = (value: string) => formatAppDate(value, language);
   const range = !filters.accountcode && filters.accountfrom !== filters.accountto;
   const cumulative = asOf || name === "ledger" && reportOptionOn(name, filters, "summary");
@@ -588,7 +607,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   }, [activeReportName]);
 
   useEffect(() => {
-    if (AS_OF_REPORTS.has(name)) return;
+    if (AS_OF_REPORTS.has(name) || MASTER_REPORTS.has(name)) return;
     let active = true;
     glAllRecords<GLMaster>("periods", "", 1000).then((items) => { if (active) setPeriods(items); }).catch(() => { if (active) setPeriods([]); });
     return () => { active = false; };
@@ -611,9 +630,10 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const periodSelect = (label: string, value: string, onChange: (code: string) => void) => <Combobox aria-label={label} value={value} onChange={(picked: string | number) => onChange(String(picked))}>{yearPeriodList.map((period) => <option key={period.code} value={period.code}>{period.code}{period.name ? ` · ${period.name}` : ""}</option>)}</Combobox>;
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
-    if (!(AS_OF_REPORTS.has(targetReport) ? selected.to : selected.fiscalyear) || busy) return;
+    if (!(MASTER_REPORTS.has(targetReport) || (AS_OF_REPORTS.has(targetReport) ? selected.to : selected.fiscalyear)) || busy) return;
     if (selected.from && selected.to && selected.from > selected.to) { setError(tr("gl_start_date_not_after_end", "วันเริ่มต้นต้องไม่เกินวันสิ้นสุด")); return; }
     if (selected.accountfrom && selected.accountto && selected.accountfrom > selected.accountto) { setError(tr("gl_err_report_account_range_invalid", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")); return; }
+    if (selected.codefrom && selected.codeto && selected.codefrom > selected.codeto) { setError(tr("gl_err_report_code_range_invalid", "รหัสเริ่มต้นต้องไม่มากกว่ารหัสสิ้นสุด")); return; }
     setBusy(true); setError("");
     try {
       const result = await fetchReport(targetReport, selected, nextPage, 50, nextPage > 1 && report && JSON.stringify(selected) === JSON.stringify(applied) && targetReport === activeReportName ? report.sequence : undefined);
@@ -676,7 +696,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     setBusy(true); setError("");
     try {
       const complete = await completeReport(applied, 100000, tr("gl_data_exceeds_100k_limit_date_range", "ข้อมูลเกิน 100,000 รายการ กรุณาจำกัดช่วงวันที่ก่อนส่งออก"));
-      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(asOf ? applied.to : applied.fiscalyear)), reportCsv({ ...complete, rows: labelledReportRows(complete.rows ?? [], tr) }), "text/csv;charset=utf-8");
+      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(MASTER_REPORTS.has(activeReportName) ? (applied.codefrom || "all") : asOf ? applied.to : applied.fiscalyear)), reportCsv({ ...complete, rows: labelledReportRows(complete.rows ?? [], tr) }), "text/csv;charset=utf-8");
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -711,7 +731,24 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     <Notice error text={error || refs.error || dims.error} />
     <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); submit(); }}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {asOf ? <>
+        {MASTER_REPORTS.has(activeReportName) ? <>
+          {activeReportName === "chartofaccounts" && <>
+            <Field label={tr("gl_account_from", "จากรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_from", "จากรหัสบัญชี")} value={filters.accountfrom} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountfrom: value, codefrom: value }))} /></Field>
+            <Field label={tr("gl_account_to", "ถึงรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_to", "ถึงรหัสบัญชี")} value={filters.accountto} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountto: value, codeto: value }))} /></Field>
+          </>}
+          {activeReportName === "journalbooks" && <>
+            <Field label={fillText(tr("gl_dimension_filter_from", "จาก{0}"), tr("gl_journal", "สมุดรายวัน"))}><input className={control} value={filters.codefrom} onChange={(e) => set("codefrom", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+            <Field label={fillText(tr("gl_dimension_filter_to", "ถึง{0}"), tr("gl_journal", "สมุดรายวัน"))}><input className={control} value={filters.codeto} onChange={(e) => set("codeto", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+          </>}
+          {activeReportName === "departments" && <>
+            <Field label={fillText(tr("gl_dimension_filter_from", "จาก{0}"), tr("gl_department", "แผนก"))}><input className={control} value={filters.codefrom} onChange={(e) => set("codefrom", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+            <Field label={fillText(tr("gl_dimension_filter_to", "ถึง{0}"), tr("gl_department", "แผนก"))}><input className={control} value={filters.codeto} onChange={(e) => set("codeto", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+          </>}
+          {activeReportName === "projects" && <>
+            <Field label={fillText(tr("gl_dimension_filter_from", "จาก{0}"), tr("gl_project", "โครงการ"))}><input className={control} value={filters.codefrom} onChange={(e) => set("codefrom", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+            <Field label={fillText(tr("gl_dimension_filter_to", "ถึง{0}"), tr("gl_project", "โครงการ"))}><input className={control} value={filters.codeto} onChange={(e) => set("codeto", e.target.value)} placeholder={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ")} /></Field>
+          </>}
+        </> : asOf ? <>
         <Field label={tr("gl_as_of_date", "ณ วันที่")}><input className={control} type="date" required value={filters.to} onChange={(e) => set("to", e.target.value)} /></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
         </> : <>
@@ -754,7 +791,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         </div>}
         </>}
         <div className="flex flex-wrap items-end gap-2">
-          <Button type="submit" className={actionClass} disabled={busy || !(asOf ? filters.to : filters.fiscalyear)}>
+          <Button type="submit" className={actionClass} disabled={busy || !(MASTER_REPORTS.has(activeReportName) || (asOf ? filters.to : filters.fiscalyear))}>
             <RefreshCw />
             {busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}
           </Button>
@@ -784,7 +821,9 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       </>
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
-        {asOf ? tr("gl_select_date_show_report", "เลือกวันที่ แล้วกดแสดงรายงาน") : tr("gl_select_fy_and_conditions_show_report", "เลือกปีบัญชีและเงื่อนไข แล้วกดแสดงรายงาน")}
+        {MASTER_REPORTS.has(activeReportName)
+          ? tr("gl_select_conditions_show_report", "เลือกเงื่อนไข แล้วกดแสดงรายงาน")
+          : asOf ? tr("gl_select_date_show_report", "เลือกวันที่ แล้วกดแสดงรายงาน") : tr("gl_select_fy_and_conditions_show_report", "เลือกปีบัญชีและเงื่อนไข แล้วกดแสดงรายงาน")}
       </div>
     )}
 

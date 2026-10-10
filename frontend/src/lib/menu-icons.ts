@@ -283,6 +283,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/report/vatpnd53": "fileText",
   "/report/taxforms": "folder",
   "/report/whtcertificate": "badge",
+  "/report/whtdeduction": "badge",
   "/transaction/accounttransfer": "payment",
   "/gl/financialclose": "check",
   "/report/ledger": "table",

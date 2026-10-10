@@ -82,7 +82,7 @@ describe("menu language labels", () => {
     // +8 รายการหัว "หน้าต่าง" และ "ช่วยเหลือ" ของ Champ ที่ BC ยังไม่มีจอ (2026-10-10)
     expect(items).toHaveLength(238);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
-    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
+    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) {
       expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(moved[previous.id] ?? previous.route);
     }

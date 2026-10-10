@@ -39,8 +39,8 @@ afterEach(() => {
 });
 
 describe("thai tax configs", () => {
-  it("ให้ config ครบ 5 รายการ และ resolve ได้จาก route", () => {
-    expect(THAI_TAX_CONFIGS).toHaveLength(5);
+  it("ให้ config ครบ 6 รายการ และ resolve ได้จาก route", () => {
+    expect(THAI_TAX_CONFIGS).toHaveLength(6);
     THAI_TAX_CONFIGS.forEach((config) => {
       expect(isThaiTaxRoute(config.route)).toBe(true);
       expect(getThaiTaxConfig(config.route)).toEqual(config);

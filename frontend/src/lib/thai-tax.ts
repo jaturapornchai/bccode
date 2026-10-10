@@ -81,6 +81,14 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
     revenueDepartmentFormCode: "มาตรา 50 ทวิ",
   },
   {
+    route: "/report/whtdeduction",
+    code: "wht_deduction",
+    title: { th: "พิมพ์ภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3,ภ.ง.ด. 53)", en: "Withholding Tax Deduction (P.N.D. 3, 53)" },
+    formType: "50twi",
+    description: { th: "พิมพ์หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ) สำหรับ ภ.ง.ด. 3 และ ภ.ง.ด. 53", en: "Print withholding tax certificates (50 Twi) for P.N.D. 3 and 53" },
+    revenueDepartmentFormCode: "มาตรา 50 ทวิ",
+  },
+  {
     route: "/report/whtreceived",
     code: "wht_received",
     title: { th: "รายงานภาษีถูกหัก ณ ที่จ่าย", en: "Tax Withheld from Us Register" },

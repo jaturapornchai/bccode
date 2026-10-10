@@ -382,6 +382,15 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
   const tr = useGLText();
   const { print: printJob, portal: printPortal } = useGLPrint();
   const [printDialog, setPrintDialog] = useState<"chart" | "books" | null>(null);
+
+  useEffect(() => {
+    if (!route) return;
+    if (resource === "accounts" && (route.includes("print=chart") || route.includes("print=true"))) {
+      setPrintDialog("chart");
+    } else if (resource === "journal-books" && (route.includes("print=books") || route.includes("print=true"))) {
+      setPrintDialog("books");
+    }
+  }, [route, resource]);
   const [search, setSearch] = useState("");
   const list = useGLList<GLRecord>(resource, search);
   const searchDebounce = useDebouncedSearch({

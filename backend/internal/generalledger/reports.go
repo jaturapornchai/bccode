@@ -76,6 +76,8 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 	var rc reportContext
 	if name == "budgetdetail" {
 		rc, err = newBudgetDetailContext(tx, scope, q)
+	} else if name == "chartofaccounts" || name == "journalbooks" || name == "departments" || name == "projects" {
+		rc, err = newMasterReportContext(tx, scope, q)
 	} else {
 		rc, err = newReportContext(ctx, tx, scope, q)
 	}
@@ -114,6 +116,12 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.budgetDetail(ctx)
 	case "statement":
 		report, err = rc.statement(ctx)
+	case "chartofaccounts":
+		report, err = rc.chartOfAccounts(ctx)
+	case "journalbooks":
+		report, err = rc.journalBooks(ctx)
+	case "departments", "projects":
+		report, err = rc.dimensionList(ctx, name)
 	default:
 		return empty, fmt.Errorf("รายงานนี้ยังไม่มีรูปแบบที่ยืนยันแล้ว")
 	}
@@ -999,4 +1007,135 @@ func budgetPeriodsInRange(y FiscalYear, from, to string) []int64 {
 		}
 	}
 	return out
+}
+
+// newMasterReportContext prepares the report context for master data reports (Champ 5520, 5531, 5538, 5521)
+func newMasterReportContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportContext, error) {
+	r := reportContext{tx: tx, scope: scope, query: q}
+	if scope.Company == "" {
+		return r, fmt.Errorf("กรุณาเลือกบริษัท")
+	}
+	q.AccountFrom, q.AccountTo = NormalizeCode(q.AccountFrom), NormalizeCode(q.AccountTo)
+	if q.AccountFrom != "" && q.AccountTo != "" && q.AccountFrom > q.AccountTo {
+		return r, fieldError("report_account_range_invalid", "accountfrom", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")
+	}
+	q.CodeFrom, q.CodeTo = NormalizeCode(q.CodeFrom), NormalizeCode(q.CodeTo)
+	if q.CodeFrom != "" && q.CodeTo != "" && q.CodeFrom > q.CodeTo {
+		return r, fieldError("report_code_range_invalid", "codefrom", "รหัสเริ่มต้นต้องไม่มากกว่ารหัสสิ้นสุด")
+	}
+	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
+	from := q.CodeFrom
+	to := q.CodeTo
+	if from == "" && q.AccountFrom != "" {
+		from = q.AccountFrom
+	}
+	if to == "" && q.AccountTo != "" {
+		to = q.AccountTo
+	}
+	r.args = []any{scope.Company, from, to}
+	return r, nil
+}
+
+// chartOfAccounts (Champ 5520: รายงานรายละเอียดผังบัญชี)
+func (r reportContext) chartOfAccounts(ctx context.Context) (Report, error) {
+	cte := `WITH accounts AS (
+		SELECT code,
+			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
+			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='en' LIMIT 1), '') AS account_name_en,
+			COALESCE(payload->>'accounttype', '') AS account_type,
+			COALESCE(payload->>'parentaccountcode', '') AS parent_code,
+			COALESCE((payload->>'level')::int, 1) AS account_level,
+			COALESCE((payload->>'allowposting')::boolean, true) AS allow_posting
+		FROM gl_records
+		WHERE company=$1 AND kind='accounts' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
+			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
+	), result AS (
+		SELECT code AS accountcode, account_name AS accountname, account_name_en AS accountnameen,
+			CASE account_type
+				WHEN 'asset' THEN 'สินทรัพย์'
+				WHEN 'liability' THEN 'หนี้สิน'
+				WHEN 'equity' THEN 'ส่วนของเจ้าของ'
+				WHEN 'income' THEN 'รายได้'
+				WHEN 'expense' THEN 'ค่าใช้จ่าย'
+				ELSE account_type
+			END AS accounttype,
+			parent_code AS parentaccountcode,
+			account_level::text AS accountlevel,
+			CASE WHEN allow_posting THEN 'ลงรายการได้' ELSE 'บัญชีคุม' END AS postingstatus
+		FROM accounts
+	)`
+	cols := []ReportColumn{
+		textColumn("accountcode", "รหัสบัญชี"),
+		textColumn("accountname", "ชื่อบัญชี (ไทย)"),
+		textColumn("accountnameen", "ชื่อบัญชี (อังกฤษ)"),
+		textColumn("accounttype", "หมวดบัญชี"),
+		textColumn("parentaccountcode", "บัญชีคุม"),
+		textColumn("accountlevel", "ระดับ"),
+		textColumn("postingstatus", "สถานะ"),
+	}
+	return r.runWithTotals(ctx, cte, "accountcode", cols, nil)
+}
+
+// journalBooks (Champ 5531: รายงานรายละเอียดสมุดบัญชี)
+func (r reportContext) journalBooks(ctx context.Context) (Report, error) {
+	cte := `WITH books AS (
+		SELECT code,
+			COALESCE(payload->>'name', '') AS book_name,
+			COALESCE((payload->>'booktype')::int, 1) AS book_type,
+			COALESCE(payload->>'docformat', '') AS doc_format,
+			COALESCE((payload->>'isactive')::boolean, true) AS is_active
+		FROM gl_records
+		WHERE company=$1 AND kind='journal-books' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
+			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
+	), result AS (
+		SELECT code AS bookcode, book_name AS bookname,
+			CASE book_type
+				WHEN 1 THEN 'ทั่วไป'
+				WHEN 2 THEN 'จ่าย'
+				WHEN 3 THEN 'รับ'
+				WHEN 4 THEN 'ขาย'
+				WHEN 5 THEN 'ซื้อ'
+				WHEN 6 THEN 'ยอดยกมา'
+				ELSE 'ทั่วไป'
+			END AS booktypename,
+			doc_format AS docformat,
+			CASE WHEN is_active THEN 'ใช้งาน' ELSE 'ปิดใช้งาน' END AS status
+		FROM books
+	)`
+	cols := []ReportColumn{
+		textColumn("bookcode", "รหัสสมุด"),
+		textColumn("bookname", "ชื่อสมุดรายวัน"),
+		textColumn("booktypename", "ประเภทสมุด"),
+		textColumn("docformat", "รูปแบบเลขที่"),
+		textColumn("status", "สถานะ"),
+	}
+	return r.runWithTotals(ctx, cte, "bookcode", cols, nil)
+}
+
+// dimensionList (Champ 5538: รายงานรายละเอียดแผนก / 5521: รายงานรายละเอียดโครงการ)
+func (r reportContext) dimensionList(ctx context.Context, kind string) (Report, error) {
+	kindLiteral := "departments"
+	titleName := "แผนก"
+	if kind == "projects" {
+		kindLiteral = "projects"
+		titleName = "โครงการ"
+	}
+	cte := `WITH dims AS (
+		SELECT code,
+			COALESCE(payload->>'name', '') AS dim_name,
+			COALESCE((payload->>'isactive')::boolean, true) AS is_active
+		FROM gl_records
+		WHERE company=$1 AND kind='` + kindLiteral + `' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
+			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
+	), result AS (
+		SELECT code AS dimcode, dim_name AS dimname,
+			CASE WHEN is_active THEN 'ใช้งาน' ELSE 'ปิดใช้งาน' END AS status
+		FROM dims
+	)`
+	cols := []ReportColumn{
+		textColumn("dimcode", "รหัส" + titleName),
+		textColumn("dimname", "ชื่อ" + titleName),
+		textColumn("status", "สถานะ"),
+	}
+	return r.runWithTotals(ctx, cte, "dimcode", cols, nil)
 }

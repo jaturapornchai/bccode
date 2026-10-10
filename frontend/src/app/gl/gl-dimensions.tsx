@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -73,10 +73,13 @@ function PrintDialog({ kind, print, onClose }: { kind: GLDimensionResource; prin
 }
 
 /** "Print" button of one register tab; opens the code-range dialog. The print job lives here, not in the dialog, because the dialog closes as the job starts. */
-function PrintAction({ kind }: { kind: GLDimensionResource }) {
+function PrintAction({ kind, autoOpen = false }: { kind: GLDimensionResource; autoOpen?: boolean }) {
   const tr = useGLText();
   const { print, portal } = useGLPrint();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
+  useEffect(() => {
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
   const title = kind === "departments" ? tr("gl_department_report_title", "รายงานรายละเอียดแผนก") : tr("gl_project_report_title", "รายงานรายละเอียดโครงการ");
   return <>
     <Button type="button" variant="outline" className={actionClass} title={title} onClick={() => setOpen(true)}><Printer className="size-4 mr-1.5" />{tr("gl_print", "พิมพ์")}</Button>
@@ -87,9 +90,19 @@ function PrintAction({ kind }: { kind: GLDimensionResource }) {
 
 export function GLDimensions({ route }: { route: string }) {
   const tr = useGLText();
-  const [tab, setTab] = useState<GLDimensionResource>("departments"), [dirty, setDirty] = useState(false);
+  const [tab, setTab] = useState<GLDimensionResource>(() => route.includes("tab=projects") || route.includes("projects") ? "projects" : "departments"), [dirty, setDirty] = useState(false);
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const onDirtyChange = useCallback((value: boolean) => setDirty(value), []);
+
+  useEffect(() => {
+    if (!route) return;
+    if (route.includes("tab=projects") || route.includes("projects")) {
+      setTab("projects");
+    } else if (route.includes("tab=departments") || route.includes("departments")) {
+      setTab("departments");
+    }
+  }, [route]);
+
   async function select(next: GLDimensionResource) {
     if (next === tab) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
@@ -104,7 +117,7 @@ export function GLDimensions({ route }: { route: string }) {
         {labels[resource]}
       </button>)}
     </div>
-    <GLMasters key={tab} resource={tab} route={route} extraActions={<PrintAction kind={tab} />} onDirtyChange={onDirtyChange} />
+    <GLMasters key={tab} resource={tab} route={route} extraActions={<PrintAction kind={tab} autoOpen={route.includes("print=true")} />} onDirtyChange={onDirtyChange} />
     {confirmationDialog}
   </div>;
 }
