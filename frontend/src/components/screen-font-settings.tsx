@@ -169,6 +169,40 @@ export function ScreenFontSettings({
     handleSelectFont(currentConfig.defaultFont);
   };
 
+  const [savedCompanySuccess, setSavedCompanySuccess] = useState(false);
+  const [activeTheme, setActiveTheme] = useState<"light" | "dark" | "system">("light");
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setActiveTheme(isDark ? "dark" : "light");
+  }, []);
+
+  const handleSetTheme = (theme: "light" | "dark" | "system") => {
+    setActiveTheme(theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("bc_theme", "dark");
+    } else if (theme === "light") {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("bc_theme", "light");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", prefersDark);
+      localStorage.setItem("bc_theme", "system");
+    }
+  };
+
+  const handleSaveCompanyDefault = () => {
+    const companySettings = {
+      fonts: selectedFonts,
+      theme: activeTheme,
+      updatedAt: new Date().toISOString(),
+    };
+    localStorage.setItem("bc_company_font_theme_settings", JSON.stringify(companySettings));
+    setSavedCompanySuccess(true);
+    setTimeout(() => setSavedCompanySuccess(false), 3500);
+  };
+
   const getTargetIcon = (target: FontTarget) => {
     switch (target) {
       case "screen":
@@ -215,7 +249,7 @@ export function ScreenFontSettings({
         })}
       </div>
 
-      {/* Header */}
+      {/* Header & Company Scope Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-xs">
         <div className="flex items-center gap-3.5">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
@@ -230,15 +264,74 @@ export function ScreenFontSettings({
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleResetDefault}
-          className="gap-2 text-xs"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          {tr("reset_default_font", "คืนค่าเริ่มต้น")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {savedCompanySuccess && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 px-3 py-1.5 rounded-lg font-medium animate-in fade-in">
+              <Check className="h-3.5 w-3.5" />
+              บันทึกเป็นค่าเริ่มต้นของบริษัทเรียบร้อย
+            </span>
+          )}
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSaveCompanyDefault}
+            className="gap-2 text-xs"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            บันทึกเป็นค่าเริ่มต้นของทั้งบริษัท
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetDefault}
+            className="gap-2 text-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            {tr("reset_default_font", "คืนค่าเริ่มต้น")}
+          </Button>
+        </div>
+      </div>
+
+      {/* Theme Quick Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-border/80 bg-card/60 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground">ธีมสีของหน้าจอ (Theme Mode):</span>
+          <span className="text-muted-foreground">ปรับโทนสีแสดงผลควบคู่กับตัวอักษร</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleSetTheme("light")}
+            className={`px-3 py-1 rounded-md font-medium transition-colors ${
+              activeTheme === "light"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            สว่าง (Light)
+          </button>
+          <button
+            onClick={() => handleSetTheme("dark")}
+            className={`px-3 py-1 rounded-md font-medium transition-colors ${
+              activeTheme === "dark"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            มืด (Dark)
+          </button>
+          <button
+            onClick={() => handleSetTheme("system")}
+            className={`px-3 py-1 rounded-md font-medium transition-colors ${
+              activeTheme === "system"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            ตามระบบ (Auto)
+          </button>
+        </div>
       </div>
 
       {/* Font Cards Grid */}

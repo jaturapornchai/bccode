@@ -26,7 +26,6 @@ describe("menu screen availability", () => {
     "/pending/sale-reservation",
     "/pending/sale-dispatch",
     "/pending/ap-payment-prepare",
-    "/pending/cheque-issued-prepare",
     "/pending/cheque-movement",
     "/pending/bank-service",
     "/pending/product-supplier-update",

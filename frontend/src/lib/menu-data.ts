@@ -412,7 +412,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("cheques-issued", "เช็คจ่าย", "Issued Cheques"),
         items: [
           tx("cheque-issued", "บันทึกเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
-          tx("cheque-issued-prepare", "บันทึกเช็คเตรียมจ่าย", "Prepare Cheques for Payment", "/pending/cheque-issued-prepare", "finance", "cheque_issue_prepare"),
+          tx("cheque-issued-prepare", "บันทึกเช็คเตรียมจ่าย", "Prepare Cheques for Payment", "/banking/cheque-issued-prepare", "finance", "cheque_issue_prepare"),
           tx("cheque-issued-clear", "บันทึกเช็คจ่ายผ่าน", "Clear Issued Cheques", "/banking/cheques/issued-clear", "finance"),
           tx("cheque-issued-cancel", "บันทึกยกเลิกเช็คจ่าย", "Cancel Issued Cheques", "/banking/cheques/issued-cancel", "finance"),
         ],

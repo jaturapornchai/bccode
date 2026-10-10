@@ -22,7 +22,7 @@ const CHAMP_HEADS = [
 const CHAMP_ONLY_PENDING_IDS = [
   "billing-note-auto",
   // 2026-10-09 (S1): items the transaction heads of the real Champ 5.5 dropdowns have and BC lacked
-  "sale-reservation", "sale-dispatch", "ap-payment-prepare", "cheque-issued-prepare",
+  "sale-reservation", "sale-dispatch", "ap-payment-prepare",
   "cheque-movement", "bank-service", "product-supplier-update", "stock-count-handheld", "transaction-lock",
   // 2026-10-09 (S2): items of the Champ "จัดการระบบ" head BC has no screen for yet
   "system-journal-format", "system-work-date", "system-product-by-warehouse", "system-default-warehouse", "system-currency",

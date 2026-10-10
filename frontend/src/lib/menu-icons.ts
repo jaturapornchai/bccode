@@ -126,6 +126,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/banking/income": "money",
   "/banking/contacts": "user",
   "/banking/petty-cash-limit": "money",
+  "/banking/cheque-issued-prepare": "check",
   "/tools/cheque-balances": "calculator",
   "/tools/bank-balances": "calculator",
   "/inventory/issue-request": "fileText",

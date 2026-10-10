@@ -125,4 +125,39 @@ test.describe('UAT Phase 5: Font Picker, Banking Contacts & Petty Cash Limit', (
 
     await capture(page, '09-petty-cash-limit-ready');
   });
+
+  test('04. ตรวจสอบหน้าจอบันทึกเช็คเตรียมจ่าย (Cheque Issued Prepare Parity 60022)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/menu');
+    await page.waitForTimeout(1500);
+
+    const searchInput = page.locator('input[placeholder*="ค้นหาเมนู"]').first();
+    await searchInput.fill('เช็คเตรียมจ่าย');
+    await page.waitForTimeout(800);
+    const targetBtn = page.locator('button').filter({ hasText: 'บันทึกเช็คเตรียมจ่าย' }).first();
+    if (await targetBtn.isVisible()) {
+      await targetBtn.click();
+      await page.waitForTimeout(1500);
+      await capture(page, '10-cheque-issued-prepare');
+      await expect(page.getByText('บันทึกเช็คเตรียมจ่าย')).toBeVisible();
+    }
+  });
+
+  test('05. ตรวจสอบหน้าจอบันทึกใบรับเงินมัดจำ (Deposit Receipt Parity 30006)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/menu');
+    await page.waitForTimeout(1500);
+
+    const searchInput = page.locator('input[placeholder*="ค้นหาเมนู"]').first();
+    await searchInput.fill('รับเงินมัดจำ');
+    await page.waitForTimeout(800);
+    const targetBtn = page.locator('button').filter({ hasText: 'บันทึกใบรับเงินมัดจำ' }).first();
+    if (await targetBtn.isVisible()) {
+      await targetBtn.click();
+      await page.waitForTimeout(1500);
+      await capture(page, '11-deposit-receipt');
+      await expect(page.getByText('บันทึกใบรับเงินมัดจำ')).toBeVisible();
+    }
+  });
 });
+

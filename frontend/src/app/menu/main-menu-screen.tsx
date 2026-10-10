@@ -136,6 +136,8 @@ import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print
 import { ScreenFontSettings } from "@/components/screen-font-settings";
 import { BankingContactsScreen } from "@/components/banking-contacts-screen";
 import { PettyCashLimitScreen } from "@/components/petty-cash-limit-screen";
+import { ChequeIssuedPrepareScreen } from "@/components/cheque-issued-prepare-screen";
+import { DepositReceiptScreen } from "@/components/deposit-receipt-screen";
 
 type WorkTab = {
   id: string;
@@ -2332,6 +2334,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/banking/petty-cash-limit") {
     return <PettyCashLimitScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/banking/cheque-issued-prepare") {
+    return <ChequeIssuedPrepareScreen language={language} />;
+  }
+
+  if (activeTab.route === "/transaction/receivedeposit") {
+    return <DepositReceiptScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

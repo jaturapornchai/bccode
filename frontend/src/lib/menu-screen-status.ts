@@ -19,6 +19,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/font-report", "/settings/font-report-title",
   "/settings/font-report-column", "/settings/font-report-detail", "/settings/font-report-company",
   "/banking/petty-cash-limit",
+  "/banking/cheque-issued-prepare",
+  "/transaction/receivedeposit",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

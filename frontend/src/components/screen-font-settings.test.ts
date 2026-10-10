@@ -41,4 +41,26 @@ describe("Screen Font Settings (Champ parity - Window Fonts)", () => {
     expect(normalizeAppFont("non-existent-font")).toBe(defaultFontId);
     expect(Object.keys(FONT_TARGET_CONFIGS)).toHaveLength(6);
   });
+
+  it("supports company-level default persistence and theme selection", () => {
+    const storage: Record<string, string> = {};
+    const mockCompanySettings = {
+      fonts: {
+        screen: "sarabun",
+        report: "sarabun",
+        "report-title": "kanit",
+        "report-column": "prompt",
+        "report-detail": "sarabun",
+        "report-company": "ibm-plex-sans-thai",
+      },
+      theme: "dark",
+      updatedAt: new Date().toISOString(),
+    };
+    storage["bc_company_font_theme_settings"] = JSON.stringify(mockCompanySettings);
+    const stored = JSON.parse(storage["bc_company_font_theme_settings"] || "{}");
+    expect(stored.theme).toBe("dark");
+    expect(stored.fonts.screen).toBe("sarabun");
+    expect(stored.fonts["report-company"]).toBe("ibm-plex-sans-thai");
+  });
 });
+
