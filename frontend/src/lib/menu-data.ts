@@ -502,7 +502,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("ic-pricing", "ราคาขายและโปรโมชั่น", "Selling Prices & Promotions"),
         items: [
           tx("product-price-adjust", "ปรับปรุงราคาขายสินค้า", "Adjust Selling Prices", "/inventory/price-adjustment", "master"),
-          tx("product-supplier-update", "ปรับปรุง ข้อมูล Supplier ตามสินค้า", "Adjust Supplier Data by Product", "/pending/product-supplier-update", "master", "product_supplier_adjust"),
+          tx("product-supplier-update", "ปรับปรุง ข้อมูล Supplier ตามสินค้า", "Adjust Supplier Data by Product", "/inventory/product-supplier-update", "master", "product_supplier_adjust"),
         ],
       },
       {
@@ -528,7 +528,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("stock-count-sheet", "บันทึกเอกสารเพื่อตรวจนับสินค้า", "Stock Count Sheet", "/inventory/count-sheet", "transaction"),
           tx("stock-count", "บันทึกผลการตรวจนับสินค้า", "Stock Count", "/transaction/stockcount"),
           tx("stock-adjust", "บันทึกปรับปรุงสินค้าหลังตรวจนับ", "Stock Adjustment", "/transaction/adjust"),
-          tx("stock-count-handheld", "ตรวจนับสต็อกโดย Hand Held", "Hand Held Stock Count", "/pending/stock-count-handheld"),
+          tx("stock-count-handheld", "ตรวจนับสต็อกโดย Hand Held", "Hand Held Stock Count", "/inventory/stock-count-handheld"),
         ],
       },
       {

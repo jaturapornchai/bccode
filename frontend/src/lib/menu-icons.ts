@@ -143,6 +143,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/promotionscreen": "gift",
   "/inventory/price-adjustment": "money",
   "/inventory/daily-sequence": "list",
+  "/inventory/stock-count-handheld": "qr",
+  "/inventory/product-supplier-update": "package",
   "/asset/maintenance": "fileCog",
   "/asset/types": "category",
   "/asset/post-gl": "fileText",

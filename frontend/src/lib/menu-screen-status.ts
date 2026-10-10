@@ -28,6 +28,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/banking/bank-service",
   "/sale/reservation",
   "/sale/dispatch",
+  "/inventory/stock-count-handheld",
+  "/inventory/product-supplier-update",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

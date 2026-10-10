@@ -145,6 +145,8 @@ import { ChequeMovementScreen } from "@/components/cheque-movement-screen";
 import { BankServiceScreen } from "@/components/bank-service-screen";
 import { SaleReservationScreen } from "@/components/sale-reservation-screen";
 import { SaleDispatchScreen } from "@/components/sale-dispatch-screen";
+import { StockCountHandheldScreen } from "@/components/stock-count-handheld-screen";
+import { ProductSupplierUpdateScreen } from "@/components/product-supplier-update-screen";
 
 type WorkTab = {
   id: string;
@@ -2377,6 +2379,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/sale/dispatch") {
     return <SaleDispatchScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/inventory/stock-count-handheld") {
+    return <StockCountHandheldScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/inventory/product-supplier-update") {
+    return <ProductSupplierUpdateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {
