@@ -6,7 +6,7 @@ import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
 
-export type ReportCategory = "inventory" | "sales" | "purchase" | "ar" | "ap" | "xbrl";
+export type ReportCategory = "inventory" | "sales" | "purchase" | "ar" | "ap" | "xbrl" | "finance";
 
 export interface ReportColumn {
   key: string;
@@ -542,6 +542,68 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
       { key: "description", label: { th: "รายการในงบการเงิน", en: "Statement Line" } },
       { key: "amount", label: { th: "ยอดเงินรอบปัจจุบัน", en: "Current Period" }, align: "right", isCurrency: true },
       { key: "prevamount", label: { th: "ยอดเงินรอบก่อน", en: "Prior Period" }, align: "right", isCurrency: true },
+    ],
+  },
+
+  // --- ระบบเช็คและการเงิน (Cheque & Finance) ---
+  {
+    route: "/report/chequereceived",
+    code: "cheque_received_report",
+    category: "finance",
+    title: { th: "รายงานรายละเอียดเช็ครับ", en: "Received Cheques Detail Report" },
+    description: { th: "รายงานรายละเอียดเช็ครับแยกตามวันที่รับ วันที่ครบกำหนด ลูกค้า เลขที่เช็ค และสถานะเช็ค", en: "Detailed received cheques report sorted by receive date, due date, customer, and cheque status" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่รับเช็ค", en: "Receive Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No" } },
+      { key: "duedate", label: { th: "วันที่ครบกำหนด", en: "Due Date" }, align: "center" },
+      { key: "debtorcode", label: { th: "รหัสลูกค้า", en: "Customer Code" } },
+      { key: "debtorname", label: { th: "ชื่อลูกค้า", en: "Customer Name" } },
+      { key: "chqnumber", label: { th: "เลขที่เช็ค", en: "Cheque No" } },
+      { key: "bankname", label: { th: "ธนาคาร/สาขา", en: "Bank / Branch" } },
+      { key: "status", label: { th: "สถานะ", en: "Status" }, align: "center" },
+      { key: "amount", label: { th: "จำนวนเงิน", en: "Amount" }, align: "right", isCurrency: true },
+      { key: "remark", label: { th: "หมายเหตุ", en: "Remark" } },
+    ],
+  },
+  {
+    route: "/report/chequeissued",
+    code: "cheque_issued_report",
+    category: "finance",
+    title: { th: "รายงานรายละเอียดเช็คจ่าย", en: "Issued Cheques Detail Report" },
+    description: { th: "รายงานรายละเอียดเช็คจ่ายแยกตามวันที่จ่าย วันที่ครบกำหนด เจ้าหนี้ เลขที่เช็ค และสมุดบัญชีเงินฝาก", en: "Detailed issued cheques report sorted by payment date, due date, supplier, and bank account" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่จ่ายเช็ค", en: "Payment Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No" } },
+      { key: "duedate", label: { th: "วันที่ครบกำหนด", en: "Due Date" }, align: "center" },
+      { key: "creditorcode", label: { th: "รหัสเจ้าหนี้", en: "Supplier Code" } },
+      { key: "creditorname", label: { th: "ชื่อเจ้าหนี้", en: "Supplier Name" } },
+      { key: "chqnumber", label: { th: "เลขที่เช็ค", en: "Cheque No" } },
+      { key: "bankbook", label: { th: "สมุดเงินฝาก/ธนาคาร", en: "Bank Book" } },
+      { key: "status", label: { th: "สถานะ", en: "Status" }, align: "center" },
+      { key: "amount", label: { th: "จำนวนเงิน", en: "Amount" }, align: "right", isCurrency: true },
+      { key: "remark", label: { th: "หมายเหตุ", en: "Remark" } },
+    ],
+  },
+  {
+    route: "/report/creditcard",
+    code: "credit_card_report",
+    category: "finance",
+    title: { th: "รายงานรายละเอียดบัตรเครดิต", en: "Credit Card Transactions Report" },
+    description: { th: "รายงานรายละเอียดการรับชำระด้วยบัตรเครดิต ค่าธรรมเนียม และยอดเงินสุทธิ", en: "Detailed credit card transaction report with fee and net settlement" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่ทำรายการ", en: "Transaction Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No" } },
+      { key: "cardno", label: { th: "เลขที่บัตรเครดิต", en: "Card No" } },
+      { key: "cardtype", label: { th: "ประเภทบัตร", en: "Card Type" }, align: "center" },
+      { key: "holdername", label: { th: "ผู้ถือบัตร/ลูกค้า", en: "Cardholder" } },
+      { key: "bankname", label: { th: "ธนาคารเจ้าของบัตร", en: "Bank" } },
+      { key: "amount", label: { th: "จำนวนเงิน", en: "Amount" }, align: "right", isCurrency: true },
+      { key: "fee", label: { th: "ค่าธรรมเนียม", en: "Fee" }, align: "right", isCurrency: true },
+      { key: "netamount", label: { th: "ยอดเงินสุทธิ", en: "Net Amount" }, align: "right", isCurrency: true },
+      { key: "status", label: { th: "สถานะ", en: "Status" }, align: "center" },
     ],
   },
 ];
@@ -1256,6 +1318,42 @@ const catalogKeys: Record<string, string> = {
   "dbd_xbrl_export.col.description": "rpt_statement_line",
   "dbd_xbrl_export.col.amount": "rpt_current_period",
   "dbd_xbrl_export.col.prevamount": "rpt_prior_period",
+
+  "cheque_received_report.title": "cheque_received_report",
+  "cheque_received_report.col.docdate": "date",
+  "cheque_received_report.col.docno": "ops_col_docno",
+  "cheque_received_report.col.duedate": "due_date",
+  "cheque_received_report.col.debtorcode": "debtor_code",
+  "cheque_received_report.col.debtorname": "debtor_name",
+  "cheque_received_report.col.chqnumber": "cheque_number",
+  "cheque_received_report.col.bankname": "bank_name",
+  "cheque_received_report.col.status": "status",
+  "cheque_received_report.col.amount": "rpt_amount_2",
+  "cheque_received_report.col.remark": "remark",
+
+  "cheque_issued_report.title": "cheque_issued_report",
+  "cheque_issued_report.col.docdate": "date",
+  "cheque_issued_report.col.docno": "ops_col_docno",
+  "cheque_issued_report.col.duedate": "due_date",
+  "cheque_issued_report.col.creditorcode": "creditor_code",
+  "cheque_issued_report.col.creditorname": "creditor_name",
+  "cheque_issued_report.col.chqnumber": "cheque_number",
+  "cheque_issued_report.col.bankbook": "book_bank",
+  "cheque_issued_report.col.status": "status",
+  "cheque_issued_report.col.amount": "rpt_amount_2",
+  "cheque_issued_report.col.remark": "remark",
+
+  "credit_card_report.title": "credit_card_report",
+  "credit_card_report.col.docdate": "date",
+  "credit_card_report.col.docno": "ops_col_docno",
+  "credit_card_report.col.cardno": "creditnumber",
+  "credit_card_report.col.cardtype": "type",
+  "credit_card_report.col.holdername": "customer",
+  "credit_card_report.col.bankname": "bank_name",
+  "credit_card_report.col.amount": "rpt_amount_2",
+  "credit_card_report.col.fee": "charge",
+  "credit_card_report.col.netamount": "net_amount",
+  "credit_card_report.col.status": "status",
 };
 
 export function reportText(

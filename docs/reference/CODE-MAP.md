@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit ab9307e6 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit f7011a08 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 33
 
@@ -892,6 +892,37 @@ Files indexed: 33
 | 522 | const-arrow | `updateGlobalStyle` |
 | 531 | function | `statementView` |
 
+## frontend/src/lib/erp-reports.ts (1381 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 615 | function | `isErpReportRoute` |
+| 620 | function | `getErpReportConfig` |
+| 646 | function | `isErpReportApiReady` |
+| 650 | function | `isRecord` |
+| 654 | function | `toNumber` |
+| 665 | function | `toText` |
+| 673 | function | `mapSalesByDocument` |
+| 688 | function | `mapGrossProfitDocument` |
+| 713 | function | `mapStockBalanceItem` |
+| 730 | function | `mapStockBalanceWarehouse` |
+| 747 | function | `mapStockMovementCost` |
+| 768 | function | `mapStockMovementSimple` |
+| 785 | function | `mapProductStatusReport` |
+| 802 | function | `mapProductPriceSettingReport` |
+| 823 | function | `mapApMovement` |
+| 844 | function | `mapApStatus` |
+| 863 | function | `mapApOutstanding` |
+| 882 | function | `mapApDailyPayment` |
+| 899 | function | `mapArMovement` |
+| 920 | function | `mapArStatus` |
+| 939 | function | `mapArOutstanding` |
+| 958 | function | `mapArCreditLimit` |
+| 990 | function | `extractRows` |
+| 1004 | function | `fetchErpReportData` |
+| 1359 | function | `reportText` |
+| 1368 | function | `reportColumnLabel` |
+
 ## frontend/src/components/banking-contacts-screen.tsx (1357 lines)
 
 | Line | Kind | Name |
@@ -1021,37 +1052,6 @@ Files indexed: 33
 | 1318 | function | `MockRandomString` |
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
-
-## frontend/src/lib/erp-reports.ts (1283 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 553 | function | `isErpReportRoute` |
-| 558 | function | `getErpReportConfig` |
-| 584 | function | `isErpReportApiReady` |
-| 588 | function | `isRecord` |
-| 592 | function | `toNumber` |
-| 603 | function | `toText` |
-| 611 | function | `mapSalesByDocument` |
-| 626 | function | `mapGrossProfitDocument` |
-| 651 | function | `mapStockBalanceItem` |
-| 668 | function | `mapStockBalanceWarehouse` |
-| 685 | function | `mapStockMovementCost` |
-| 706 | function | `mapStockMovementSimple` |
-| 723 | function | `mapProductStatusReport` |
-| 740 | function | `mapProductPriceSettingReport` |
-| 761 | function | `mapApMovement` |
-| 782 | function | `mapApStatus` |
-| 801 | function | `mapApOutstanding` |
-| 820 | function | `mapApDailyPayment` |
-| 837 | function | `mapArMovement` |
-| 858 | function | `mapArStatus` |
-| 877 | function | `mapArOutstanding` |
-| 896 | function | `mapArCreditLimit` |
-| 928 | function | `extractRows` |
-| 942 | function | `fetchErpReportData` |
-| 1261 | function | `reportText` |
-| 1270 | function | `reportColumnLabel` |
 
 ## frontend/src/app/tax/tax-filing-workbench.tsx (1276 lines)
 
