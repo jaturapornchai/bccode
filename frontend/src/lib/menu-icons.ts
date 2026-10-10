@@ -377,6 +377,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/settings/work-date": "calendarCheck",
   "/pending/system-product-by-warehouse": "warehouse",
   "/pending/system-default-warehouse": "warehouse",
+  "/settings/product-by-warehouse": "warehouse",
+  "/settings/default-warehouse": "warehouse",
   "/pending/system-currency": "currency",
   "/pending/system-main-map": "map",
   "/pending/system-credit-debit-reasons": "list",

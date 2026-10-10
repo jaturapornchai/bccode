@@ -32,6 +32,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/inventory/product-supplier-update",
   "/settings/journal-format",
   "/settings/work-date",
+  "/settings/product-by-warehouse",
+  "/settings/default-warehouse",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

@@ -149,6 +149,8 @@ import { StockCountHandheldScreen } from "@/components/stock-count-handheld-scre
 import { ProductSupplierUpdateScreen } from "@/components/product-supplier-update-screen";
 import { SystemJournalFormatScreen } from "@/components/system-journal-format-screen";
 import { SystemWorkDateScreen } from "@/components/system-work-date-screen";
+import { SystemProductByWarehouseScreen } from "@/components/system-product-by-warehouse-screen";
+import { SystemDefaultWarehouseScreen } from "@/components/system-default-warehouse-screen";
 
 type WorkTab = {
   id: string;
@@ -2397,6 +2399,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/settings/work-date") {
     return <SystemWorkDateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/product-by-warehouse") {
+    return <SystemProductByWarehouseScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/default-warehouse") {
+    return <SystemDefaultWarehouseScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

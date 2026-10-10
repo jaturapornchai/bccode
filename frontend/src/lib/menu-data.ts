@@ -713,8 +713,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("system-journal-format", "กำหนดรูปแบบรายวัน", "Journal Format", "/settings/journal-format", "settings"),
           tx("system-work-date", "กำหนดวันที่ทำงานเริ่มต้น", "Default Work Date", "/settings/work-date", "settings"),
-          tx("system-product-by-warehouse", "กำหนดสินค้าตามคลัง", "Products by Warehouse", "/pending/system-product-by-warehouse", "settings"),
-          tx("system-default-warehouse", "กำหนดคลังที่เก็บสินค้าเริ่มต้น", "Default Warehouse", "/pending/system-default-warehouse", "settings"),
+          tx("system-product-by-warehouse", "กำหนดสินค้าตามคลัง", "Products by Warehouse", "/settings/product-by-warehouse", "settings"),
+          tx("system-default-warehouse", "กำหนดคลังที่เก็บสินค้าเริ่มต้น", "Default Warehouse", "/settings/default-warehouse", "settings"),
           tx("system-currency", "กำหนดสกุลเงิน", "Currencies", "/pending/system-currency", "settings"),
           tx("system-main-map", "กำหนดแผนที่หลัก", "Main Map", "/pending/system-main-map", "settings"),
           tx("system-credit-debit-reasons", "กำหนดสาเหตุการลดหนี้/เพิ่มหนี้", "Credit and Debit Note Reasons", "/pending/system-credit-debit-reasons", "settings"),
