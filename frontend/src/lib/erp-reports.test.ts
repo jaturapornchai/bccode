@@ -10,8 +10,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
-  it("registers all 38 ERP report routes across 7 categories", () => {
-    expect(ERP_REPORT_CONFIGS.length).toBe(38);
+  it("registers all 44 ERP report routes across 7 categories", () => {
+    expect(ERP_REPORT_CONFIGS.length).toBe(44);
 
     // Inventory
     expect(isErpReportRoute("/report/stockbalanceitem")).toBe(true);
@@ -22,6 +22,12 @@ describe("Unified ERP Reporting Engine", () => {
     expect(isErpReportRoute("/report/reportstockmovement")).toBe(true);
     expect(isErpReportRoute("/report/productstatus")).toBe(true);
     expect(isErpReportRoute("/report/productpricesetting")).toBe(true);
+    expect(isErpReportRoute("/report/maxstock")).toBe(true);
+    expect(isErpReportRoute("/report/nomovementstock")).toBe(true);
+    expect(isErpReportRoute("/report/stockcountvariance")).toBe(true);
+    expect(isErpReportRoute("/report/pendingreceive")).toBe(true);
+    expect(isErpReportRoute("/report/pendingdelivery")).toBe(true);
+    expect(isErpReportRoute("/report/serialmovement")).toBe(true);
 
     // Sales
     expect(isErpReportRoute("/report/reportdedebisales")).toBe(true);

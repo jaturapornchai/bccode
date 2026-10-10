@@ -16,8 +16,6 @@ describe("menu screen availability", () => {
   // AP/AR debt reports (8 routes) connected to PostgreSQL via /api/report/debt/query on 2026-09-19.
   const CHAMP_PENDING_ROUTES = [
     "/transaction/purchasereducedebt", "/transaction/rfqpricetable",
-    "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
-    "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
   ];
 
   // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).
