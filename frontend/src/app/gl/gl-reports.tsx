@@ -700,6 +700,36 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
+  // Desktop ERP keyboard shortcuts (Champ parity): Alt+P = Print, Alt+E = Export CSV, Alt+R = Refresh
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (drillDocument !== null) return;
+      if ((e.altKey && (e.key === "p" || e.key === "P")) || ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P"))) {
+        if (applied && report && !busy) {
+          e.preventDefault();
+          void printReport();
+        }
+        return;
+      }
+      if (e.altKey && (e.key === "e" || e.key === "E")) {
+        if (applied && report && !busy) {
+          e.preventDefault();
+          void exportCsv();
+        }
+        return;
+      }
+      if (e.altKey && (e.key === "r" || e.key === "R")) {
+        if (!busy && (MASTER_REPORTS.has(activeReportName) || (asOf ? filters.to : filters.fiscalyear))) {
+          e.preventDefault();
+          submit();
+        }
+        return;
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [applied, report, busy, drillDocument, activeReportName, asOf, filters]);
+
   return <section className={`${panel} flex flex-col flex-1 min-h-0 gap-3`}>
     <div className="shrink-0 flex items-center justify-between gap-3">
       {heading && <h2 className="text-lg font-semibold">{heading}</h2>}
@@ -791,17 +821,20 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         </div>}
         </>}
         <div className="flex flex-wrap items-end gap-2">
-          <Button type="submit" className={actionClass} disabled={busy || !(MASTER_REPORTS.has(activeReportName) || (asOf ? filters.to : filters.fiscalyear))}>
+          <Button type="submit" className={actionClass} title="Enter / Alt+R" disabled={busy || !(MASTER_REPORTS.has(activeReportName) || (asOf ? filters.to : filters.fiscalyear))}>
             <RefreshCw />
             {busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}
+            <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-black/15 dark:bg-white/15 px-1 rounded">Enter</kbd>
           </Button>
-          <Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void exportCsv()}>
+          <Button type="button" variant="outline" className={actionClass} title="Alt+E" disabled={busy || !report} onClick={() => void exportCsv()}>
             <Download />
             {tr("gl_export_table", "ส่งออกตาราง")}
+            <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded">Alt+E</kbd>
           </Button>
-          <Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void printReport()}>
+          <Button type="button" variant="outline" className={actionClass} title="Alt+P" disabled={busy || !report} onClick={() => void printReport()}>
             <Printer />
             {tr("gl_print", "พิมพ์")}
+            <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded">Alt+P</kbd>
           </Button>
         </div>
       </div>

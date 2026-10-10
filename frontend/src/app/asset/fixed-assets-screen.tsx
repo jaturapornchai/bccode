@@ -110,10 +110,11 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
   // Sync activeTab with initial route
   useEffect(() => {
     const cleanRoute = route.split("?")[0];
-    if (cleanRoute === "/asset/registry") setActiveTab("registry");
-    else if (cleanRoute === "/asset/depreciation") setActiveTab("depreciation");
+    if (cleanRoute === "/asset/registry" || cleanRoute === "/report/assetdisposal") setActiveTab("registry");
+    else if (cleanRoute === "/asset/depreciation" || cleanRoute === "/report/depreciationmonthly") setActiveTab("depreciation");
     else if (cleanRoute === "/asset/post-gl") setActiveTab("post-gl");
-    else if (cleanRoute === "/report/assetschedule") setActiveTab("schedule");
+    else if (cleanRoute === "/report/assetschedule" || cleanRoute === "/report/depreciationyearly") setActiveTab("schedule");
+    else if (cleanRoute === "/report/depreciationpnd50") setActiveTab("tax");
     else if (cleanRoute === "/asset/types") setActiveTab("types");
   }, [route]);
 

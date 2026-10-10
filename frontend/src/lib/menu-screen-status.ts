@@ -21,11 +21,15 @@ export const FIXED_ASSET_ROUTES = [
   "/asset/registry", "/asset/depreciation",
   "/asset/cip", "/asset/maintenance",
   "/asset/types", "/asset/post-gl", "/report/assetschedule",
+  "/report/depreciationmonthly", "/report/depreciationyearly",
+  "/report/depreciationpnd50", "/report/assetdisposal",
 ] as const;
 
 export function isFixedAssetRoute(route: string): boolean {
   const clean = route.split("?")[0];
-  return clean.startsWith("/asset/") || clean === "/report/assetschedule";
+  return clean.startsWith("/asset/") || clean === "/report/assetschedule" ||
+    clean === "/report/depreciationmonthly" || clean === "/report/depreciationyearly" ||
+    clean === "/report/depreciationpnd50" || clean === "/report/assetdisposal";
 }
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);

@@ -288,4 +288,14 @@ describe("Champ report details: documents, books and dimension split", () => {
     for (const key of ["bookcode", "docnofrom", "docnoto", "orderby", "daytotals", "bydepartment", "byproject", "dimtotals"]) expect(forwarded.has(key)).toBe(true);
     expect(forwarded.get("bookcode")).toBe("JV,PV");
   });
+  it("provides Desktop ERP keyboard shortcuts and hints for Print (Alt+P), Export (Alt+E), and Submit (Enter / Alt+R)", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/gl/gl-reports.tsx"), "utf8");
+    expect(source).toContain("Alt+P");
+    expect(source).toContain("Alt+E");
+    expect(source).toContain("Alt+R");
+    expect(source).toContain("handleKeyDown");
+    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-black/15 dark:bg-white/15 px-1 rounded\">Enter</kbd>");
+    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded\">Alt+E</kbd>");
+    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded\">Alt+P</kbd>");
+  });
 });

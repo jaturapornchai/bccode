@@ -362,4 +362,10 @@ describe("ไฟล์ยื่นกรมสรรพากร — ตัว�
     expect(isHeadOfficeBranch("")).toBe(false);
     expect(isHeadOfficeBranch(undefined)).toBe(false);
   });
+
+  it("maps P.N.D.3 and P.N.D.53 routes to official RD tax form codes", () => {
+    expect(taxFormRouteCode("/report/vatpnd3")).toBe("pnd3");
+    expect(taxFormRouteCode("/report/vatpnd53")).toBe("pnd53");
+    expect(taxFormRouteCode("/report/vatpp30")).toBe("pp30");
+  });
 });
