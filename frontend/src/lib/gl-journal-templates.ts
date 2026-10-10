@@ -95,3 +95,113 @@ export function jumpRowIndex(focusedRow: number | null, rememberedRow: number, l
   const wanted = focusedRow ?? rememberedRow;
   return Math.min(Math.max(0, Number.isInteger(wanted) ? wanted : 0), last);
 }
+
+export interface SMEPresetTemplate {
+  id: string;
+  name: string;
+  category: "expense" | "income" | "payroll";
+  bookcode: string;
+  description: string;
+  badge: string;
+  lines: { accountcode: string; description: string }[];
+}
+
+/** แม่แบบบันทึกรายวันสำเร็จรูปสำหรับ SMEs ไทย ตามผังบัญชีมาตรฐานและประมวลรัษฎากร */
+export const SME_PRESET_TEMPLATES: SMEPresetTemplate[] = [
+  {
+    id: "preset-rent",
+    name: "จ่ายค่าเช่าสำนักงาน (หัก ณ ที่จ่าย 5%)",
+    category: "expense",
+    bookcode: "PV",
+    badge: "หัก 5%",
+    description: "จ่ายค่าเช่าสำนักงานประจำเดือน",
+    lines: [
+      { accountcode: "53210", description: "ค่าเช่าสำนักงาน" },
+      { accountcode: "21264", description: "ภาษีหัก ณ ที่จ่ายค้างจ่าย (5%)" },
+      { accountcode: "11131", description: "เงินฝากกระแสรายวัน" },
+    ],
+  },
+  {
+    id: "preset-service-fee",
+    name: "จ่ายค่าบริการ / ค่าจ้างทำของ (หัก ณ ที่จ่าย 3%)",
+    category: "expense",
+    bookcode: "PV",
+    badge: "หัก 3%",
+    description: "จ่ายค่าบริการวิชาชีพและค่าจ้างทำของ",
+    lines: [
+      { accountcode: "53310", description: "ค่าสอบบัญชีและบริการวิชาชีพ" },
+      { accountcode: "21264", description: "ภาษีหัก ณ ที่จ่ายค้างจ่าย (3%)" },
+      { accountcode: "11131", description: "เงินฝากกระแสรายวัน" },
+    ],
+  },
+  {
+    id: "preset-utilities",
+    name: "จ่ายค่าน้ำประปา / ค่าไฟฟ้า (ภาษีซื้อ 7%)",
+    category: "expense",
+    bookcode: "PV",
+    badge: "VAT 7%",
+    description: "จ่ายค่าน้ำประปา ค่าไฟฟ้า ค่าสาธารณูปโภค",
+    lines: [
+      { accountcode: "53210", description: "ค่าสาธารณูปโภค" },
+      { accountcode: "11351", description: "ภาษีซื้อ" },
+      { accountcode: "11110", description: "เงินสด" },
+    ],
+  },
+  {
+    id: "preset-salary",
+    name: "จ่ายเงินเดือนพนักงาน (พร้อมประกันสังคม)",
+    category: "payroll",
+    bookcode: "PV",
+    badge: "เงินเดือน",
+    description: "จ่ายเงินเดือนพนักงานประจำเดือน",
+    lines: [
+      { accountcode: "53111", description: "เงินเดือนและค่าจ้าง" },
+      { accountcode: "53121", description: "เงินสมทบประกันสังคม" },
+      { accountcode: "21243", description: "เงินประกันสังคมค้างจ่าย" },
+      { accountcode: "11131", description: "เงินฝากกระแสรายวัน" },
+    ],
+  },
+  {
+    id: "preset-ar-receive",
+    name: "รับชำระหนี้จากลูกหนี้ (ถูกหัก ณ ที่จ่าย 3%)",
+    category: "income",
+    bookcode: "RV",
+    badge: "ถูกหัก 3%",
+    description: "รับชำระหนี้ค่าบริการจากลูกหนี้การค้า",
+    lines: [
+      { accountcode: "11131", description: "เงินฝากกระแสรายวัน" },
+      { accountcode: "11353", description: "ภาษีเงินได้ถูกหัก ณ ที่จ่าย (3%)" },
+      { accountcode: "11310", description: "ลูกหนี้การค้า" },
+    ],
+  },
+  {
+    id: "preset-service-income",
+    name: "บันทึกรายได้ค่าบริการ",
+    category: "income",
+    bookcode: "SV",
+    badge: "รายได้",
+    description: "บันทึกรายได้ค่าบริการ",
+    lines: [
+      { accountcode: "11310", description: "ลูกหนี้การค้า" },
+      { accountcode: "41210", description: "รายได้ค่าบริการ" },
+    ],
+  },
+];
+
+export function presetToJournalTemplate(preset: SMEPresetTemplate): GLJournalTemplate {
+  return {
+    id: preset.id,
+    code: preset.id,
+    version: 1,
+    name: preset.name,
+    isactive: true,
+    template: {
+      bookcode: preset.bookcode,
+      description: preset.description,
+      lines: preset.lines.map((line) => ({
+        accountcode: line.accountcode,
+        description: line.description,
+      })),
+    },
+  };
+}

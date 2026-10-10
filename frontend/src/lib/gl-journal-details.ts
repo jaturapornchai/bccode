@@ -253,3 +253,72 @@ export async function parseStatementCsv(text:string, bankAccountCode:string):Pro
     return {id,bank_account_code:bankAccountCode,source_key:`sha256:${hash}:${index+2}`,transaction_date:date,direction:Number(direction),amount,bank_reference:value("bank_reference"),description:value("description"),...(valueDate?{value_date:valueDate}:{}),...(balanceAfter?{balance_after:balanceAfter}:{})};
   });
 }
+
+export type AutoMatchBankResult = {
+  matches: GLDetailMatch[];
+  matchedCount: number;
+  unmatchedStatements: GLDetailStatement[];
+};
+
+/**
+ * จับคู่รายการ Statement กับบรรทัดบัญชีธนาคารในใบสำคัญโดยอัตโนมัติ (Exact Auto-Match)
+ * - คำนวณยอดเงินด้วย amountUnits (BigInt / minor units ตาม Rule 20 ห้าม float)
+ * - ตรวจสอบทิศทาง: direction 1 (เงินเข้า / Debit), direction 2 (เงินออก / Credit)
+ * - กรองข้ามรายการที่จับคู่ไปแล้วใน existingMatches
+ */
+export function autoMatchBankStatement({
+  bankLines = [],
+  statementLines = [],
+  lines = [],
+  existingMatches = [],
+}: {
+  bankLines?: GLDetailBankLine[];
+  statementLines?: GLDetailStatement[];
+  lines?: { debit?: string; credit?: string }[];
+  existingMatches?: GLDetailMatch[];
+}): AutoMatchBankResult {
+  const usedStatementIds = new Set(existingMatches.map((m) => m.statement_line_id));
+  const usedLineNumbers = new Set(existingMatches.map((m) => m.line_number));
+
+  const newMatches: GLDetailMatch[] = [];
+  const newlyMatchedStatementIds = new Set<string>();
+
+  for (const bLine of bankLines) {
+    if (usedLineNumbers.has(bLine.line_number)) continue;
+    const glLine = lines[bLine.line_number - 1];
+    if (!glLine) continue;
+
+    const lineAmountStr = bLine.direction === 2 ? (glLine.credit || "0") : (glLine.debit || "0");
+    const lineUnits = amountUnits(lineAmountStr);
+    if (lineUnits <= 0n) continue;
+
+    // หา Statement ที่ยอดเงินตรง ทิศทางตรง และบัญชีตรง (ถ้ามีระบุ)
+    const candidate = statementLines.find((stmt) => {
+      if (usedStatementIds.has(stmt.id) || newlyMatchedStatementIds.has(stmt.id)) return false;
+      if (Number(stmt.direction) !== Number(bLine.direction)) return false;
+      if (bLine.bank_account_code && stmt.bank_account_code && bLine.bank_account_code !== stmt.bank_account_code) return false;
+      return amountUnits(stmt.amount) === lineUnits;
+    });
+
+    if (candidate) {
+      newlyMatchedStatementIds.add(candidate.id);
+      usedLineNumbers.add(bLine.line_number);
+      newMatches.push({
+        id: crypto.randomUUID(),
+        statement_line_id: candidate.id,
+        line_number: bLine.line_number,
+        amount: candidate.amount,
+      });
+    }
+  }
+
+  const unmatchedStatements = statementLines.filter(
+    (stmt) => !usedStatementIds.has(stmt.id) && !newlyMatchedStatementIds.has(stmt.id)
+  );
+
+  return {
+    matches: newMatches,
+    matchedCount: newMatches.length,
+    unmatchedStatements,
+  };
+}

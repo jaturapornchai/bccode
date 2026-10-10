@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer } from "lucide-react";
+import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer, ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
 import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLDimension, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates, fillText } from "@/lib/general-ledger";
@@ -386,7 +386,7 @@ export function ReportGrid({
         onToggleHighContrast={reportPref.toggleHighContrast}
       />
     </div>
-    <div className={`flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm ${reportPref.contrastClass}`}>
+    <div className={`flex-1 min-h-[220px] overflow-auto rounded-xl border border-border shadow-sm ${reportPref.contrastClass}`}>
       <table className={`w-full text-left leading-normal ${density.tableClass} ${reportPref.fontSizeClass}`}>
         <thead className="sticky top-0 bg-muted z-10">
           <ReportHeadRows columns={report.columns} cellClass={(column) => `whitespace-nowrap p-2 ${column.amount ? "text-right" : "text-left"}`} />
@@ -402,7 +402,18 @@ export function ReportGrid({
 
                 let cellContent;
                 if (column.amount) {
-                  cellContent = balanceText(column.key, formatAmount(val));
+                  const isRemainingCol = column.key === "remaining_amount" && row.amount;
+                  const isPartial = isRemainingCol && val !== row.amount && val !== "0";
+                  cellContent = (
+                    <div className="inline-flex items-center justify-end gap-1.5">
+                      {isRemainingCol && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${isPartial ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground border border-border"}`}>
+                          {isPartial ? tr("gl_bank_unmatched_status_partial", "จับคู่บางส่วน") : tr("gl_bank_unmatched_status_unmatched", "ยังไม่จับคู่")}
+                        </span>
+                      )}
+                      <span>{balanceText(column.key, formatAmount(val))}</span>
+                    </div>
+                  );
                 } else if (isDocNoCol && onDrillDocNo && (row.journalid || row.id)) {
                   cellContent = (
                     <button
@@ -580,6 +591,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [volume, setVolume] = useState("");
   const [newPagePerAccount, setNewPagePerAccount] = useState(false);
+  const [filterCollapsed, setFilterCollapsed] = useState(false);
   const [budgets, setBudgets] = useState<BudgetOption[]>([]);
   // ทะเบียนงวด ใช้เลือกช่วงรายงานตามงวดแบบ Champ (ไม่ติ๊ก "ดูจากวันที่เอกสาร" = ตามงวด); โหลดไม่ได้หรือปียังไม่มีงวด = ใช้ช่วงวันที่ตามเดิม
   const [periods, setPeriods] = useState<GLMaster[]>([]);
@@ -730,9 +742,36 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [applied, report, busy, drillDocument, activeReportName, asOf, filters]);
 
+  const filterSummaryText = useMemo(() => {
+    const parts: string[] = [];
+    if (filters.fiscalyear) parts.push(`${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`);
+    if (filters.from && filters.to) parts.push(`${formatAppDate(filters.from, language)} - ${formatAppDate(filters.to, language)}`);
+    else if (filters.to) parts.push(`${tr("gl_as_of_date", "ณ วันที่")} ${formatAppDate(filters.to, language)}`);
+    if (filters.branchcode) parts.push(`${tr("gl_branch_code", "สาขา")} ${filters.branchcode}`);
+    if (filters.accountfrom && filters.accountto) parts.push(`${tr("gl_account_code", "รหัสบัญชี")} ${filters.accountfrom} - ${filters.accountto}`);
+    else if (filters.accountcode) parts.push(`${tr("gl_account_code", "รหัสบัญชี")} ${filters.accountcode}`);
+    return parts.join(" · ");
+  }, [filters, tr, language]);
+
   return <section className={`${panel} flex flex-col flex-1 min-h-0 gap-3`}>
     <div className="shrink-0 flex items-center justify-between gap-3">
-      {heading && <h2 className="text-lg font-semibold">{heading}</h2>}
+      <div className="flex items-center gap-2.5 min-w-0">
+        {heading && <h2 className="text-lg font-semibold truncate">{heading}</h2>}
+        {report && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setFilterCollapsed(!filterCollapsed)}
+            title={filterCollapsed ? tr("gl_expand_all", "ขยายเงื่อนไข") : tr("gl_collapse_all", "ย่อเงื่อนไข")}
+          >
+            <Filter className="size-3.5" />
+            <span>{filterCollapsed ? tr("gl_expand_all", "ขยายเงื่อนไข") : tr("gl_collapse_all", "ย่อเงื่อนไข")}</span>
+            {filterCollapsed ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
+          </Button>
+        )}
+      </div>
       {drilledFrom && (
         <Button
           type="button"
@@ -759,7 +798,62 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     )}
 
     <Notice error text={error || refs.error || dims.error} />
-    <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+    {report && filterCollapsed ? (
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-border bg-muted/40 text-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+          <Filter className="size-4 shrink-0 text-primary" />
+          <span className="truncate font-medium text-foreground">{filterSummaryText || tr("gl_report_all_conditions", "แสดงตามเงื่อนไขที่เลือก")}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            onClick={() => setFilterCollapsed(false)}
+          >
+            <ChevronDown className="size-3.5" />
+            <span>{tr("gl_expand_all", "ขยายเงื่อนไข")}</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            disabled={busy}
+            onClick={() => submit()}
+            title="Enter / Alt+R"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>{busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            disabled={busy || !report}
+            onClick={() => void exportCsv()}
+            title="Alt+E"
+          >
+            <Download className="size-3.5" />
+            <span>{tr("gl_export_table", "ส่งออกตาราง")}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            disabled={busy || !report}
+            onClick={() => void printReport()}
+            title="Alt+P"
+          >
+            <Printer className="size-3.5" />
+            <span>{tr("gl_print", "พิมพ์")}</span>
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); submit(); }}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {MASTER_REPORTS.has(activeReportName) ? <>
           {activeReportName === "chartofaccounts" && <>
@@ -836,9 +930,22 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
             {tr("gl_print", "พิมพ์")}
             <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded">Alt+P</kbd>
           </Button>
+          {activeReportName === "bank-unmatched" && (
+            <Button
+              type="button"
+              variant="outline"
+              className={actionClass}
+              onClick={() => { window.location.href = "/gl/journals"; }}
+              title={tr("gl_bank_unmatched_goto_journal", "ไปที่สมุดรายวันรับ/จ่ายเงิน")}
+            >
+              <ExternalLink className="size-4 shrink-0" />
+              {tr("gl_bank_unmatched_goto_journal", "ไปที่สมุดรายวันรับ/จ่ายเงิน")}
+            </Button>
+          )}
         </div>
       </div>
     </form>
+    )}
     {report ? (
       <>
         <ReportGrid

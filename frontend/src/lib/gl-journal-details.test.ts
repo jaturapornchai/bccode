@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type GLDetailVat, type GLDetailWithholding, defaultVatTaxType, detailTaxIdTarget, validThaiTaxId, journalDetailsProblem, normalizeBranchNo, normalizeJournalDetails, parseStatementCsv, reconciliationChanges, taxDigits, supportLabel, vatClaimTiming, vatPeriodChoices, vatPeriodPatch, vatPeriodValue } from "./gl-journal-details";
+import { type GLDetailVat, type GLDetailWithholding, autoMatchBankStatement, defaultVatTaxType, detailTaxIdTarget, validThaiTaxId, journalDetailsProblem, normalizeBranchNo, normalizeJournalDetails, parseStatementCsv, reconciliationChanges, taxDigits, supportLabel, vatClaimTiming, vatPeriodChoices, vatPeriodPatch, vatPeriodValue } from "./gl-journal-details";
 
 describe("statement evidence import",()=>{
   it("preserves decimal strings and stable file-row identities across retries",async()=>{
@@ -252,5 +252,97 @@ describe("Thai tax id check digit", () => {
     expect(detailTaxIdTarget(details, "tax_id")).toEqual({ section: "partners", row: 2, field: "tax_id" });
     expect(detailTaxIdTarget(details, "partner_code")).toBeNull();
     expect(detailTaxIdTarget({ partners: [details.partners[0]] }, "tax_id")).toBeNull();
+  });
+});
+
+describe("autoMatchBankStatement — การกระทบยอดธนาคารอัตโนมัติ", () => {
+  it("จับคู่รายการ Statement กับบรรทัดธนาคารที่ยอดเงินและทิศทางตรงกันได้ถูกต้อง 100%", () => {
+    const bankLines = [
+      { line_number: 1, bank_account_code: "BKBANK", direction: 1 }, // เงินเข้า 1,500.00
+      { line_number: 2, bank_account_code: "BKBANK", direction: 2 }, // เงินออก 500.00
+    ];
+    const lines = [
+      { debit: "1500.00", credit: "0" },
+      { debit: "0", credit: "500.00" },
+    ];
+    const statementLines = [
+      { id: "STMT-1", bank_account_code: "BKBANK", source_key: "K1", transaction_date: "2026-10-10", direction: 1, amount: "1500.00" },
+      { id: "STMT-2", bank_account_code: "BKBANK", source_key: "K2", transaction_date: "2026-10-10", direction: 2, amount: "500.00" },
+      { id: "STMT-3", bank_account_code: "BKBANK", source_key: "K3", transaction_date: "2026-10-10", direction: 1, amount: "200.00" }, // ยอดไม่ตรง
+    ];
+
+    const result = autoMatchBankStatement({
+      bankLines,
+      statementLines,
+      lines,
+    });
+
+    expect(result.matchedCount).toBe(2);
+    expect(result.matches).toHaveLength(2);
+    expect(result.matches[0]).toMatchObject({
+      statement_line_id: "STMT-1",
+      line_number: 1,
+      amount: "1500.00",
+    });
+    expect(result.matches[1]).toMatchObject({
+      statement_line_id: "STMT-2",
+      line_number: 2,
+      amount: "500.00",
+    });
+    expect(result.unmatchedStatements).toHaveLength(1);
+    expect(result.unmatchedStatements[0].id).toBe("STMT-3");
+  });
+
+  it("ไม่จับคู่ซ้ำกับรายการที่ถูกจับคู่ไปแล้วใน existingMatches", () => {
+    const bankLines = [
+      { line_number: 1, bank_account_code: "BKBANK", direction: 1 },
+      { line_number: 2, bank_account_code: "BKBANK", direction: 1 },
+    ];
+    const lines = [
+      { debit: "1000.00", credit: "0" },
+      { debit: "1000.00", credit: "0" },
+    ];
+    const statementLines = [
+      { id: "STMT-1", bank_account_code: "BKBANK", source_key: "K1", transaction_date: "2026-10-10", direction: 1, amount: "1000.00" },
+      { id: "STMT-2", bank_account_code: "BKBANK", source_key: "K2", transaction_date: "2026-10-10", direction: 1, amount: "1000.00" },
+    ];
+    const existingMatches = [
+      { id: "MATCH-1", statement_line_id: "STMT-1", line_number: 1, amount: "1000.00" },
+    ];
+
+    const result = autoMatchBankStatement({
+      bankLines,
+      statementLines,
+      lines,
+      existingMatches,
+    });
+
+    // เหลือแค่ line 2 กับ STMT-2 ที่ต้องจับคู่
+    expect(result.matchedCount).toBe(1);
+    expect(result.matches[0].statement_line_id).toBe("STMT-2");
+    expect(result.matches[0].line_number).toBe(2);
+    expect(result.unmatchedStatements).toHaveLength(0);
+  });
+
+  it("ไม่จับคู่ข้ามทิศทาง แม้ยอดเงินจะเท่ากัน (เงินเข้า debit ไม่จับคู่เงินออก credit)", () => {
+    const bankLines = [
+      { line_number: 1, bank_account_code: "BKBANK", direction: 1 }, // เงินเข้า
+    ];
+    const lines = [
+      { debit: "750.00", credit: "0" },
+    ];
+    const statementLines = [
+      { id: "STMT-OUT", bank_account_code: "BKBANK", source_key: "K1", transaction_date: "2026-10-10", direction: 2, amount: "750.00" }, // เงินออก
+    ];
+
+    const result = autoMatchBankStatement({
+      bankLines,
+      statementLines,
+      lines,
+    });
+
+    expect(result.matchedCount).toBe(0);
+    expect(result.matches).toHaveLength(0);
+    expect(result.unmatchedStatements).toHaveLength(1);
   });
 });

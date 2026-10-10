@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Info, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { glRequest } from "@/lib/general-ledger-api";
 import { type GLAccount, type GLLine, amountUnits, formatAmount } from "@/lib/general-ledger";
 import { newVatRow } from "@/lib/gl-journal-entry";
-import { PARTNER_TEXT_LIMITS, type GLJournalDetails, type GLSupportKind, type GLSupportRow, defaultVatTaxType, normalizeBranchNo, parseStatementCsv, supportLabel, taxDigits, validThaiTaxId, vatClaimTiming, vatPeriodChoices, vatPeriodPatch, vatPeriodValue } from "@/lib/gl-journal-details";
+import { PARTNER_TEXT_LIMITS, type GLJournalDetails, type GLSupportKind, type GLSupportRow, autoMatchBankStatement, defaultVatTaxType, normalizeBranchNo, parseStatementCsv, supportLabel, taxDigits, validThaiTaxId, vatClaimTiming, vatPeriodChoices, vatPeriodPatch, vatPeriodValue } from "@/lib/gl-journal-details";
 import { WHT_INCOME_OPTIONS } from "@/lib/thai-tax";
 import { AccountSelect, AmountInput, Field, Notice, control, downloadText, useGLText } from "./gl-common";
 
@@ -135,8 +135,27 @@ export function GLJournalDetailsPanel({value={},original={},onChange,lines,accou
   const tr=useGLText();
   const {fields,sections}=detailFields(tr);
   const [picker,setPicker]=useState<Picker|null>(null),[cache,setCache]=useState<Partial<Record<GLSupportKind,Row[]>>>({}),[error,setError]=useState("");
+  const [matchNotice,setMatchNotice]=useState("");
   const [importBank,setImportBank]=useState<Row|null>(null),[importing,setImporting]=useState(false);
   useEffect(()=>{onBusyChange?.(importing);return()=>onBusyChange?.(false);},[importing,onBusyChange]);
+  function handleAutoMatch() {
+    setMatchNotice("");
+    const res = autoMatchBankStatement({
+      bankLines: value.bank_lines ?? [],
+      statementLines: value.statement_lines ?? [],
+      lines,
+      existingMatches: value.matches ?? [],
+    });
+    if (res.matchedCount > 0) {
+      onChange({
+        ...value,
+        matches: [...(value.matches ?? []), ...res.matches],
+      });
+      setMatchNotice(tr("gl_match_auto_found", "จับคู่สำเร็จ {0} รายการ").replace("{0}", String(res.matchedCount)));
+    } else {
+      setMatchNotice(tr("gl_match_auto_none", "ไม่พบรายการที่ยอดเงินและทิศทางตรงกันพอดี"));
+    }
+  }
   function local(kind:GLSupportKind):Row[] {const key=({partners:"partners","bank-accounts":"bank_accounts",documents:"documents",statements:"statement_lines","bank-lines":"bank_lines",allocations:"allocations",settlements:"settlements",matches:"matches"} as const)[kind];return detailRows(value,key).map(row=>kind==="bank-lines"?{...row,journal_id:row.journal_id||journalId,amount:amountUnits(lines[Number(row.line_number)-1]?.debit||"0")!==0n?lines[Number(row.line_number)-1]?.debit:lines[Number(row.line_number)-1]?.credit}:row);}
   function update(key:Key,index:number,patch:Row) {onChange({...value,[key]:detailRows(value,key).map((row,i)=>i===index?{...row,...patch}:row)});}
   function remember(kind:GLSupportKind,rows:Row[]) {setCache(current=>({...current,[kind]:[...(current[kind]??[]),...rows].filter((row,index,all)=>all.findIndex(candidate=>identity(kind,candidate)===identity(kind,row))===index)}));}
@@ -191,7 +210,16 @@ export function GLJournalDetailsPanel({value={},original={},onChange,lines,accou
       {key==="withholdings"&&<p className="text-muted-foreground">{tr("gl_details_withholdings_hint","ฐานภาษีแก้ได้เสมอ แม้ผ่านบัญชีแล้ว — ยอดบัญชีไม่เปลี่ยน ระบบเก็บค่าเดิมไว้ในประวัติ; ภาษีเว้นว่าง = คำนวณ ฐาน × อัตรา ตอนบันทึก")}</p>}
       {key==="vats"&&<p className="text-muted-foreground">{tr("gl_details_vats_hint","ฐานภาษีและภาษีแก้ได้เสมอ แม้ผ่านบัญชีแล้ว — ยอดบัญชีไม่เปลี่ยน ระบบเก็บค่าเดิมไว้ในประวัติ; ภาษีเว้นว่าง = คำนวณ ฐาน × อัตรา ตอนบันทึก; ใบลดหนี้กรอกยอดเป็นบวก รายงาน ภ.พ.30 หักออกให้")}</p>}
       {posted&&key==="allocations"&&<p>{tr("gl_details_reallocate_hint","ถอนและจัดสรรใหม่ในครั้งเดียว ยอด GL เดิมไม่เปลี่ยน")}</p>}
-      {canAdd&&<Button type="button" variant="outline" className="mt-3 min-h-11" onClick={()=>onChange({...value,[key]:[...rows,newRow(key,date,branch,booktype)]})}>{tr("gl_details_add","เพิ่ม")}{tr(`gl_details_section_${key}`,title)}</Button>}
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {canAdd&&<Button type="button" variant="outline" className="min-h-11" onClick={()=>onChange({...value,[key]:[...rows,newRow(key,date,branch,booktype)]})}>{tr("gl_details_add","เพิ่ม")}{tr(`gl_details_section_${key}`,title)}</Button>}
+        {key==="matches"&&canAdd&&(
+          <Button type="button" variant="outline" className="min-h-11 inline-flex items-center gap-1.5 border-primary/40 text-primary hover:bg-primary/10" onClick={handleAutoMatch} title={tr("gl_match_auto_hint","จับคู่รายการ Statement กับบรรทัดธนาคารที่ยอดเงินและทิศทางตรงกันโดยอัตโนมัติ")}>
+            <Sparkles className="size-4 shrink-0 text-primary" />
+            {tr("gl_match_auto_button","จับคู่อัตโนมัติ (Auto-Match)")}
+          </Button>
+        )}
+      </div>
+      {key==="matches"&&matchNotice&&<p role="status" className="mt-2 text-[0.9rem] font-medium text-primary">{matchNotice}</p>}
       {key==="statement_lines"&&canAdd&&<div className="mt-3 grid gap-2 border-t border-border pt-3"><p>{tr("gl_details_ui_22","CSV: transaction_date (YYYY-MM-DD), direction (1 เข้า / 2 ออก), amount, bank_reference, description")}</p><Button type="button" variant="outline" onClick={()=>setPicker({kind:"bank-accounts",accept:row=>{setImportBank(row);remember("bank-accounts",[row]);}})}>{importBank?supportLabel("bank-accounts",importBank):tr("gl_details_ui_23","เลือกบัญชีสำหรับนำเข้า Statement")}</Button><input type="file" accept=".csv,text/csv" aria-label={tr("gl_details_ui_24","นำเข้า Statement CSV")} disabled={!importBank||importing} onChange={e=>{const file=e.target.files?.[0];if(file)void importCsv(file);e.target.value="";}}/><Button type="button" variant="outline" onClick={()=>downloadText("statement-template.csv","transaction_date,direction,amount,bank_reference,description\n","text/csv;charset=utf-8")}>{tr("gl_details_csv_header","ดาวน์โหลดหัวตาราง CSV")}</Button></div>}
     </details>;})}
     {picker&&<SupportPicker picker={picker} local={local(picker.kind)} onClose={()=>setPicker(null)} onCache={remember}/>}

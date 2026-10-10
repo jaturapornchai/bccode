@@ -59,4 +59,22 @@ describe("GLJournalDetailsPanel partner rows", () => {
     expect(html).toContain("เพิ่มคู่ค้าภายในห้องบัญชี");
     expect(html).toContain("ใช้งานอยู่");
   });
+
+  it("renders auto-match button in matches section when editable", () => {
+    const html = renderToStaticMarkup(createElement(GLJournalDetailsPanel, {
+      value: {
+        bank_lines: [{ line_number: 1, bank_account_code: "BKBANK", direction: 1 }],
+        statement_lines: [{ id: "STMT-1", bank_account_code: "BKBANK", source_key: "K1", transaction_date: "2026-10-10", direction: 1, amount: "1500.00" }],
+      },
+      onChange: () => {},
+      lines: [{ accountcode: "11131", description: "ธนาคาร", debit: "1500.00", credit: "0", departmentcode: "", projectcode: "", cashflow: "" }],
+      accounts: [],
+      date: "2026-10-10",
+      branch: "00000",
+      editable: true,
+      posted: false,
+    }));
+    expect(html).toContain("จับคู่อัตโนมัติ (Auto-Match)");
+    expect(html).toContain("เพิ่มจับคู่บัญชีกับ Statement");
+  });
 });

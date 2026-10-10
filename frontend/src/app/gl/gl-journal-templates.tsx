@@ -1,13 +1,11 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { BookmarkPlus, FolderOpen, Trash2 } from "lucide-react";
+import { BookmarkPlus, FolderOpen, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ConfirmDialogOptions } from "@/components/ui/confirm-dialog";
 import type { GLJournal, GLJournalTemplate, GLJournalTemplateBody, GLPage } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
-import { JOURNAL_TEMPLATE_NAME_MAX, journalTemplateName, journalTemplateNameProblem, templateBodyFromJournal } from "@/lib/gl-journal-templates";
+import { JOURNAL_TEMPLATE_NAME_MAX, journalTemplateName, journalTemplateNameProblem, templateBodyFromJournal, SME_PRESET_TEMPLATES, presetToJournalTemplate } from "@/lib/gl-journal-templates";
 import { Notice, actionClass, control, useGLCommand, useGLText } from "./gl-common";
 
 // Champ daily-entry templates (CGLFrmJournal OnRecur / OnSelRecure, glfrmjournal.cpp:1657 and :2704-2757): the first button names the
@@ -88,6 +86,7 @@ function templateMeta(template: GLJournalTemplate, tr: (key: string, fallback: s
 
 function PickerDialog({ onPick, onDelete, onClose }: { onPick: (template: GLJournalTemplate) => void; onDelete: (template: GLJournalTemplate) => void; onClose: () => void }) {
   const tr = useGLText();
+  const [activeTab, setActiveTab] = useState<"preset" | "custom">("preset");
   const [items, setItems] = useState<GLJournalTemplate[]>([]), [query, setQuery] = useState(""), [loading, setLoading] = useState(true), [error, setError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
@@ -99,38 +98,105 @@ function PickerDialog({ onPick, onDelete, onClose }: { onPick: (template: GLJour
     // tr only words the fallback error; a dictionary that arrives later must not restart the request
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const rows = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+
+  const needle = query.trim().toLowerCase();
+  const customRows = useMemo(() => {
     return items
       .filter((item) => !needle || `${item.name} ${item.template.bookcode ?? ""} ${item.template.description ?? ""}`.toLowerCase().includes(needle))
       .sort((a, b) => a.name.localeCompare(b.name, "th"));
-  }, [items, query]);
+  }, [items, needle]);
+
+  const presetRows = useMemo(() => {
+    return SME_PRESET_TEMPLATES.filter((item) => !needle || `${item.name} ${item.bookcode} ${item.description}`.toLowerCase().includes(needle));
+  }, [needle]);
+
   const title = tr("gl_journal_template_picker_title", "เลือกรูปแบบรายการรายวัน");
   return (
     <TemplateModal label={title} onClose={onClose}>
-      <h3 className="font-semibold">{title}</h3>
+      <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
+        <h3 className="font-semibold text-lg">{title}</h3>
+        <Button type="button" variant="outline" size="sm" className="h-8" onClick={onClose}>{tr("gl_close", "ปิด")}</Button>
+      </div>
+
+      {/* Tabs: แม่แบบมาตรฐาน SMEs vs แม่แบบของฉัน */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border">
+        <button
+          type="button"
+          className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${activeTab === "preset" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("preset")}
+        >
+          <span className="flex items-center justify-center gap-1.5">
+            <Sparkles className="size-4 text-primary" />
+            <span>{tr("gl_template_preset_sme", "แม่แบบมาตรฐาน SMEs")}</span>
+            <span className="ml-1 text-xs px-1.5 py-0.2 rounded-full bg-primary/10 text-primary">{presetRows.length}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${activeTab === "custom" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("custom")}
+        >
+          <span className="flex items-center justify-center gap-1.5">
+            <FolderOpen className="size-4" />
+            <span>{tr("gl_template_custom_saved", "แม่แบบที่บันทึกไว้")}</span>
+            <span className="ml-1 text-xs px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">{customRows.length}</span>
+          </span>
+        </button>
+      </div>
+
       <div className="flex gap-2">
         <input className={control} aria-label={tr("gl_journal_template_search", "ค้นหาชื่อรูปแบบ")} placeholder={tr("gl_journal_template_search", "ค้นหาชื่อรูปแบบ")} value={query} onChange={(event) => setQuery(event.target.value)} />
-        <Button type="button" variant="outline" className={actionClass} onClick={onClose}>{tr("gl_close", "ปิด")}</Button>
       </div>
+
       <Notice error text={error} />
-      {loading && <p role="status">{tr("gl_journal_template_loading", "กำลังโหลดรูปแบบรายการ…")}</p>}
-      <ul className="grid gap-2">
-        {rows.map((template) => (
-          <li key={template.id ?? template.code} className="flex flex-wrap items-stretch gap-2">
-            <Button type="button" variant="outline" className="min-h-11 h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => onPick(template)}>
-              <span className="grid min-w-0 gap-0.5 leading-snug [overflow-wrap:anywhere]">
-                <span className="font-medium">{template.name}</span>
-                <span className="text-[0.9rem] font-normal text-muted-foreground">{templateMeta(template, tr)}</span>
-              </span>
-            </Button>
-            <Button type="button" variant="outline" className={`${actionClass} h-auto min-h-11 border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/10`} aria-label={`${tr("gl_delete", "ลบ")} ${template.name}`} onClick={() => onDelete(template)}>
-              <Trash2 className="mr-1.5 size-4" />{tr("gl_delete", "ลบ")}
-            </Button>
-          </li>
-        ))}
-      </ul>
-      {!loading && !error && rows.length === 0 && <p>{items.length === 0 ? tr("gl_journal_template_empty", "ยังไม่มีรูปแบบรายการ — เปิดใบสำคัญที่ต้องการแล้วกด “ตั้งเป็นรูปแบบ”") : tr("gl_details_ui_11", "ไม่พบรายการตามเงื่อนไข")}</p>}
+
+      {activeTab === "preset" ? (
+        <ul className="grid gap-2 max-h-[50vh] overflow-y-auto pr-1">
+          {presetRows.map((preset) => (
+            <li key={preset.id}>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-14 h-auto justify-start p-3 whitespace-normal text-left hover:border-primary/50 hover:bg-accent/50"
+                onClick={() => onPick(presetToJournalTemplate(preset))}
+              >
+                <div className="grid w-full gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-foreground text-[0.95rem]">{preset.name}</span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
+                      {preset.badge} · {tr("gl_preset_book_badge", "สมุด {0}").replace("{0}", preset.bookcode)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {preset.description} ({tr("gl_preset_lines_count", "{0} บรรทัดบัญชี:").replace("{0}", String(preset.lines.length))} {preset.lines.map((l) => `${l.accountcode} ${l.description}`).join(" · ")})
+                  </div>
+                </div>
+              </Button>
+            </li>
+          ))}
+          {presetRows.length === 0 && <p className="text-center text-muted-foreground py-4">{tr("gl_details_ui_11", "ไม่พบรายการตามเงื่อนไข")}</p>}
+        </ul>
+      ) : (
+        <>
+          {loading && <p role="status">{tr("gl_journal_template_loading", "กำลังโหลดรูปแบบรายการ…")}</p>}
+          <ul className="grid gap-2 max-h-[50vh] overflow-y-auto pr-1">
+            {customRows.map((template) => (
+              <li key={template.id ?? template.code} className="flex flex-wrap items-stretch gap-2">
+                <Button type="button" variant="outline" className="min-h-11 h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => onPick(template)}>
+                  <span className="grid min-w-0 gap-0.5 leading-snug [overflow-wrap:anywhere]">
+                    <span className="font-medium">{template.name}</span>
+                    <span className="text-[0.9rem] font-normal text-muted-foreground">{templateMeta(template, tr)}</span>
+                  </span>
+                </Button>
+                <Button type="button" variant="outline" className={`${actionClass} h-auto min-h-11 border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/10`} aria-label={`${tr("gl_delete", "ลบ")} ${template.name}`} onClick={() => onDelete(template)}>
+                  <Trash2 className="mr-1.5 size-4" />{tr("gl_delete", "ลบ")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+          {!loading && !error && customRows.length === 0 && <p className="text-center text-muted-foreground py-4">{items.length === 0 ? tr("gl_journal_template_empty", "ยังไม่มีรูปแบบรายการ — เปิดใบสำคัญที่ต้องการแล้วกด “ตั้งเป็นรูปแบบ”") : tr("gl_details_ui_11", "ไม่พบรายการตามเงื่อนไข")}</p>}
+        </>
+      )}
     </TemplateModal>
   );
 }

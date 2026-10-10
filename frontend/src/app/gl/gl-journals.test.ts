@@ -291,3 +291,21 @@ describe("pasteIssueText", () => {
     expect(pasteIssueText({ row: 2, field: "credit", value: "หนึ่งพัน", problem: "invalid" }, tr)).toContain("เครดิต");
   });
 });
+
+describe("SME_PRESET_TEMPLATES", () => {
+  it("has valid Thai SME presets with accounts and descriptions", async () => {
+    const { SME_PRESET_TEMPLATES, presetToJournalTemplate } = await import("@/lib/gl-journal-templates");
+    expect(SME_PRESET_TEMPLATES.length).toBeGreaterThanOrEqual(5);
+
+    const rent = SME_PRESET_TEMPLATES.find((p) => p.id === "preset-rent");
+    expect(rent).toBeDefined();
+    expect(rent?.bookcode).toBe("PV");
+    expect(rent?.lines.some((l) => l.accountcode === "53210")).toBe(true);
+
+    const template = presetToJournalTemplate(rent!);
+    expect(template.name).toBe(rent?.name);
+    expect(template.template.bookcode).toBe("PV");
+    expect(template.template.lines.length).toBe(rent?.lines.length);
+  });
+});
+
