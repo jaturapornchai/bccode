@@ -55,42 +55,32 @@ async function runPhase5Uat() {
     console.log('✅ เข้าสู่หน้าจอหลัก /menu เรียบร้อย');
     await page.screenshot({ path: path.join(SHOTS_DIR, '01-menu-main.png') });
 
+    async function searchAndOpenMenu(searchText, targetItemTitle) {
+      const searchInput = page.locator('input[placeholder*="ค้นหาเมนู"]').first();
+      await searchInput.fill('');
+      await searchInput.fill(searchText);
+      await page.waitForTimeout(800);
+      const targetBtn = page.locator('button').filter({ hasText: targetItemTitle }).first();
+      await targetBtn.waitFor({ state: 'visible', timeout: 8000 });
+      await targetBtn.click();
+      await page.waitForTimeout(2000);
+    }
+
     // 5. ทดสอบเปิด Screen Font Settings
     console.log('👉 [4/6] UAT ทดสอบหน้าจอ Font Settings (6 เป้าหมาย)...');
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new CustomEvent('bc_open_menu_tab', {
-          detail: { id: 'window-font-screen', title: 'เลือกตัวอักษรสำหรับหน้าจอทั่วไป', route: '/settings/font' },
-        })
-      );
-    });
-    await page.waitForTimeout(2000);
+    await searchAndOpenMenu('ตัวอักษร', 'เลือกตัวอักษรสำหรับหน้าจอทั่วไป');
     await page.screenshot({ path: path.join(SHOTS_DIR, '02-font-settings-screen.png') });
     console.log('   ✅ เปิดหน้าจอ Font Settings สำเร็จ บันทึกภาพ 02-font-settings-screen.png');
 
     // 6. ทดสอบเปิด Banking Contacts
     console.log('👉 [5/6] UAT ทดสอบหน้าจอผู้ติดต่อธนาคาร (Banking Contacts)...');
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new CustomEvent('bc_open_menu_tab', {
-          detail: { id: 'bank-contact', title: 'บันทึกรายละเอียดผู้ติดต่อธนาคาร', route: '/banking/contacts' },
-        })
-      );
-    });
-    await page.waitForTimeout(2000);
+    await searchAndOpenMenu('ผู้ติดต่อธนาคาร', 'บันทึกรายละเอียดผู้ติดต่อธนาคาร');
     await page.screenshot({ path: path.join(SHOTS_DIR, '03-banking-contacts.png') });
     console.log('   ✅ เปิดหน้าจอ Banking Contacts สำเร็จ บันทึกภาพ 03-banking-contacts.png');
 
     // 7. ทดสอบเปิด Petty Cash Limit
     console.log('👉 [6/6] UAT ทดสอบหน้าจอกำหนดวงเงินสดย่อย (Petty Cash Limit)...');
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new CustomEvent('bc_open_menu_tab', {
-          detail: { id: 'petty-cash-limit', title: 'กำหนดวงเงินสดย่อย', route: '/banking/petty-cash-limit' },
-        })
-      );
-    });
-    await page.waitForTimeout(2000);
+    await searchAndOpenMenu('วงเงินสดย่อย', 'กำหนดวงเงินสดย่อย');
     await page.screenshot({ path: path.join(SHOTS_DIR, '04-petty-cash-limit.png') });
     console.log('   ✅ เปิดหน้าจอ Petty Cash Limit สำเร็จ บันทึกภาพ 04-petty-cash-limit.png');
 
