@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit 375b8a7c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-10 @ commit 8e7266ca - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 33
 
@@ -1275,6 +1275,27 @@ Files indexed: 33
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
 
+## frontend/src/lib/erp-transaction.ts (1138 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 752 | function | `isErpTransactionRoute` |
+| 757 | function | `getErpModuleConfig` |
+| 768 | function | `statusErrorKey` |
+| 775 | function | `userDetail` |
+| 779 | function | `fetchErpTransactions` |
+| 810 | function | `saveErpTransaction` |
+| 840 | function | `deleteErpTransaction` |
+| 881 | function | `approveErpDoc` |
+| 903 | function | `unapproveErpDoc` |
+| 926 | function | `cancelErpDoc` |
+| 949 | function | `approveBatchErpDocs` |
+| 984 | function | `unapproveBatchErpDocs` |
+| 1021 | function | `cancelBatchErpDocs` |
+| 1058 | function | `fetchErpDocEvents` |
+| 1091 | function | `fetchDeliveryDateInvoices` |
+| 1113 | function | `saveDeliveryDates` |
+
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 
 | Line | Kind | Name |
@@ -1316,27 +1337,6 @@ Files indexed: 33
 | 1099 | function | `finishWithholdingRow` |
 | 1113 | function | `withholdingNetKnown` |
 | 1118 | function | `pqArray` |
-
-## frontend/src/lib/erp-transaction.ts (1118 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 732 | function | `isErpTransactionRoute` |
-| 737 | function | `getErpModuleConfig` |
-| 748 | function | `statusErrorKey` |
-| 755 | function | `userDetail` |
-| 759 | function | `fetchErpTransactions` |
-| 790 | function | `saveErpTransaction` |
-| 820 | function | `deleteErpTransaction` |
-| 861 | function | `approveErpDoc` |
-| 883 | function | `unapproveErpDoc` |
-| 906 | function | `cancelErpDoc` |
-| 929 | function | `approveBatchErpDocs` |
-| 964 | function | `unapproveBatchErpDocs` |
-| 1001 | function | `cancelBatchErpDocs` |
-| 1038 | function | `fetchErpDocEvents` |
-| 1071 | function | `fetchDeliveryDateInvoices` |
-| 1093 | function | `saveDeliveryDates` |
 
 ## backend/internal/authentication/services/authentication_service.go (1113 lines)
 

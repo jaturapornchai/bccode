@@ -247,6 +247,16 @@ export const ERP_MODULE_CONFIGS: ErpModuleConfig[] = [
     counterpartyKey: "cp_vendor",
     hasLineItems: true,
   },
+  {
+    route: "/transaction/purchasereducedebt",
+    moduleKey: "purchase_reduce_debt",
+    apiPath: "apcreditnote",
+    domain: "purchase",
+    title: { th: "บันทึกลดหนี้", en: "Purchase Debt Reduction" },
+    counterpartyLabel: { th: "เจ้าหนี้", en: "Vendor" },
+    counterpartyKey: "cp_vendor",
+    hasLineItems: true,
+  },
 
   // 4. ลูกหนี้ (AR)
   {
@@ -401,6 +411,16 @@ export const ERP_MODULE_CONFIGS: ErpModuleConfig[] = [
     apiPath: "rfq",
     domain: "purchase",
     title: { th: "บันทึกใบสืบราคาสินค้ารวม", en: "Request for Quotation" },
+    counterpartyLabel: { th: "เจ้าหนี้", en: "Vendor" },
+    counterpartyKey: "cp_vendor",
+    hasLineItems: true,
+  },
+  {
+    route: "/transaction/rfqpricetable",
+    moduleKey: "rfq_price_table",
+    apiPath: "rfq",
+    domain: "purchase",
+    title: { th: "บันทึกใบตารางราคารวม", en: "Consolidated Price Table" },
     counterpartyLabel: { th: "เจ้าหนี้", en: "Vendor" },
     counterpartyKey: "cp_vendor",
     hasLineItems: true,

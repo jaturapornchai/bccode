@@ -103,11 +103,15 @@ describe("ERP Transaction domain configs and operations", () => {
       expect(path).not.toContain("/");
       expect(ERP_TRANSACTION_MODULES).toContain(path);
     }
-    // count-sheet and stockcount are the same Champ document (stock-count); no other screens share a type
-    const shared = [...new Set(paths.filter((path, i) => paths.indexOf(path) !== i))];
-    expect(shared).toEqual(["stock-count"]);
+    // count-sheet and stockcount are the same Champ document (stock-count);
+    // purchasereducedebt and purchasedebitnote are Champ document siblings (apcreditnote);
+    // rfqpricetable and rfq are Champ document siblings (rfq)
+    const shared = [...new Set(paths.filter((path, i) => paths.indexOf(path) !== i))].sort();
+    expect(shared).toEqual(["apcreditnote", "rfq", "stock-count"].sort());
     expect(getErpModuleConfig("/inventory/count-sheet")?.apiPath).toBe("stock-count");
     expect(getErpModuleConfig("/transaction/stockcount")?.apiPath).toBe("stock-count");
+    expect(getErpModuleConfig("/transaction/purchasereducedebt")?.apiPath).toBe("apcreditnote");
+    expect(getErpModuleConfig("/transaction/rfqpricetable")?.apiPath).toBe("rfq");
     // route spelling is inverted vs the Thai label for these two: the label decides the type
     expect(getErpModuleConfig("/transaction/purchasedebitnote")?.apiPath).toBe("apcreditnote");
     expect(getErpModuleConfig("/transaction/purchasecreditnote")?.apiPath).toBe("apdebitnote");
@@ -244,8 +248,12 @@ describe("ERP Transaction domain configs and operations", () => {
       ),
     );
     expect(screenOf.size).toBe(63);
-    // stock-count is the only type reachable from two menu entries (doctype.screenAliases)
-    const aliases: Record<string, string[]> = { "stock-count": ["stock-count-sheet"] };
+    // types reachable from multiple menu entries (doctype.screenAliases)
+    const aliases: Record<string, string[]> = {
+      "stock-count": ["stock-count-sheet"],
+      "apcreditnote": ["purchase-reduce-debt"],
+      "rfq": ["rfq-price-table"],
+    };
     const menuIdOfRoute = new Map(flattenMenuItems().map((item) => [item.route, item.id]));
     for (const config of ERP_MODULE_CONFIGS) {
       const menuId = menuIdOfRoute.get(config.route);

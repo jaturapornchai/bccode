@@ -12,11 +12,8 @@ describe("menu screen availability", () => {
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 
-  // Champ parity 2026-09-19: routes added from Champ menuconfig.xml that have no screen or backend yet.
-  // AP/AR debt reports (8 routes) connected to PostgreSQL via /api/report/debt/query on 2026-09-19.
-  const CHAMP_PENDING_ROUTES = [
-    "/transaction/purchasereducedebt", "/transaction/rfqpricetable",
-  ];
+  // Champ parity 2026-09-19: all Champ pending routes are now fully connected!
+  const CHAMP_PENDING_ROUTES: string[] = [];
 
   // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).
   const CHAMP_OPERATIONS_ROUTES = [
