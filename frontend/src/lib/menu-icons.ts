@@ -374,6 +374,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   // Settings screens opened from the menu bar (menu-bars.ts route nodes) that had no explicit icon yet.
   "/debtorgroup": "users",
   // 2026-10-10: Champ "หน้าต่าง" and "ช่วยเหลือ" pending items
+  "/settings/font": "settings",
   "/pending/window-font-screen": "settings",
   "/pending/window-font-report": "fileText",
   "/pending/window-font-report-title": "fileText",

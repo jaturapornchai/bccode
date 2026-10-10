@@ -133,6 +133,8 @@ import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
 import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
+import { ScreenFontSettings } from "@/components/screen-font-settings";
+import { BankingContactsScreen } from "@/components/banking-contacts-screen";
 
 type WorkTab = {
   id: string;
@@ -2310,6 +2312,14 @@ function WorkTabPanel({
 
   if (activeTab.route === "/ar/billing-note-auto-print") {
     return <BillingNoteAutoPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/settings/font") {
+    return <ScreenFontSettings language={language} />;
+  }
+
+  if (activeTab.route === "/banking/contacts") {
+    return <BankingContactsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

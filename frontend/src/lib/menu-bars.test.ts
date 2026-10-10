@@ -28,7 +28,7 @@ const CHAMP_ONLY_PENDING_IDS = [
   "system-journal-format", "system-work-date", "system-product-by-warehouse", "system-default-warehouse", "system-currency",
   "system-main-map", "system-credit-debit-reasons", "system-payment-terms", "system-customer-inquiry", "system-product-inquiry",
   // 2026-10-10: items of the Champ "หน้าต่าง" and "ช่วยเหลือ" heads BC has no screen for yet
-  "window-font-screen", "window-font-report", "window-font-report-title", "window-font-report-column", "window-font-report-detail", "window-font-report-company",
+  "window-font-report", "window-font-report-title", "window-font-report-column", "window-font-report-detail", "window-font-report-company",
   "help-about", "help-standard-software",
 ];
 
@@ -176,6 +176,9 @@ describe("Champ-style menu bar layout", () => {
     const adj = items.get("purchase-receipt-date-adjust");
     expect(adj?.route).toBe("/procurement/delivery-dates");
     expect(isMenuScreenPending("/procurement/delivery-dates")).toBe(false);
+    const font = items.get("window-font-screen");
+    expect(font?.route).toBe("/settings/font");
+    expect(isMenuScreenPending("/settings/font")).toBe(false);
 
     // ยกเลิกเอกสารที่ผ่านรายการแล้ว: Champ 5.5 dropdown "บัญชี" มีเป็นเมนูของตัวเองต่อจาก "ผ่านรายการ"
     // (docs/kms/champ/11-menu-parity-audit-2026-10-09.md) → เปิดจอกลับรายการ (GLJournals mode=reverse) ที่ route เดิม

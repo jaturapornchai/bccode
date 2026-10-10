@@ -456,6 +456,58 @@ export function TaxFilingWorkbench({
   const showReportTitle = (isVatType && vatView === "register") || config.formType === "wht_summary";
   const registerHeading = showReportTitle ? reportHeading(reportTitle, defaultRegisterHeading) : defaultRegisterHeading;
 
+  const handleExportCsv = () => {
+    if (!canExport) return;
+    const c = columnLabels;
+    const v = vatLabels;
+    const csv = [
+      (isWhtType
+        ? [c.seq, `"${partyHeader}"`, c.taxid, c.branch, c.date, c.base, c.tax, c.docno, c.net]
+        : [v.seq, v.date, v.number, v.voucher, `"${v.party}"`, v.taxid, v.headOffice, v.branchNo, ...vatMoneyColumns.map((m) => `"${m.label}"`)]).join(","),
+      ...filteredRecords.map((r, idx) =>
+        (isWhtType
+          ? [idx + 1, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.docdate, r.amountbeforevat, r.whtamount ?? r.vatamount, r.taxinvoiceno, r.totalamount]
+          : [idx + 1, r.docdate, r.taxinvoiceno, r.docno ?? "", `"${r.counterpartyname}"`, r.taxid, r.isheadoffice ? "✓" : "", r.isheadoffice ? "" : r.branchno,
+            ...vatMoneyColumns.map((m) => m.row(r) ?? "0.00")]).join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${config.code}_${activeTab}_${selectedYear}_${selectedMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrint = () => {
+    if (activeTab === "50twi" || !canExport) return;
+    window.print();
+  };
+
+  // Desktop ERP keyboard shortcuts (Champ parity): Alt+P = Print, Alt+E = Export CSV
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.altKey && (e.key === "p" || e.key === "P")) || ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P"))) {
+        if (canExport && activeTab !== "50twi") {
+          e.preventDefault();
+          handlePrint();
+        }
+        return;
+      }
+      if (e.altKey && (e.key === "e" || e.key === "E")) {
+        if (canExport) {
+          e.preventDefault();
+          handleExportCsv();
+        }
+        return;
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canExport, activeTab, filteredRecords, columnLabels, vatLabels, selectedYear, selectedMonth]);
+
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6 print:p-0 print:gap-2">
       {/* Header Bar */}
@@ -531,33 +583,13 @@ export function TaxFilingWorkbench({
           <Button
             variant="outline"
             disabled={!canExport}
-            onClick={() => {
-              const c = columnLabels;
-              const v = vatLabels;
-              const csv = [
-                (isWhtType
-                  ? [c.seq, `"${partyHeader}"`, c.taxid, c.branch, c.date, c.base, c.tax, c.docno, c.net]
-                  : [v.seq, v.date, v.number, v.voucher, `"${v.party}"`, v.taxid, v.headOffice, v.branchNo, ...vatMoneyColumns.map((m) => `"${m.label}"`)]).join(","),
-                ...filteredRecords.map((r, idx) =>
-                  (isWhtType
-                    ? [idx + 1, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.docdate, r.amountbeforevat, r.whtamount ?? r.vatamount, r.taxinvoiceno, r.totalamount]
-                    : [idx + 1, r.docdate, r.taxinvoiceno, r.docno ?? "", `"${r.counterpartyname}"`, r.taxid, r.isheadoffice ? "✓" : "", r.isheadoffice ? "" : r.branchno,
-                      ...vatMoneyColumns.map((m) => m.row(r) ?? "0.00")]).join(","),
-                ),
-              ].join("\n");
-              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.setAttribute("download", `${config.code}_${activeTab}_${selectedYear}_${selectedMonth}.csv`);
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            onClick={handleExportCsv}
             className="gap-2"
+            title="Alt+E"
           >
             <Download className="h-4 w-4" />
             {tr("gl_export_csv", "ส่งออก CSV")}
+            <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded">Alt+E</kbd>
           </Button>
 
           {/* ใบ 50 ทวิ พิมพ์/ดาวน์โหลดจากหน้าต่าง PDF ที่ backend สร้าง ไม่ใช่ window.print() ของหน้าเว็บ */}
@@ -565,11 +597,13 @@ export function TaxFilingWorkbench({
             <Button
               variant="default"
               disabled={!canExport}
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="gap-2 shadow-sm"
+              title="Alt+P"
             >
               <Printer className="h-4 w-4" />
               {tr("print_report", "พิมพ์รายงาน")}
+              <kbd className="hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-black/15 dark:bg-white/15 px-1 rounded">Alt+P</kbd>
             </Button>
           )}
         </div>

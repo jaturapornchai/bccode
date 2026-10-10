@@ -15,6 +15,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/datamodelgraph", "/inventory/product-sets", "/productset",
   "/report/vatsummary", "/customer/label-print",
   "/ar/billing-note-auto-print",
+  "/settings/font", "/banking/contacts",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

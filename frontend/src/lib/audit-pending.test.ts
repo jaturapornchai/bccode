@@ -30,7 +30,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10 (Champ Parity Phase 4): -2 purchasereceiptadjustment + customer-label-print connected = 54.
     // 2026-10-10: withholding-tax-deduction connected to /report/whtdeduction (Champ 5513/32993) = 50.
     // 2026-10-10: 4 fixed asset reports connected to FixedAssetsScreen (/report/depreciationmonthly, /report/depreciationyearly, /report/depreciationpnd50, /report/assetdisposal) = 46.
-    expect(pendingList.length).toBe(46);
+    // 2026-10-10: window-font-screen connected to /settings/font and bank-contact connected to /banking/contacts = 44.
+    expect(pendingList.length).toBe(44);
   });
 });
 

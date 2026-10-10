@@ -734,7 +734,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "window-fonts",
         title: ml("window-fonts", "เลือกตัวอักษรในการแสดงผลต่าง", "Choose Display Fonts"),
         items: [
-          tx("window-font-screen", "เลือกตัวอักษรสำหรับหน้าจอทั่วไป", "Font for General Screens", "/pending/window-font-screen", "settings"),
+          tx("window-font-screen", "เลือกตัวอักษรสำหรับหน้าจอทั่วไป", "Font for General Screens", "/settings/font", "settings"),
           tx("window-font-report", "เลือกตัวอักษรสำหรับรายงานทั่วไป", "Font for General Reports", "/pending/window-font-report", "settings"),
           tx("window-font-report-title", "เลือกตัวอักษรสำหรับชื่อของรายงาน", "Font for Report Titles", "/pending/window-font-report-title", "settings"),
           tx("window-font-report-column", "เลือกตัวอักษรสำหรับคอลัมน์ของรายงาน", "Font for Report Columns", "/pending/window-font-report-column", "settings"),
