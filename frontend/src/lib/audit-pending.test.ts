@@ -40,7 +40,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: system-journal-format (/settings/journal-format) and system-work-date (/settings/work-date) connected = 26.
     // 2026-10-10: system-product-by-warehouse (/settings/product-by-warehouse) and system-default-warehouse (/settings/default-warehouse) connected = 24.
     // 2026-10-10: system-currency (/settings/currency) and system-payment-terms (/settings/payment-terms) connected = 22.
-    expect(pendingList.length).toBe(22);
+    // 2026-10-10: system-credit-debit-reasons (/settings/credit-debit-reasons) and system-main-map (/settings/main-map) connected = 20.
+    expect(pendingList.length).toBe(20);
   });
 });
 

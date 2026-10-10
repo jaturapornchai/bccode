@@ -36,6 +36,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/settings/default-warehouse",
   "/settings/currency",
   "/settings/payment-terms",
+  "/settings/credit-debit-reasons",
+  "/settings/main-map",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
