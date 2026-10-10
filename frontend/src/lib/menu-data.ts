@@ -316,7 +316,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("ap-other-debt", "บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ", "Other Payables", "/transaction/apotherdebt", "finance"),
           tx("ap-billing-receipt", "บันทึกใบรับวางบิล", "Supplier Billing Receipt", "/transaction/apbillingreceipt", "finance"),
-          tx("ap-payment-prepare", "บันทึกเตรียมจ่ายชำระหนี้", "Prepare Debt Payment", "/pending/ap-payment-prepare", "finance"),
+          tx("ap-payment-prepare", "บันทึกเตรียมจ่ายชำระหนี้", "Prepare Debt Payment", "/ap/payment-prepare", "finance"),
           tx("pay", "บันทึกจ่ายชำระหนี้", "Pay", "/transaction/pay", "finance"),
           tx("ap-bad-debt", "บันทึกตัดหนี้สูญ(เจ้าหนี้)", "Write Off Payables", "/transaction/apbaddebt", "finance"),
         ],
@@ -360,7 +360,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("ar-other-debt", "บันทึกเอกสารตั้งลูกหนี้อื่นๆ", "Other Receivables", "/transaction/arotherdebt", "finance"),
           tx("billing-note", "บันทึกใบวางบิล", "Billing Note", "/transaction/billingnote"),
-          tx("billing-note-auto", "บันทึกใบวางบิลอัตโนมัติ", "Automatic Billing Note", "/pending/billing-note-auto"),
+          tx("billing-note-auto", "บันทึกใบวางบิลอัตโนมัติ", "Automatic Billing Note", "/ar/billing-note-auto"),
           tx("billing-note-auto-print", "พิมพ์ใบวางบิลอัตโนมัติ", "Print Automatic Billing Notes", "/ar/billing-note-auto-print"),
           tx("temporary-receipt", "บันทึกใบเสร็จชั่วคราว", "Temporary Receipt", "/transaction/temporaryreceipt", "finance"),
           tx("paid", "บันทึกใบเสร็จรับเงิน/รับชำระหนี้", "Receive Payment", "/transaction/paid", "finance"),
@@ -574,7 +574,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-daily-sequence", "กำหนดลำดับรายวัน", "Inventory Daily Sequence", "/inventory/daily-sequence", "transaction"),
           tx("reprocess", "คำนวณยอดคงเหลือรวมของสินค้าใหม่", "Recalculate Data", "/rebuildstockscreen", "report"),
-          tx("transaction-lock", "Transaction Lock", "Transaction Lock", "/pending/transaction-lock"),
+          tx("transaction-lock", "Transaction Lock", "Transaction Lock", "/tools/transaction-lock"),
         ],
       },
     ],

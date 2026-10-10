@@ -138,6 +138,9 @@ import { BankingContactsScreen } from "@/components/banking-contacts-screen";
 import { PettyCashLimitScreen } from "@/components/petty-cash-limit-screen";
 import { ChequeIssuedPrepareScreen } from "@/components/cheque-issued-prepare-screen";
 import { DepositReceiptScreen } from "@/components/deposit-receipt-screen";
+import { BillingNoteAutoScreen } from "@/components/billing-note-auto-screen";
+import { TransactionLockScreen } from "@/components/transaction-lock-screen";
+import { ApPaymentPrepareScreen } from "@/components/ap-payment-prepare-screen";
 
 type WorkTab = {
   id: string;
@@ -2342,6 +2345,18 @@ function WorkTabPanel({
 
   if (activeTab.route === "/banking/cheque-issued-prepare") {
     return <ChequeIssuedPrepareScreen language={language} />;
+  }
+
+  if (activeTab.route === "/ar/billing-note-auto") {
+    return <BillingNoteAutoScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/tools/transaction-lock") {
+    return <TransactionLockScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/ap/payment-prepare") {
+    return <ApPaymentPrepareScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

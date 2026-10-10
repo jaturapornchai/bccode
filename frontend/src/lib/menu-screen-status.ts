@@ -21,6 +21,9 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/banking/petty-cash-limit",
   "/banking/cheque-issued-prepare",
   "/transaction/receivedeposit",
+  "/ar/billing-note-auto",
+  "/tools/transaction-lock",
+  "/ap/payment-prepare",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
