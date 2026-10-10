@@ -24,8 +24,6 @@ describe("menu screen availability", () => {
     // 2026-10-09 (S1): Champ items of the transaction heads without a screen yet.
     "/pending/sale-reservation",
     "/pending/sale-dispatch",
-    "/pending/cheque-movement",
-    "/pending/bank-service",
     "/pending/product-supplier-update",
     "/pending/stock-count-handheld",
     // 2026-10-09 (S2): Champ จัดการระบบ items without a screen yet.

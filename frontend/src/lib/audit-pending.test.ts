@@ -34,7 +34,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-10-10: 5 window font report screens connected to /settings/font-* and petty-cash-limit connected to /banking/petty-cash-limit = 38.
     // 2026-10-10: cheque-issued-prepare connected to /banking/cheque-issued-prepare (ChequeIssuedPrepareScreen) = 37.
     // 2026-10-10: billing-note-auto (/ar/billing-note-auto), transaction-lock (/tools/transaction-lock), and ap-payment-prepare (/ap/payment-prepare) connected = 34.
-    expect(pendingList.length).toBe(34);
+    // 2026-10-10: cheque-movement (/banking/cheque-movement) and bank-service (/banking/bank-service) connected = 32.
+    expect(pendingList.length).toBe(32);
   });
 });
 

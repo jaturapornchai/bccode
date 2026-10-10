@@ -24,6 +24,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/ar/billing-note-auto",
   "/tools/transaction-lock",
   "/ap/payment-prepare",
+  "/banking/cheque-movement",
+  "/banking/bank-service",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

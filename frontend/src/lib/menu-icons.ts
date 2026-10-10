@@ -249,6 +249,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/ar/billing-note-auto-print": "print",
   "/tools/transaction-lock": "shield",
   "/ap/payment-prepare": "payment",
+  "/banking/cheque-movement": "list",
+  "/banking/bank-service": "bank",
   "/transaction/debitnote": "fileText",
   "/transaction/etax": "globe",
   "/transaction/stockcount": "calculator",

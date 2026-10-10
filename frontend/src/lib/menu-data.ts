@@ -440,7 +440,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "cash-bank-master",
         title: { key: "menu_bank_accounts", th: "สมุดเงินฝากธนาคาร", en: "Bank Accounts" },
         items: [
-          tx("bank-service", "บริการธนาคาร", "Bank Services", "/pending/bank-service", "finance"),
+          tx("bank-service", "บริการธนาคาร", "Bank Services", "/banking/bank-service", "finance"),
           tx("bank-contact", "บันทึกรายละเอียดผู้ติดต่อธนาคาร", "Bank Contacts", "/banking/contacts", "master"),
           tx("book-bank", "บันทึกสมุดเงินฝากธนาคาร", "Bank Book", "/bookbankscreen", "master", "book_bank"),
         ],
@@ -460,7 +460,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "bank-utilities",
         title: ml("bank-utilities", "ตรวจและประมวลผลเงินฝากและเช็ค", "Bank & Cheque Utilities"),
         items: [
-          tx("cheque-movement", "ข้อมูลการเคลื่อนไหวเช็ค", "Cheque Movement Inquiry", "/pending/cheque-movement", "finance"),
+          tx("cheque-movement", "ข้อมูลการเคลื่อนไหวเช็ค", "Cheque Movement Inquiry", "/banking/cheque-movement", "finance"),
           tx("cheque-recalculate", "คำนวณยอดคงเหลือของเช็คใหม่", "Recalculate Cheque Balances", "/tools/cheque-balances", "finance"),
           tx("bank-recalculate", "คำนวณยอดคงเหลือของสมุดบัญชีใหม่", "Recalculate Bank Book Balances", "/tools/bank-balances", "finance"),
         ],
