@@ -34,10 +34,10 @@ const ACTION_ICONS: Record<MenuBarActionId, LucideIcon> = {
 // Heads must stay on ONE row at 1024px (13 heads + overview), so they are compact text buttons;
 // `!` beats the unlayered `button { font-size: inherit }` reset (see tailwind-button-font-size-gotcha).
 const HEAD_CLASS = "h-9 shrink-0 gap-1 px-2 text-[0.9rem]! data-[state=open]:bg-accent data-[state=open]:text-accent-foreground";
-// Dropdown rows: ≥ 44px click target and ≥ 0.9rem Thai text (UX rule: คนไทย 40+).
-const ROW_CLASS = "min-h-[44px] gap-2 px-2 py-1.5 text-[0.95rem] leading-snug data-[disabled]:cursor-not-allowed";
+// Dropdown rows: compact height for high information density (desktop ERP)
+const ROW_CLASS = "min-h-[30px] gap-2 px-2 py-0.5 text-[0.88rem] leading-tight data-[disabled]:cursor-not-allowed";
 const PANEL_CLASS =
-  "max-h-[min(80vh,var(--radix-dropdown-menu-content-available-height))] max-w-[min(30rem,calc(100vw-1rem))] overflow-y-auto! p-1.5";
+  "max-h-[min(88vh,var(--radix-dropdown-menu-content-available-height))] max-w-[min(28rem,calc(100vw-1rem))] overflow-y-auto! p-1";
 
 export type ChampMenuBarProps = {
   activeSection: string;
@@ -107,12 +107,15 @@ export function ChampMenuBar({
 
   function renderNodes(nodes: MenuBarNode[], keyPrefix: string) {
     return nodes.map((node, index) => {
-      if (node.kind === "divider") return <DropdownMenuSeparator key={`${keyPrefix}-divider-${index}`} />;
+      if (node.kind === "divider") return <DropdownMenuSeparator key={`${keyPrefix}-divider-${index}`} className="my-0.5" />;
 
       if (node.kind === "submenu") {
         return (
           <DropdownMenuSub key={node.id}>
-            <DropdownMenuSubTrigger className={ROW_CLASS}>{menuText(node.label, language, backendLanguage)}</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger className={ROW_CLASS}>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate font-medium">{menuText(node.label, language, backendLanguage)}</span>
+            </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className={cn("min-w-[17rem]", PANEL_CLASS)} collisionPadding={8}>
                 {renderNodes(node.nodes, node.id)}
@@ -126,8 +129,10 @@ export function ChampMenuBar({
         const Icon = ACTION_ICONS[node.id];
         return (
           <DropdownMenuItem className={ROW_CLASS} key={node.id} onSelect={() => onAction(node.id)}>
-            <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1">{menuText(node.label, language, backendLanguage)}</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground">
+              <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0 flex-1 truncate">{menuText(node.label, language, backendLanguage)}</span>
           </DropdownMenuItem>
         );
       }
@@ -149,10 +154,10 @@ export function ChampMenuBar({
             else onOpenItem(item);
           }}
         >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-            <MenuRouteIcon item={item} size={15} />
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground">
+            <MenuRouteIcon item={item} size={14} />
           </span>
-          <span className="line-clamp-2 min-w-0 flex-1 break-words font-medium">{menuText(item.label, language, backendLanguage)}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">{menuText(item.label, language, backendLanguage)}</span>
           <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
           {locked ? <Lock aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
         </DropdownMenuItem>
