@@ -31,6 +31,7 @@ const POST_ALLOWED_EXACT = [
   "api/report/tax/form/load",
   "api/report/tax/form/delete",
   "api/report/tax/form/rdfile",
+  "api/report/tax/etax/generate-xml",
   "api/report/debt/query",
   "api/report/sales/by-document",
 ];

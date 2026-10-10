@@ -131,6 +131,89 @@ export function ETaxInvoiceScreen({ language, holdingcode, branchcode = "00000" 
     }
   };
 
+  const handleDownloadXml = async (doc: ETaxDocument) => {
+    try {
+      const payload = {
+        document: {
+          doc_no: doc.docNo,
+          type_code: doc.typeCode,
+          type_name: doc.typeName,
+          issue_date_time: `${doc.date}T10:00:00.000Z`,
+          purpose_code: doc.typeCode === "81" ? "CDNG05" : doc.typeCode === "80" ? "DBNG01" : undefined,
+          purpose_reason: doc.typeCode === "81" ? "รับคืนสินค้าเนื่องจากสินค้าผิดคุณลักษณะ" : doc.typeCode === "80" ? "คำนวณราคาสินค้าต่ำกว่าที่เป็นจริง" : undefined,
+          original_doc_no: doc.typeCode === "81" || doc.typeCode === "80" ? "INV6910-0012" : undefined,
+          original_doc_date: doc.typeCode === "81" || doc.typeCode === "80" ? "2026-10-08" : undefined,
+          currency_code: "THB",
+          seller: {
+            name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด",
+            tax_id: "0105560012345",
+            branch_id: branchcode,
+            address: {
+              line_one: "123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร",
+              postcode: "10110",
+              country_code: "TH",
+            },
+          },
+          buyer: {
+            name: doc.customerName,
+            tax_id: doc.taxId,
+            branch_id: "00000",
+            address: {
+              line_one: "สำนักงานใหญ่",
+              postcode: "10330",
+              country_code: "TH",
+            },
+          },
+          items: [
+            {
+              line_id: 1,
+              item_code: "ITEM-001",
+              item_name: doc.typeName,
+              quantity: "1.00",
+              unit_code: "C62",
+              unit_price: Math.abs(doc.amount).toFixed(2),
+              amount: Math.abs(doc.amount).toFixed(2),
+              discount: "0.00",
+              net_amount: Math.abs(doc.amount).toFixed(2),
+              tax_rate: "7.00",
+              tax_amount: Math.abs(doc.vatAmount).toFixed(2),
+            },
+          ],
+          line_total_amount: Math.abs(doc.amount).toFixed(2),
+          discount_total: "0.00",
+          tax_basis_total: Math.abs(doc.amount).toFixed(2),
+          tax_rate: "7.00",
+          tax_total: Math.abs(doc.vatAmount).toFixed(2),
+          grand_total: Math.abs(doc.totalAmount).toFixed(2),
+        },
+      };
+
+      const res = await fetch("/api/goapi/report/tax/etax/generate-xml", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.xml) {
+        throw new Error(data.message || "Failed to generate e-Tax XML");
+      }
+
+      const blob = new Blob([data.xml], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.filename || `${doc.docNo}_ETAX.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(isThai ? `เกิดข้อผิดพลาดในการสร้าง XML: ${msg}` : `Failed to generate XML: ${msg}`);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
       {/* Header Banner */}
@@ -343,7 +426,7 @@ export function ETaxInvoiceScreen({ language, holdingcode, branchcode = "00000" 
                               type="button"
                               title="Download XML มธพ. 3-2560"
                               className="rounded p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground"
-                              onClick={() => alert(`ดาวน์โหลด XML สำหรับ ${doc.docNo}`)}
+                              onClick={() => void handleDownloadXml(doc)}
                             >
                               <FileText className="h-4 w-4" />
                             </button>
