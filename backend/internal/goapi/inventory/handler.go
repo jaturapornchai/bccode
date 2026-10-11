@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"smlcloudplatform/internal/goapi/handlers"
 	m "smlcloudplatform/internal/goapi/inventory/models"
 	"smlcloudplatform/internal/goapi/logger"
 	myPg "smlcloudplatform/internal/goapi/mypg"
@@ -207,13 +208,18 @@ func GetInventoryValuation(c echo.Context) error {
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode"})
 	}
+	// บริษัทมาจาก session ที่ล็อกอินเท่านั้น (holdingcode ต้องตรงกับ session ด้วย) — ไม่เชื่อค่าจาก query
+	businessCode, ok, resp := handlers.ResolveReportCompany(c, holdingCode)
+	if !ok {
+		return resp
+	}
 
 	svc, err := connectAndService(holdingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	report, err := svc.GetInventoryValuation(c.Request().Context(), holdingCode)
+	report, err := svc.GetInventoryValuation(c.Request().Context(), holdingCode, businessCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -228,6 +234,10 @@ func GetStockCard(c echo.Context) error {
 
 	if holdingCode == "" || itemCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode และ itemcode"})
+	}
+	businessCode, ok, resp := handlers.ResolveReportCompany(c, holdingCode)
+	if !ok {
+		return resp
 	}
 
 	from, err := time.Parse("2006-01-02", fromDate)
@@ -244,7 +254,7 @@ func GetStockCard(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": svcErr.Error()})
 	}
 
-	report, err := svc.GetStockCard(c.Request().Context(), holdingCode, itemCode, from, to)
+	report, err := svc.GetStockCard(c.Request().Context(), holdingCode, businessCode, itemCode, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -259,6 +269,10 @@ func GetStockMovement(c echo.Context) error {
 
 	if holdingCode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode"})
+	}
+	businessCode, ok, resp := handlers.ResolveReportCompany(c, holdingCode)
+	if !ok {
+		return resp
 	}
 
 	from, err := time.Parse("2006-01-02", fromDate)
@@ -275,7 +289,7 @@ func GetStockMovement(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": svcErr.Error()})
 	}
 
-	items, err := svc.GetStockMovementReport(c.Request().Context(), holdingCode, itemCode, from, to)
+	items, err := svc.GetStockMovementReport(c.Request().Context(), businessCode, itemCode, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

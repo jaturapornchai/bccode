@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -259,8 +260,15 @@ type StockMovementRow struct {
 	DocRef        string  `json:"docref"`
 }
 
-// GetStockMovementReport — ดึงประวัติการเคลื่อนไหวสต็อกสินค้าทั้งหมดจาก stock_ledger
-func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, holdingCode, itemCode string, fromDate, toDate time.Time) ([]StockMovementRow, error) {
+// ErrCompanyRequired - stock_ledger / stock_period_balance เก็บหลายบริษัทในฐานเดียวกัน รายงานต้องกรองบริษัทเดียวเสมอ:
+// รหัสบริษัทว่างคือข้อผิดพลาดของผู้เรียก ไม่ใช่ "ทุกบริษัท" และไม่ใช่บริษัท 01
+var ErrCompanyRequired = errors.New("inventory report company is required")
+
+// GetStockMovementReport — ประวัติการเคลื่อนไหวสต็อกของบริษัท businessCode จาก stock_ledger
+func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, businessCode, itemCode string, fromDate, toDate time.Time) ([]StockMovementRow, error) {
+	if businessCode == "" {
+		return nil, ErrCompanyRequired
+	}
 	query := `SELECT 
 		s.docdatetime::date::text AS docdate,
 		s.docno,
@@ -288,13 +296,13 @@ func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, ho
 	FROM stock_ledger s
 	LEFT JOIN (SELECT DISTINCT ON (businesscode, docno, itemcode) businesscode, docno, itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d 
 	       ON d.businesscode = s.businesscode AND d.docno = s.docno AND d.itemcode = s.itemcode
-	WHERE (s.businesscode = $1 OR s.businesscode = '01' OR $1 = '')
+	WHERE s.businesscode = $1
 	  AND s.docdatetime::date >= $2::date
 	  AND s.docdatetime::date <= $3::date
 	  AND ($4 = '' OR s.itemcode = $4)
 	ORDER BY s.docdatetime ASC, s.behindindex ASC, s.docno ASC, s.linenumber ASC`
 
-	rows, err := s.db.QueryContext(ctx, query, holdingCode, fromDate, toDate, itemCode)
+	rows, err := s.db.QueryContext(ctx, query, businessCode, fromDate, toDate, itemCode)
 	if err != nil {
 		return nil, err
 	}
@@ -315,8 +323,11 @@ func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, ho
 	return results, nil
 }
 
-// GetStockCard — รายงาน Stock Card (ประวัติเคลื่อนไหวสินค้า)
-func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode, itemCode string, fromDate, toDate time.Time) (*m.StockCardReport, error) {
+// GetStockCard — รายงาน Stock Card (ประวัติเคลื่อนไหวสินค้า) ของบริษัท businessCode
+func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode, businessCode, itemCode string, fromDate, toDate time.Time) (*m.StockCardReport, error) {
+	if businessCode == "" {
+		return nil, ErrCompanyRequired
+	}
 	report := &m.StockCardReport{
 		HoldingCode: holdingCode,
 		ItemCode:    itemCode,
@@ -324,8 +335,9 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 		ToDate:      toDate,
 	}
 
-	// 1. ลองดึงจาก stock_ledger ก่อน (ตารางหลัก)
-	stockLedgerRows, err := s.db.QueryContext(ctx,
+	// สมุดสต็อก (stock_ledger) ของบริษัทนี้เป็นแหล่งเดียว: บริษัทที่ไม่มีความเคลื่อนไหว = รายงานว่าง
+	// (ไม่ถอยไปตารางเดิม inventorycosttransactions ที่กรองแค่ holding — จะได้ข้อมูลทุกบริษัทในกลุ่ม)
+	rows, err := s.db.QueryContext(ctx,
 		`SELECT s.docdatetime, s.docno,
 		        CASE 
 		            WHEN s.transflag = `+strconv.Itoa(doctype.Purchase)+` THEN 'purchase'
@@ -341,68 +353,33 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 		 FROM stock_ledger s
 		 LEFT JOIN (SELECT DISTINCT ON (businesscode, docno, itemcode) businesscode, docno, itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d 
 		        ON d.businesscode = s.businesscode AND d.docno = s.docno AND d.itemcode = s.itemcode
-		 WHERE (s.businesscode = $1 OR s.businesscode = '01' OR $1 = '')
+		 WHERE s.businesscode = $1
 		   AND s.itemcode = $2
 		   AND s.docdatetime::date >= $3::date
 		   AND s.docdatetime::date <= $4::date
 		 ORDER BY s.docdatetime ASC, s.behindindex ASC, s.docno ASC, s.linenumber ASC`,
-		holdingCode, itemCode, fromDate, toDate,
-	)
-	if err == nil {
-		defer stockLedgerRows.Close()
-		hasRows := false
-		for stockLedgerRows.Next() {
-			hasRows = true
-			var entry m.StockCardEntry
-			var inQty, outQty float64
-			var itemName string
-			if scanErr := stockLedgerRows.Scan(&entry.Date, &entry.DocNo, &entry.TransactionType, &entry.TransFlag,
-				&itemName, &inQty, &outQty, &entry.UnitCost, &entry.TotalCost,
-				&entry.BalanceQty, &entry.BalanceValue, &entry.AverageCost); scanErr == nil {
-				entry.QtyIn = inQty
-				entry.QtyOut = outQty
-				if report.ItemName == "" {
-					report.ItemName = itemName
-				}
-				report.Entries = append(report.Entries, entry)
-			}
-		}
-		if hasRows {
-			return report, nil
-		}
-	}
-
-	// 2. Fallback ไป inventorycosttransactions เดิม
-	rows, err := s.db.QueryContext(ctx,
-		`SELECT transactiondate, refdocno, transactiontype, transflag,
-		        qty, unitcost, totalcost, balanceqty, balancetotalvalue, balanceavgcost
-		 FROM inventorycosttransactions
-		 WHERE holdingcode = $1 AND itemcode = $2 AND transactiondate >= $3 AND transactiondate <= $4
-		 ORDER BY transactiondate ASC, id ASC`,
-		holdingCode, itemCode, fromDate, toDate,
+		businessCode, itemCode, fromDate, toDate,
 	)
 	if err != nil {
-		return report, nil
+		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		var entry m.StockCardEntry
-		var qty float64
-		err := rows.Scan(&entry.Date, &entry.DocNo, &entry.TransactionType, &entry.TransFlag,
-			&qty, &entry.UnitCost, &entry.TotalCost,
-			&entry.BalanceQty, &entry.BalanceValue, &entry.AverageCost)
-		if err != nil {
+		var itemName string
+		if err := rows.Scan(&entry.Date, &entry.DocNo, &entry.TransactionType, &entry.TransFlag,
+			&itemName, &entry.QtyIn, &entry.QtyOut, &entry.UnitCost, &entry.TotalCost,
+			&entry.BalanceQty, &entry.BalanceValue, &entry.AverageCost); err != nil {
 			return nil, err
 		}
-		if qty > 0 {
-			entry.QtyIn = qty
-		} else {
-			entry.QtyOut = -qty
+		if report.ItemName == "" {
+			report.ItemName = itemName
 		}
 		report.Entries = append(report.Entries, entry)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return report, nil
 }
 
@@ -440,64 +417,46 @@ func (s *InventoryCostingService) GetCostLayers(ctx context.Context, holdingCode
 	return layers, nil
 }
 
-// GetInventoryValuation — รายงานมูลค่าสินค้าคงเหลือทั้งร้าน
-func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, holdingCode string) (*m.InventoryValuationReport, error) {
+// GetInventoryValuation — รายงานมูลค่าสินค้าคงเหลือของบริษัท businessCode
+func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, holdingCode, businessCode string) (*m.InventoryValuationReport, error) {
+	if businessCode == "" {
+		return nil, ErrCompanyRequired
+	}
 	report := &m.InventoryValuationReport{
 		HoldingCode: holdingCode,
 		AsOfDate:    time.Now(),
 	}
 
-	// 1. ลองดึงจาก stock_period_balance ก่อน (ข้อมูลจริงล่าสุด)
-	spbRows, err := s.db.QueryContext(ctx,
-		`SELECT spb.itemcode, COALESCE(d.description, spb.itemcode) AS itemname, spb.whcode, spb.closeqty, spb.closeavgcost, spb.closeamount
-		 FROM stock_period_balance spb
-		 LEFT JOIN (SELECT DISTINCT ON (itemcode) itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d ON d.itemcode = spb.itemcode
-		 WHERE (spb.businesscode = $1 OR spb.businesscode = '01' OR $1 = '') AND spb.closeqty > 0
-		 ORDER BY spb.itemcode, spb.whcode`,
-		holdingCode,
-	)
-	if err == nil {
-		defer spbRows.Close()
-		hasRows := false
-		for spbRows.Next() {
-			hasRows = true
-			var item m.InventoryValuationItem
-			if scanErr := spbRows.Scan(&item.ItemCode, &item.ItemName, &item.WhCode, &item.Qty, &item.AverageCost, &item.TotalValue); scanErr == nil {
-				item.CostingMethod = "movingaverage"
-				report.Items = append(report.Items, item)
-				report.TotalValue += item.TotalValue
-			}
-		}
-		if hasRows {
-			return report, nil
-		}
-	}
-
-	// 2. Fallback ไป inventorystockbalances เดิม
+	// ยอดยกไปของบริษัทนี้ (stock_period_balance) เป็นแหล่งเดียว: บริษัทที่ไม่มีสต็อก = รายงานว่าง
+	// (ไม่ถอยไปตารางเดิม inventorystockbalances ที่กรองแค่ holding — จะได้สต็อกทุกบริษัทในกลุ่ม)
+	// ตารางเก็บยอดปิดทุกงวดที่มีความเคลื่อนไหว (PK businesscode, itemcode, whcode, periodkey) → ใช้งวดล่าสุดของแต่ละสินค้า/คลัง
+	// ไม่งั้นสินค้าที่เคลื่อนไหวหลายเดือนจะถูกนับยอดคงเหลือซ้ำทุกงวด
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT sb.itemcode, sb.whcode, sb.currentqty, sb.currentavgcost, sb.currenttotalvalue,
-		        COALESCE(pc.costingmethod, 'movingaverage')
-		 FROM inventorystockbalances sb
-		 LEFT JOIN productcostingconfig pc ON sb.holdingcode = pc.holdingcode AND sb.itemcode = pc.itemcode
-		 WHERE sb.holdingcode = $1 AND sb.currentqty > 0
-		 ORDER BY sb.itemcode, sb.whcode`,
-		holdingCode,
+		`SELECT spb.itemcode, COALESCE(d.description, spb.itemcode) AS itemname, spb.whcode, spb.closeqty, spb.closeavgcost, spb.closeamount
+		 FROM (SELECT DISTINCT ON (itemcode, whcode) itemcode, whcode, closeqty, closeavgcost, closeamount
+		       FROM stock_period_balance WHERE businesscode = $1
+		       ORDER BY itemcode, whcode, periodkey DESC) spb
+		 LEFT JOIN (SELECT DISTINCT ON (itemcode) itemcode, description FROM docdetail WHERE businesscode = $1 AND description IS NOT NULL AND description != '') d ON d.itemcode = spb.itemcode
+		 WHERE spb.closeqty > 0
+		 ORDER BY spb.itemcode, spb.whcode`,
+		businessCode,
 	)
 	if err != nil {
-		return report, nil
+		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		var item m.InventoryValuationItem
-		err := rows.Scan(&item.ItemCode, &item.WhCode, &item.Qty, &item.AverageCost, &item.TotalValue, &item.CostingMethod)
-		if err != nil {
+		if err := rows.Scan(&item.ItemCode, &item.ItemName, &item.WhCode, &item.Qty, &item.AverageCost, &item.TotalValue); err != nil {
 			return nil, err
 		}
+		item.CostingMethod = "movingaverage"
 		report.Items = append(report.Items, item)
 		report.TotalValue += item.TotalValue
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return report, nil
 }
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -69,7 +70,7 @@ func CustomerLabelsHandler(c echo.Context) error {
 
 	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
 	if scopeErr != nil {
-		return scopeErr.respond(c)
+		return taxScopeFail(c, scopeErr)
 	}
 
 	if req.Limit <= 0 || req.Limit > 2000 {
@@ -92,6 +93,9 @@ func CustomerLabelsHandler(c echo.Context) error {
 	defer cancel()
 
 	items, err := queryCustomerLabels(ctx, db, businessCode, req)
+	if errors.Is(err, errReportCompanyRequired) {
+		return reportCompanyRequiredFail(c)
+	}
 	if err != nil {
 		logger.Error(fmt.Sprintf("Customer labels query failed: %v", err))
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -108,11 +112,14 @@ func CustomerLabelsHandler(c echo.Context) error {
 }
 
 func queryCustomerLabels(ctx context.Context, db sqlQueryer, businessCode string, req CustomerLabelsRequest) ([]CustomerLabelItem, error) {
+	if strings.TrimSpace(businessCode) == "" {
+		return nil, errReportCompanyRequired
+	}
 	var whereClauses []string
 	var args []any
 	argIdx := 1
 
-	whereClauses = append(whereClauses, fmt.Sprintf("(p.company = $%d OR p.company = '01' OR $%d = '')", argIdx, argIdx))
+	whereClauses = append(whereClauses, fmt.Sprintf("p.company = $%d", argIdx))
 	args = append(args, businessCode)
 	argIdx++
 

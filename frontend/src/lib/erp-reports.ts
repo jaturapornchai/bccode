@@ -14,6 +14,8 @@ export interface ReportColumn {
   align?: "left" | "center" | "right";
   isNumeric?: boolean;
   isCurrency?: boolean;
+  /** Per-row ratio (e.g. % GP): adding rows gives a meaningless number, so the footer shows no total. */
+  isPercent?: boolean;
 }
 
 export interface ErpReportConfig {
@@ -282,7 +284,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
       { key: "salesrevenue", label: { th: "ยอดขาย", en: "Revenue" }, align: "right", isCurrency: true },
       { key: "costofgoods", label: { th: "ต้นทุนขาย", en: "COGS" }, align: "right", isCurrency: true },
       { key: "grossprofit", label: { th: "กำไรขั้นต้น", en: "Gross Profit" }, align: "right", isCurrency: true },
-      { key: "marginpercent", label: { th: "% GP", en: "% Margin" }, align: "right", isNumeric: true },
+      { key: "marginpercent", label: { th: "% GP", en: "% Margin" }, align: "right", isNumeric: true, isPercent: true },
     ],
   },
   {
@@ -299,7 +301,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
       { key: "salesrevenue", label: { th: "ยอดขายรวม", en: "Sales" }, align: "right", isCurrency: true },
       { key: "costofgoods", label: { th: "ต้นทุนรวม", en: "Cost" }, align: "right", isCurrency: true },
       { key: "grossprofit", label: { th: "กำไรขั้นต้น", en: "Gross Profit" }, align: "right", isCurrency: true },
-      { key: "marginpercent", label: { th: "% GP", en: "% Margin" }, align: "right", isNumeric: true },
+      { key: "marginpercent", label: { th: "% GP", en: "% Margin" }, align: "right", isNumeric: true, isPercent: true },
     ],
   },
   {
@@ -877,6 +879,11 @@ function toText(value: unknown): string | undefined {
   return undefined;
 }
 
+// Money from the backend is decimal text ("1234.50"); kept as text so the viewer formats and sums it exactly.
+function toAmountText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
 type RowMapper = (source: Record<string, unknown>) => ErpReportRow;
 
 function mapSalesByDocument(source: Record<string, unknown>): ErpReportRow {
@@ -889,11 +896,12 @@ function mapSalesByDocument(source: Record<string, unknown>): ErpReportRow {
   if (custcode !== undefined) row.custcode = custcode;
   const custname = toText(source.debtorname);
   if (custname !== undefined) row.custname = custname;
-  const totalamount = toNumber(source.totalamount);
+  const totalamount = toAmountText(source.totalamount);
   if (totalamount !== undefined) row.totalamount = totalamount;
   return row;
 }
 
+// Sales amounts and % GP are computed by the backend as decimal text (Rule 20); display only here.
 function mapGrossProfitDocument(source: Record<string, unknown>): ErpReportRow {
   const row: ErpReportRow = {};
   const docno = toText(source.docno);
@@ -901,21 +909,14 @@ function mapGrossProfitDocument(source: Record<string, unknown>): ErpReportRow {
   const custname = toText(source.debtorname);
   if (custname !== undefined) row.custname = custname;
 
-  const totalamount = toNumber(source.totalamount);
-  const calcamount = toNumber(source.calcamount);
-  const grossprofit = toNumber(source.grossprofit);
-
-  if (totalamount !== undefined) row.salesrevenue = totalamount;
-  if (calcamount !== undefined) row.costofgoods = calcamount;
+  const salesrevenue = toAmountText(source.totalamount);
+  if (salesrevenue !== undefined) row.salesrevenue = salesrevenue;
+  const costofgoods = toAmountText(source.calcamount);
+  if (costofgoods !== undefined) row.costofgoods = costofgoods;
+  const grossprofit = toAmountText(source.grossprofit);
   if (grossprofit !== undefined) row.grossprofit = grossprofit;
-
-  if (grossprofit !== undefined && totalamount !== undefined) {
-    const marginpercent =
-      totalamount === 0
-        ? 0
-        : Math.round((grossprofit / totalamount) * 100 * 100) / 100;
-    row.marginpercent = marginpercent;
-  }
+  const marginpercent = toAmountText(source.marginpercent);
+  if (marginpercent !== undefined) row.marginpercent = marginpercent;
   return row;
 }
 
@@ -1182,8 +1183,8 @@ const AGING_MONEY_KEYS = ["notinrange", ...AGING_RANGE_COLUMN_KEYS, "overrange",
 // Aging amounts stay as backend numeric text; the viewer formats and sums them exactly.
 function mapAgingAmounts(source: Record<string, unknown>, row: ErpReportRow): ErpReportRow {
   for (const key of AGING_MONEY_KEYS) {
-    const value = source[key];
-    if (typeof value === "string" && value.trim() !== "") row[key] = value;
+    const value = toAmountText(source[key]);
+    if (value !== undefined) row[key] = value;
   }
   const doccount = toNumber(source.doccount);
   if (doccount !== undefined) row.doccount = doccount;

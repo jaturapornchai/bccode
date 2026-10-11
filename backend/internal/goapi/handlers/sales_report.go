@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 )
 
 // SalesReportRequest - request สำหรับรายงานขาย
@@ -83,7 +85,7 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 
 	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
 	if scopeErr != nil {
-		return scopeErr.respond(c)
+		return taxScopeFail(c, scopeErr)
 	}
 
 	// Connect to database
@@ -118,37 +120,10 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 	}
 	defer rows.Close()
 
-	// Scan results
-	results := make([]map[string]any, 0)
-	columns, err := rows.Columns()
+	results, err := scanSalesReportRows(rows)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to get columns",
-			"code":  "COLUMN_ERROR",
-		})
-	}
-
-	for rows.Next() {
-		values := make([]any, len(columns))
-		valuePtrs := make([]any, len(columns))
-		for i := range columns {
-			valuePtrs[i] = &values[i]
-		}
-
-		if err := rows.Scan(valuePtrs...); err != nil {
-			continue
-		}
-
-		row := make(map[string]any)
-		for i, col := range columns {
-			val := values[i]
-			if b, ok := val.([]byte); ok {
-				row[col] = string(b)
-			} else {
-				row[col] = val
-			}
-		}
-		results = append(results, row)
+		logger.Error("SalesReport: read rows failed for %s/%s: %v", req.HoldingCode, businessCode, err)
+		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "load_failed")
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
@@ -159,6 +134,39 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 		"offset":      req.Offset,
 		"report_type": req.ReportType,
 	})
+}
+
+// scanSalesReportRows - อ่านทุกแถวของ query รายงานขายเป็น map ตามชื่อคอลัมน์ แล้วแปลงคอลัมน์เงินด้วย formatSalesReportRow
+// แถวที่อ่าน/แปลงไม่ได้ = รายงานเงินไม่ครบ → คืนข้อผิดพลาด ห้ามทิ้งแถวเงียบ ๆ
+func scanSalesReportRows(rows *sql.Rows) ([]map[string]any, error) {
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	results := make([]map[string]any, 0)
+	for rows.Next() {
+		values := make([]any, len(columns))
+		valuePtrs := make([]any, len(columns))
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, err
+		}
+		row := make(map[string]any, len(columns))
+		for i, col := range columns {
+			if b, ok := values[i].([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = values[i]
+			}
+		}
+		if err := formatSalesReportRow(row); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	return results, rows.Err()
 }
 
 // buildSalesReportHeaderQuery - สร้าง query สำหรับรายงานขายแบบสรุป (ป้องกัน SQL injection)
@@ -172,6 +180,11 @@ func buildSalesReportHeaderQuery(fromDate, toDate time.Time, businessCode string
 	// ลบเอกสาร = soft delete (doc.isdelete) แล้ว stock engine ค่อยถอนบรรทัดออกจาก
 	// stock_ledger ทีหลัง ระหว่างรอ worker ยอดจึงยังค้างใน ledger — กรองด้วย doc.isdelete
 	// อีกชั้นเพื่อไม่ให้รายงานนับใบที่ลบไปแล้ว (ใช้กับทั้งสาม query ในไฟล์นี้)
+	//
+	// ชื่อลูกค้า = doc.custname ที่บันทึกไว้บนเอกสารของบริษัทเดียวกัน (businesscode + transflag + docno)
+	// ไม่ join ตาราง debtor เดิม: ฐานปัจจุบันไม่มีตารางนั้น (query ล้มทั้งรายงาน) และ join ด้วยรหัสลูกค้าอย่างเดียวไม่มีบริษัท
+	// ทำให้รหัสซ้ำข้ามบริษัทแตกแถวเอกสารและเห็นชื่อลูกค้าของอีกบริษัท
+	// ไม่ส่งราคาเฉลี่ย/ต้นทุนเฉลี่ยต่อใบ (AVG ได้ทศนิยมยาวไม่ใช่ค่าที่บันทึก และไม่มีจอใดใช้)
 	query := `
 SELECT
   CAST(MAX(p.docdatetime) + INTERVAL '7 hour' AS DATE) as docdate,
@@ -179,16 +192,12 @@ SELECT
   MAX(p.docdatetime) + INTERVAL '7 hour' as docdatetime,
   p.docno,
   COALESCE(doc.custcode, '') as debtorcode,
-  COALESCE((SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1), '') as debtorname,
-  COALESCE(MAX(doc.totalamount), 0) as totalqty,
+  COALESCE(doc.custname, '') as debtorname,
   SUM(p.docvalue) as totalamount,
-  AVG(p.price) as price,
-  AVG(p.unitcost) as averagecost,
   SUM(p.amount) as calcamount,
   (SUM(p.docvalue) - SUM(p.amount)) as grossprofit
 FROM public.stock_ledger p
-LEFT JOIN public.doc doc ON doc.businesscode = p.businesscode AND doc.docno = p.docno
-LEFT JOIN public.debtor d ON doc.custcode = d.code
+LEFT JOIN public.doc doc ON doc.businesscode = p.businesscode AND doc.transflag = p.transflag AND doc.docno = p.docno
 WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
   AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2
@@ -228,7 +237,7 @@ WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
 		query += ")"
 	}
 
-	query += "\nGROUP BY p.docno, doc.custcode, d.names"
+	query += "\nGROUP BY p.docno, doc.custcode, doc.custname"
 
 	if sortAscending {
 		query += "\nORDER BY MAX(p.docdatetime) ASC, p.docno"
@@ -247,6 +256,7 @@ func buildSalesReportDetailQuery(fromDate, toDate time.Time, businessCode string
 	args := make([]any, 0)
 	argIndex := 1
 
+	// ชื่อสินค้า = คำอธิบายบรรทัดเอกสารของบริษัทเดียวกัน (ฐานปัจจุบันไม่มีตาราง productbarcode เดิม), หน่วย = รหัสหน่วยที่บันทึกในสมุดสต็อก
 	query := `
 SELECT
   CAST(p.docdatetime + INTERVAL '7 hour' AS DATE) as docdate,
@@ -257,7 +267,7 @@ SELECT
   p.itemcode,
   COALESCE(item_lookup.itemname, '') as itemname,
   p.barcode,
-  COALESCE(unit_lookup.unitname, '') as unitname,
+  p.unitcode as unitname,
   p.docqty as totalqty,
   p.docvalue as totalamount,
   p.amount as calcamount,
@@ -266,17 +276,14 @@ SELECT
   (p.docvalue - p.amount) as grossprofit
 FROM public.stock_ledger p
 LEFT JOIN LATERAL (
-  SELECT STRING_AGG(DISTINCT pb.name0, ', ') AS itemname
-  FROM public.productbarcode pb
-  WHERE pb.itemcode = p.itemcode
-    AND pb.barcoderefunitstand = 1
-    AND pb.barcoderefunitdivide = 1
+  SELECT dl.description AS itemname
+  FROM public.docdetail dl
+  WHERE dl.businesscode = p.businesscode AND dl.transflag = p.transflag
+    AND dl.docno = p.docno AND dl.itemcode = p.itemcode
+    AND COALESCE(dl.description, '') <> ''
+  ORDER BY dl.linenumber = p.linenumber DESC, dl.linenumber
+  LIMIT 1
 ) item_lookup ON TRUE
-LEFT JOIN LATERAL (
-  SELECT STRING_AGG(DISTINCT pb.unitname, ', ') AS unitname
-  FROM public.productbarcode pb
-  WHERE pb.barcode = p.barcode
-) unit_lookup ON TRUE
 WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
   AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2
@@ -364,7 +371,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 
 	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
 	if scopeErr != nil {
-		return scopeErr.respond(c)
+		return taxScopeFail(c, scopeErr)
 	}
 
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
@@ -381,7 +388,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 	query, args := buildSalesReportSummaryQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes)
 
 	var totalDocuments int64
-	var totalAmount, totalCost, totalProfit float64
+	var totalAmount, totalCost, totalProfit decimal.Decimal
 
 	err = db.QueryRowContext(ctx, query, args...).Scan(
 		&totalDocuments, &totalAmount, &totalCost, &totalProfit,
@@ -396,14 +403,19 @@ func SalesReportSummaryHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status": "success",
-		"data": map[string]any{
-			"total_documents": totalDocuments,
-			"totalamount":     totalAmount,
-			"totalcost":       totalCost,
-			"total_profit":    totalProfit,
-			"profit_margin":   calculateMargin(totalAmount, totalProfit),
-		},
+		"data":   salesSummaryData(totalDocuments, totalAmount, totalCost, totalProfit),
 	})
+}
+
+// salesSummaryData - ยอดสรุปเป็นข้อความทศนิยม (ไม่ส่งเงินเป็น JSON number) ไม่ปัดทิ้งความละเอียดที่บันทึกไว้
+func salesSummaryData(documents int64, amount, cost, profit decimal.Decimal) map[string]any {
+	return map[string]any{
+		"total_documents": documents,
+		"totalamount":     reportMoneyText(amount),
+		"totalcost":       reportMoneyText(cost),
+		"total_profit":    reportMoneyText(profit),
+		"profit_margin":   moneyText(salesMarginPercent(amount, profit)),
+	}
 }
 
 // buildSalesReportSummaryQuery - สร้าง query สำหรับสรุปยอดขาย
@@ -444,10 +456,46 @@ WHERE p.transflag = ` + strconv.Itoa(doctype.SaleInvoice) + `
 	return query, args
 }
 
-// calculateMargin - คำนวณ profit margin
-func calculateMargin(amount, profit float64) float64 {
-	if amount == 0 {
-		return 0
+// salesMoneyColumns - คอลัมน์เงินของรายงานขาย (stock_ledger เก็บ numeric(18,8)) ส่งออกด้วย reportMoneyText:
+// อย่างน้อย 2 ตำแหน่ง ไม่ปัดทิ้งความละเอียดที่บันทึกไว้ (ต้นทุน = จำนวน × ต้นทุนต่อหน่วย มีได้ถึง 8 ตำแหน่ง)
+// เพื่อให้ ยอดขาย − ต้นทุน = กำไรขั้นต้น ทุกแถว และยอดรวมท้ายรายงานกระทบกันได้
+// price/averagecost มีเฉพาะแบบรายละเอียด (ค่าที่บันทึกต่อบรรทัด); แบบสรุปไม่ส่ง AVG ที่ทศนิยมยาวเกินที่บันทึก
+// totalqty ของรายงานแบบรายละเอียด = docqty (จำนวน ไม่ใช่เงิน) จึงคงข้อความ numeric จากฐาน
+var salesMoneyColumns = []string{"totalamount", "price", "averagecost", "calcamount", "grossprofit"}
+
+// formatSalesReportRow - แปลงคอลัมน์เงินเป็น decimal แล้วส่งเป็นข้อความ "1234.50" / "0.125" (Rule 20: ไม่ใช้ float/JSON number กับเงิน)
+// และคำนวณ marginpercent ที่ backend จากยอดเต็มความละเอียด (frontend แสดงผลอย่างเดียว)
+func formatSalesReportRow(row map[string]any) error {
+	amounts := make(map[string]decimal.Decimal, len(salesMoneyColumns))
+	for _, key := range salesMoneyColumns {
+		raw, ok := row[key]
+		if !ok || raw == nil {
+			continue
+		}
+		text, ok := raw.(string)
+		if !ok {
+			return fmt.Errorf("%s: unexpected type %T", key, raw)
+		}
+		value, err := decimal.NewFromString(text)
+		if err != nil {
+			return fmt.Errorf("%s: %w", key, err)
+		}
+		amounts[key] = value
+		row[key] = reportMoneyText(value)
 	}
-	return (profit / amount) * 100
+	total, hasTotal := amounts["totalamount"]
+	profit, hasProfit := amounts["grossprofit"]
+	if hasTotal && hasProfit {
+		row["marginpercent"] = moneyText(salesMarginPercent(total, profit))
+	}
+	return nil
+}
+
+// salesMarginPercent - % กำไรขั้นต้น = กำไร × 100 ÷ ยอดขาย ปัด 2 ตำแหน่งแบบครึ่งปัดออกจากศูนย์ (เท่ากับ moneyText)
+// ยอดขายเป็นศูนย์ → 0 (ไม่มีฐานให้คิดอัตรา)
+func salesMarginPercent(amount, profit decimal.Decimal) decimal.Decimal {
+	if amount.IsZero() {
+		return decimal.Zero
+	}
+	return profit.Mul(decimal.NewFromInt(100)).DivRound(amount, 2)
 }

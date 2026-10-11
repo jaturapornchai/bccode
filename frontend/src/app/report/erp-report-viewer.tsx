@@ -272,7 +272,8 @@ export function ErpReportViewer({
     }
 
     if (sortKey) {
-      const sortsAmountText = config.columns.some((col) => col.key === sortKey && col.isCurrency);
+      // Backend decimal text (money, % GP) sorts by exact value, not alphabetically ("100.00" > "30.00").
+      const sortsAmountText = config.columns.some((col) => col.key === sortKey && (col.isCurrency || col.isNumeric));
       result.sort((a, b) => {
         const valA = a[sortKey];
         const valB = b[sortKey];
@@ -300,7 +301,7 @@ export function ErpReportViewer({
     const totals: Record<string, string | number> = {};
     const filtered = searchTerm.trim() !== "";
     for (const col of config.columns) {
-      if (!col.isNumeric && !col.isCurrency) continue;
+      if ((!col.isNumeric && !col.isCurrency) || col.isPercent) continue;
       const backendTotal = filtered ? undefined : reportTotals?.[col.key];
       if (typeof backendTotal === "string" || typeof backendTotal === "number") {
         totals[col.key] = backendTotal;

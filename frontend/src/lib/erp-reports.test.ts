@@ -115,12 +115,10 @@ describe("fetchErpReportData", () => {
             docno: "INV-001",
             debtorcode: "C-001",
             debtorname: "Test Customer",
-            totalqty: 3,
-            totalamount: 53500,
-            price: 100,
-            averagecost: 80,
-            calcamount: 32000,
-            grossprofit: 21500,
+            totalamount: "53500.00",
+            calcamount: "32000.00",
+            grossprofit: "21500.00",
+            marginpercent: "40.19",
           },
         ],
         count: 1,
@@ -142,14 +140,14 @@ describe("fetchErpReportData", () => {
     expect(row.docdate).toBe("2026-09-02");
     expect(row.custcode).toBe("C-001");
     expect(row.custname).toBe("Test Customer");
-    expect(row.totalamount).toBe(53500);
+    expect(row.totalamount).toBe("53500.00");
     expect("vatamount" in row).toBe(false);
     expect("subtotal" in row).toBe(false);
     expect("marginpercent" in row).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("computes marginpercent for gross_profit_document from backend numbers", async () => {
+  it("keeps gross_profit_document amounts and % GP as backend decimal text", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       status: 200,
@@ -159,9 +157,25 @@ describe("fetchErpReportData", () => {
           {
             docno: "INV-002",
             debtorname: "GP Customer",
-            totalamount: 1000,
-            calcamount: 700,
-            grossprofit: 300,
+            totalamount: "0.30",
+            calcamount: "0.10",
+            grossprofit: "0.20",
+            marginpercent: "66.67",
+          },
+          {
+            docno: "INV-003",
+            debtorname: "GP Customer",
+            totalamount: "1000.00",
+            calcamount: "700.00",
+            grossprofit: "300.00",
+          },
+          {
+            docno: "INV-004",
+            debtorname: "GP Customer",
+            totalamount: "1.00",
+            calcamount: "0.125",
+            grossprofit: "0.875",
+            marginpercent: "87.50",
           },
         ],
       }),
@@ -179,10 +193,20 @@ describe("fetchErpReportData", () => {
     const row = result.rows[0];
     expect(row.docno).toBe("INV-002");
     expect(row.custname).toBe("GP Customer");
-    expect(row.salesrevenue).toBe(1000);
-    expect(row.costofgoods).toBe(700);
-    expect(row.grossprofit).toBe(300);
-    expect(row.marginpercent).toBe(30);
+    expect(row.salesrevenue).toBe("0.30");
+    expect(row.costofgoods).toBe("0.10");
+    expect(row.grossprofit).toBe("0.20");
+    expect(row.marginpercent).toBe("66.67");
+    // % GP comes only from the backend (Rule 20) — never recomputed with JS numbers.
+    expect("marginpercent" in result.rows[1]).toBe(false);
+    // Stored precision (cost = qty x unit cost) is kept so revenue - cost = gross profit on every row.
+    expect(result.rows[2]).toMatchObject({ salesrevenue: "1.00", costofgoods: "0.125", grossprofit: "0.875", marginpercent: "87.50" });
+  });
+
+  it("marks % GP columns as per-row ratios so the footer never adds them up", () => {
+    const marginColumns = ERP_REPORT_CONFIGS.flatMap((config) => config.columns).filter((col) => col.key === "marginpercent");
+    expect(marginColumns.length).toBeGreaterThan(0);
+    for (const col of marginColumns) expect(col.isPercent).toBe(true);
   });
 
   it("maps stock_balance_item from inventory-valuation payload", async () => {

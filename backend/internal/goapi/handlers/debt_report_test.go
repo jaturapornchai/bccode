@@ -1,12 +1,94 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"smlcloudplatform/internal/goapi/language"
+	msmodels "smlcloudplatform/pkg/microservice/models"
+
+	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
 )
+
+var debtLedgerReportCodes = []string{"ap_movement", "ap_status", "ap_outstanding", "ap_daily_payment", "ar_movement", "ar_status", "ar_outstanding", "ar_credit_limit"}
+
+// TestBuildDebtReportQueryScopesToOneCompany - เดิม WHERE (d.company = $1 OR d.company = '01' OR $1 = ”)
+// ทำให้ผู้ใช้บริษัท 02 เห็นเอกสารของบริษัท 01 และรหัสว่างถูกแทนเป็น 01 — ต้องกรองบริษัทเดียว และรหัสว่าง = ข้อผิดพลาด
+func TestBuildDebtReportQueryScopesToOneCompany(t *testing.T) {
+	fromDate := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	toDate := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	for _, code := range debtLedgerReportCodes {
+		t.Run(code, func(t *testing.T) {
+			q, args, err := BuildDebtReportQuery(code, "02", fromDate, toDate, "", 20, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(q, "WHERE d.company = $1 AND d.ledger") || strings.Contains(q, "'01'") || strings.Contains(q, "$1 = ''") {
+				t.Fatalf("company filter is not strict:\n%s", q)
+			}
+			if len(args) == 0 || args[0] != "02" {
+				t.Fatalf("first arg = %v, want company 02", args)
+			}
+			for _, empty := range []string{"", "   "} {
+				if _, _, err := BuildDebtReportQuery(code, empty, fromDate, toDate, "", 20, 0); !errors.Is(err, errReportCompanyRequired) {
+					t.Fatalf("company %q: err = %v, want errReportCompanyRequired", empty, err)
+				}
+			}
+		})
+	}
+}
+
+// TestReportCompanyRequiredFailIsCodedBadRequest - รหัสบริษัทว่างที่หลุดถึงตัวสร้าง query ตอบ 400 พร้อมรหัสและข้อความตามภาษา
+func TestReportCompanyRequiredFailIsCodedBadRequest(t *testing.T) {
+	e := echo.New()
+	rec := httptest.NewRecorder()
+	ctx := e.NewContext(httptest.NewRequest(http.MethodPost, "/?lang=en", nil), rec)
+	if err := reportCompanyRequiredFail(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	want := language.Text("company_required", "en")
+	if rec.Code != http.StatusBadRequest || body["code"] != "COMPANY_REQUIRED" || body["message"] != want || want == "company_required" {
+		t.Fatalf("status=%d body=%v want message %q", rec.Code, body, want)
+	}
+}
+
+// TestCompanyReportsRejectMissingCompany - ผู้ใช้ที่ยังไม่เลือกบริษัทต้องไม่ได้ข้อมูลบริษัทใด และข้อความแปลตามภาษาผู้ใช้
+func TestCompanyReportsRejectMissingCompany(t *testing.T) {
+	user := &msmodels.UserInfo{HoldingCode: "H1"}
+	const dates = `"holdingcode":"H1","fromdate":"2026-09-01","todate":"2026-09-30"`
+	cases := map[string]struct {
+		handler echo.HandlerFunc
+		body    string
+	}{
+		"debt":              {DebtReportHandler, `{"holdingcode":"H1","reportcode":"ar_status"}`},
+		"customer labels":   {CustomerLabelsHandler, `{"holdingcode":"H1"}`},
+		"sales by document": {SalesReportByDocumentHandler, `{` + dates + `}`},
+		"sales summary":     {SalesReportSummaryHandler, `{` + dates + `}`},
+	}
+	want := language.Text("company_required", "en")
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rec := callTaxHandlerLang(t, tc.handler, "/", "en", tc.body, user)
+			var body map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if rec.Code != http.StatusConflict || body["code"] != "COMPANY_REQUIRED" || body["message"] != want {
+				t.Fatalf("status=%d body=%v want message %q", rec.Code, body, want)
+			}
+		})
+	}
+}
 
 func TestBuildDebtReportQuery(t *testing.T) {
 	fromDate := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -225,7 +307,7 @@ func TestAgingTotalsSplitsDebtAndReductionsExactly(t *testing.T) {
 	if row["doccount"] != int64(6) {
 		t.Errorf("doccount = %v, want 6", row["doccount"])
 	}
-	if got := agingMoneyText(decimal.RequireFromString("1.23456")); got != "1.23456" {
+	if got := reportMoneyText(decimal.RequireFromString("1.23456")); got != "1.23456" {
 		t.Errorf("precision lost: %s", got)
 	}
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"testing"
 
@@ -50,5 +51,33 @@ func TestQueryCustomerLabels(t *testing.T) {
 	}
 	if items[0].TotalSales != "50000.00" {
 		t.Errorf("expected total sales 50000.00, got %s", items[0].TotalSales)
+	}
+}
+
+// TestQueryCustomerLabelsScopesToOneCompany - เดิม (p.company = $1 OR p.company = '01' OR $1 = ”)
+// ทำให้ลูกค้าของบริษัท 01 ปนในป้ายของบริษัทอื่น และรหัสว่างดึงลูกค้าทุกบริษัท
+func TestQueryCustomerLabelsScopesToOneCompany(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`FROM gl_subledger_partners p\s+WHERE p\.company = \$1 AND COALESCE`).
+		WithArgs("02", 500, 0).
+		WillReturnRows(sqlmock.NewRows([]string{"code"}))
+
+	req := CustomerLabelsRequest{HoldingCode: "test", Limit: 500}
+	if _, err := queryCustomerLabels(context.Background(), db, "02", req); err != nil {
+		t.Fatalf("queryCustomerLabels returned error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, empty := range []string{"", "  "} {
+		if _, err := queryCustomerLabels(context.Background(), db, empty, req); !errors.Is(err, errReportCompanyRequired) {
+			t.Fatalf("company %q: err = %v, want errReportCompanyRequired", empty, err)
+		}
 	}
 }

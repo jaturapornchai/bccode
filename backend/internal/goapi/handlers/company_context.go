@@ -36,6 +36,16 @@ func reportCompanyScope(c echo.Context, requestedHolding string) (string, *compa
 	return businessCode, nil
 }
 
+// ResolveReportCompany - reportCompanyScope สำหรับแพ็กเกจรายงานนอก handlers (goapi/inventory):
+// คืนบริษัทจาก session ที่ล็อกอิน (ไม่เชื่อค่าจาก query); ไม่ผ่าน → เขียนข้อผิดพลาดตามภาษาผู้ใช้แล้ว (ok=false) ให้ handler คืน resp ต่อ
+func ResolveReportCompany(c echo.Context, requestedHolding string) (company string, ok bool, resp error) {
+	company, scopeErr := reportCompanyScope(c, requestedHolding)
+	if scopeErr != nil {
+		return "", false, taxScopeFail(c, scopeErr)
+	}
+	return company, true, nil
+}
+
 func authenticatedCompanyContext(c echo.Context, requestedHolding, requestedBusiness string) (string, string, *companyContextError) {
 	userInfo, ok := c.Get("UserInfo").(msmodels.UserInfo)
 	holdingCode := strings.TrimSpace(userInfo.HoldingCode)
