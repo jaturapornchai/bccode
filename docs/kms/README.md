@@ -151,6 +151,7 @@
 - [decisions/2026-09-28-copy-dom-button-dev-only.md](decisions/2026-09-28-copy-dom-button-dev-only.md) — ปุ่มลอย `Copy DOM` + โหมดคลิกเปิด/ปิด แสดงเฉพาะ `next dev` (บังปุ่มบันทึกมุมล่างซ้ายบนจอเตี้ย + กดโดนแล้วทุกคลิกกลายเป็น Copy DOM); Alt+คลิกคัดลอก DOM ยังทำงานบน production โดยตัดสินจาก `e.altKey` + รีเซ็ต Alt ตอน blur/ซ่อนแท็บ; `NODE_ENV` มีได้จุดเดียวในไฟล์ (ทับบางส่วนของ ADR 2026-09-12)
 - [decisions/2026-10-07-condense-agents-md.md](decisions/2026-10-07-condense-agents-md.md) — ย่อ AGENTS.md เหลือกฎสั้น ~15k ตัวอักษร ลด token ทุกการเรียก; ฉบับเต็มที่ [rules/agents-full.md](rules/agents-full.md)
 - [decisions/2026-10-11-stock-cost-average-only.md](decisions/2026-10-11-stock-cost-average-only.md) — ต้นทุนสินค้าใช้ถัวเฉลี่ยวิธีเดียว ถอด FIFO/LIFO/FEFO/lot/standard ออกทั้งระบบ (ตัวคิดต้นทุนอ้างอิง `stockprocess_class.cs:2986-2998`)
+- [decisions/2026-10-11-gl-6-dimensions-parity.md](decisions/2026-10-11-gl-6-dimensions-parity.md) — มิติวิเคราะห์ GL ครบ 6 มิติ (แผนก, โครงการ, จัดสรร, งาน, หน่วยงาน, ฝ่าย) ตาม Champ Parity: รวมจอกำหนดรหัสต่างๆ ในจอเดียวแบบ Tab/Action, ผังบัญชีกำหนดรหัสที่อนุญาตตามกฎข้อ 5, รายงานและงบประมาณรองรับครบ 6 มิติ (Release `r20261011-3`)
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 42 ไฟล์ใน `bugs/`
 

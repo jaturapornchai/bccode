@@ -14,8 +14,8 @@ Full version (reasons, examples, history): `docs/kms/rules/agents-full.md` — o
 - Machine rules=`~/.agents/AGENTS.md` (copies: `node ~/.agents/sync-rules.mjs`); no project rules in global
 - Read SKILL.md from disk, no cache: UI→`ui-scale-polish`; accounting/tax→`thai-accounting-tax`+`docs/kms/21-thai-tax-form-references.md` (official refs only, no guessing); skill edits commit with the work; lessons→`docs/kms/` one topic/file, cite `file:line`, list in `docs/kms/README.md`
 
-## mydocs/ read-only
-- `mydocs/`=ลุงจืด specs (`mydocs/specs/rules.md` …): re-read when changed; no AI may create/edit/delete files/folders inside; suggestions→chat/docs outside; GL: md `mydocs/specs/gl/`, SQL `mydocs/datamodels/gl/`
+## mydocs/
+- `mydocs/`=ลุงจืด specs & datamodels (`mydocs/specs/rules.md` …): AI can read, create, edit, and update files/folders inside `mydocs/` to keep specs and datamodels (GL: md `mydocs/specs/gl/`, SQL `mydocs/datamodels/gl/`) in sync with real code and owner orders
 
 ## Auto deploy
 - Done+verify pass (test/tsc/build 100%)→deploy prod (https://account.bcaicloud.com/) unasked
@@ -26,7 +26,7 @@ Full version (reasons, examples, history): `docs/kms/rules/agents-full.md` — o
 ADR `2026-10-09-champ-parity-purpose-additive-extras.md`, `2026-10-11-champ-processing-workflow-template.md`, `2026-09-19-champ-parity-menu-cut.md`
 - Behave like Champ: menus/screens/functions/fields+order/buttons/shortcuts/wording/steps/workflow/logic/calc results equivalent to Champ (`champ/champ/menuconfigxml/menuconfig.xml`, `BC5Account.rc`, C++/MFC, DDL, reports); no cuts unless ordered in writing (e.g. payroll); read Champ code before designing screen/menu/field/API
 - Processing/workflow always=Champ: before designing/changing any processing (record/check/approve, post/GL, settle, stock, cancel/reverse, period lock/close, year-end, cost, reports) trace real Champ code (`champ-lib/BC5PROCESS` e.g. `gltlsprocess.cpp`/`glautoprocess.cpp`, the screen `.cpp`, `champ/champ/Script/SQLSERVER_Script.sql`) for step order, status/flags, checks+warnings, affected tables/balances, reversal, then follow it; cite Champ `file:line` in design/ADR/commit body; differ only for equal-result technique (e.g. synchronous `BEGIN…COMMIT` vs batch), law, or owner order, and report it; not found/unreadable→ask ลุงจืด, never invent workflow
-- Champ lacks it+no order+not required by Thai accounting/tax law→never add a menu/screen/main function yourself; Champ duplicate screens→one screen with Tab/Action; menus follow `menuconfig.xml`; `goods-inspection`, `low-stock-alert`, `sale-reservation-flow` are Champ, keep
+- Champ lacks it+no order+not required by Thai accounting/tax law→never add a menu/screen/main function yourself; Champ duplicate screens→one screen with Tab/Action; menus follow `menuconfig.xml`; `goods-inspection`, `low-stock-alert`, `sale-reservation-flow` are Champ, keep; อะไรที่ไม่ได้ใช้/ของเก่าตกค้างลบออกได้เลย (คำสั่งลุงจืด 2026-10-11: ลอก bc champ หรือลบออกได้ถ้าไม่ได้ใช้); `mydocs/`, `docs/kms/`, `.agents/skills/` ปรับแก้เดินหน้าไปเรื่อยๆ อะไรขัดแย้งให้ใช้ของใหม่
 - Small extras OK unasked if additive (Champ steps/results unchanged), optional, no new top-level menu, clearly useful (e.g. search/filter, Smart Paste, Export); report at end (removable); unsure=big; big (new menu/screen/module, workflow change, new mandatory field, formula change, new capability e.g. LINE OA/e-Tax/AI assistant)→propose pros/cons, approval first
 
 ## Backend-first+REST+MCP
@@ -123,10 +123,10 @@ ADR `2026-10-09-champ-parity-purpose-additive-extras.md`, `2026-10-11-champ-proc
 ## Opus lead+5.5 children
 - Orchestration Rule in `~/.agents/AGENTS.md` (5.5 family; fable only when ordered): `opus`=accounting/tax/money (Rule 20)/security/auth/permissions/verify; `sonnet`=explore/UI/unit+test; `haiku`=mechanical + short Thai drafts (UI microcopy, `languages.tsv` th/en rows, menu descriptions; Lead checks before commit), never tax/law/accounting explanations, accounting KMS or completeness audits (Champ parity, secret scan, flag removal)
 - Develop first, verify once: mid-work only `go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>`, no per-step agent reviews; end of batch: `npm run verify:all`+one combined `git diff` review (money/tax/permissions→opus, else sonnet)+one Demo UAT (psql per operation still)+one screenshot round→collect every failure from that run→group by root cause→plan→fix all in one pass (regression test that fails first per fix, one commit per root cause, disjoint files→parallel children)→one full rerun; blockers (build/login/preflight) first→commit→deploy; not done before that passes
-- Children=draft: Opus re-runs verify/tests/PostgreSQL queries; children never commit/push/deploy/touch `mydocs/`; no other-vendor AI unless ordered
+- Children=draft: Opus re-runs verify/tests/PostgreSQL queries; children never commit/push/deploy; no other-vendor AI unless ordered
 
 ## Dev: forward only
 - PostgreSQL in every env (local/.202/production) disposable: no migration/backfill/dual-read-write/compat shim; change schema/API contract directly; code creates structure (`CREATE ... IF NOT EXISTS`)→rebuild+deploy; no manual DDL on running DB
-- New ready→delete old in same change; no feature flag/old table-route-wrapper kept "เผื่อไว้"
+- New ready→delete old in same change; no feature flag/old table-route-wrapper kept "เผื่อไว้"; อะไรไม่ได้ใช้ลบออกได้เลย; `mydocs/`, `docs/kms/`, `.agents/skills/` ปรับแก้เดินหน้าไปเรื่อยๆ อะไรขัดแย้งใช้ของใหม่
 - Change DB/fields/screens/code unasked; excludes git push/force-push/other R0; data wiped→report what+how much (keep `tools/fast-deploy.py` pre-deploy backup)
 - Go-live (ลุงจืด declares it or prod tenant has real customer data)→stops for real data: real migration (backup, counts before/after, rollback path), stop+ask each time; unsure→ask ลุงจืด, never guess
