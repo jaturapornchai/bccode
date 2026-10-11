@@ -34,6 +34,12 @@ func expectDateOpen(mock sqlmock.Sqlmock, day string, locked bool) {
 		WithArgs(testCompany, day).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(locked))
 }
 
+// expectNotReserved คาดการตรวจว่าเอกสารหนี้ไม่ได้ถูกใบเตรียมจ่ายจองไว้ (checkNotReserved) — ไม่มีแถว = ไม่ถูกจอง
+func expectNotReserved(mock sqlmock.Sqlmock, debtID string) {
+	mock.ExpectQuery(`FROM ap_payment_prepare_lines l`).
+		WithArgs(testCompany, debtID).WillReturnRows(sqlmock.NewRows([]string{"docno"}))
+}
+
 func requirePeriodLocked(t *testing.T, err error, day string) {
 	t.Helper()
 	user, ok := gl.AsUserError(err)
@@ -62,7 +68,7 @@ func expectGetDoc(mock sqlmock.Sqlmock, flag int, docNo string, cancelled bool, 
 	docColumns := []string{"id", "docno", "docdatetime", "transflag", "custcode", "totalamount", "totalvalue_doc",
 		"totaldiscount_doc", "totalvatvalue_doc", "totalbeforevat_doc", "totalaftervat_doc", "iscancel", "isclosed",
 		"branchid", "custname", "description", "remark", "created_at", "modified_at",
-		"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
+		"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason", "creditday", "perioddatetime"}
 	var cancelledBy string
 	var cancelledAt any
 	if cancelled {
@@ -72,13 +78,13 @@ func expectGetDoc(mock sqlmock.Sqlmock, flag int, docNo string, cancelled bool, 
 		WithArgs(testCompany, flag, docNo).
 		WillReturnRows(sqlmock.NewRows(docColumns).AddRow(1, docNo, "2026-10-08T00:00:00Z", flag, "V101",
 			1070.0, 1000.0, 0.0, 70.0, 1000.0, 1070.0, cancelled, false, testBranch, "ห้างหุ้นส่วนจำกัด ศรีสยามวัสดุ", "ขอซื้อวัสดุสำนักงาน", "", stamp, stamp,
-			approval, "", nil, cancelledBy, cancelledAt, reason))
+			approval, "", nil, cancelledBy, cancelledAt, reason, 0, nil))
 	mock.ExpectQuery(`SELECT docnoref, docnoreftransflag FROM docref`).
 		WithArgs(testCompany, docNo).WillReturnRows(sqlmock.NewRows([]string{"docnoref", "docnoreftransflag"}))
 	mock.ExpectQuery(`FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
 		WithArgs(testCompany, flag, docNo).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "linenumber", "itemcode", "barcode", "unitcode", "totalqty",
-			"price", "sumamount", "description", "whcode", "locationcode", "docref"}))
+			"price", "sumamount", "description", "whcode", "locationcode", "docref", "debt_document_id", "paybillno", "reftype"}))
 }
 
 // เทียบเวลาด้วย Equal (ขอบวันตามเวลาไทยไม่ขึ้นกับ *time.Location ที่ใช้สร้าง)

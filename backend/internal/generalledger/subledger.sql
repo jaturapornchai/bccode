@@ -66,3 +66,66 @@ DROP TRIGGER IF EXISTS gl_subledger_audit_append_only ON gl_subledger_audit;
 CREATE TRIGGER gl_subledger_audit_append_only BEFORE UPDATE OR DELETE OR TRUNCATE ON gl_subledger_audit FOR EACH STATEMENT EXECUTE FUNCTION gl_reject_audit_mutation();
 
 ALTER TABLE gl_subledger_allocations ADD COLUMN IF NOT EXISTS reversed_effective_date date;
+
+-- AP payment preparation (Champ BCPaymentTemp/BCPaymentTempSub2): reserves AP subledger debts for a later payment voucher; never posts.
+-- Used/reserved amounts are computed live from settlements (APOpenItems/APReservations); lines keep a snapshot of the debt.
+-- No FK to gl_subledger_documents: ERP edit/delete removes debt rows for real, so reservations are guarded by
+-- cleanSubledger (ERP) and subledgerMutation.checkReservations (GL) with gl_err_ap_prepare_reserved instead.
+-- Lives in the GL schema because the GL reservation guard reads it on every subledger mutation.
+CREATE TABLE IF NOT EXISTS ap_payment_prepare (
+ company text NOT NULL,
+ docno text NOT NULL CHECK (length(btrim(docno)) > 0),
+ paydate date NOT NULL,
+ partner_code text NOT NULL,
+ branch_code text NOT NULL DEFAULT '',
+ remark text NOT NULL DEFAULT '',
+ projectcode text NOT NULL DEFAULT '',
+ allocatecode text NOT NULL DEFAULT '',
+ billgroupcode text NOT NULL DEFAULT '',
+ departmentcode text NOT NULL DEFAULT '',
+ total_amount numeric(18,2) NOT NULL DEFAULT 0,
+ total_home_amount numeric(18,2) NOT NULL DEFAULT 0,
+ discount_amount numeric(18,2) NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
+ net_amount numeric(18,2) NOT NULL DEFAULT 0,
+ exchange_profit numeric(18,2) NOT NULL DEFAULT 0,
+ iscancel boolean NOT NULL DEFAULT false,
+ cancel_reason text NOT NULL DEFAULT '',
+ cancelled_at timestamptz,
+ cancelled_by text NOT NULL DEFAULT '',
+ version bigint NOT NULL DEFAULT 1 CHECK (version > 0),
+ created_at timestamptz NOT NULL,
+ created_by text NOT NULL,
+ modified_at timestamptz NOT NULL,
+ modified_by text NOT NULL,
+ PRIMARY KEY (company, docno),
+ CHECK (NOT iscancel OR length(btrim(cancel_reason)) > 0)
+);
+CREATE INDEX IF NOT EXISTS ap_payment_prepare_partner ON ap_payment_prepare (company, partner_code, paydate);
+CREATE TABLE IF NOT EXISTS ap_payment_prepare_lines (
+ company text NOT NULL,
+ docno text NOT NULL,
+ linenumber int NOT NULL CHECK (linenumber > 0),
+ debt_document_id text NOT NULL,
+ document_no text NOT NULL,
+ document_date date NOT NULL,
+ debt_amount numeric(18,2) NOT NULL,
+ billtype smallint NOT NULL,
+ sign smallint NOT NULL DEFAULT 1 CHECK (sign IN (1, -1)),
+ description text NOT NULL DEFAULT '',
+ invbalance numeric(18,2) NOT NULL,
+ payamount numeric(18,2) NOT NULL CHECK (payamount > 0),
+ PRIMARY KEY (company, docno, linenumber),
+ UNIQUE (company, docno, debt_document_id),
+ FOREIGN KEY (company, docno) REFERENCES ap_payment_prepare (company, docno)
+);
+CREATE INDEX IF NOT EXISTS ap_payment_prepare_lines_debt ON ap_payment_prepare_lines (company, debt_document_id);
+CREATE TABLE IF NOT EXISTS ap_payment_prepare_events (
+ event_no bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ company text NOT NULL,
+ docno text NOT NULL,
+ action text NOT NULL CHECK (action IN ('create', 'update', 'cancel')),
+ actor text NOT NULL,
+ occurred_at timestamptz NOT NULL,
+ payload jsonb NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ap_payment_prepare_events_doc ON ap_payment_prepare_events (company, docno, event_no);

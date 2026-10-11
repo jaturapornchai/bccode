@@ -61,14 +61,18 @@ export function hasScreenAction(
   return permissions.includes("*") || permissions.includes(actionEntry(screen, action));
 }
 
-export type ScreenActions = Record<PermissionAction, boolean>;
+// cancel is not a separate checkbox: like the backend (transaction/httpapi/http.go authorize), "<screen>:cancel" or the
+// delete permission allows cancelling a document.
+export type ScreenActions = Record<PermissionAction, boolean> & { cancel: boolean };
 
-export const ALL_SCREEN_ACTIONS: ScreenActions = { create: true, update: true, delete: true };
+export const ALL_SCREEN_ACTIONS: ScreenActions = { create: true, update: true, delete: true, cancel: true };
 
 export function screenActionsFor(permissions: readonly string[], screen: string): ScreenActions {
+  const canDelete = hasScreenAction(permissions, screen, "delete");
   return {
     create: hasScreenAction(permissions, screen, "create"),
     update: hasScreenAction(permissions, screen, "update"),
-    delete: hasScreenAction(permissions, screen, "delete"),
+    delete: canDelete,
+    cancel: canDelete || permissions.includes(`${screen}:cancel`),
   };
 }

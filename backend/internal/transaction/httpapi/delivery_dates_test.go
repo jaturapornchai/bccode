@@ -73,8 +73,8 @@ func TestSaveDeliveryDates(t *testing.T) {
 	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM information_schema.tables WHERE table_name = 'gl_subledger_documents'\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	mock.ExpectExec(`UPDATE gl_subledger_documents SET payload = jsonb_set\(COALESCE\(payload::jsonb, '{}'::jsonb\), '{due_date}', to_jsonb\(\$1::text\)\) WHERE company = \$2 AND \(id = \$3 OR id = 'AR-' \|\| \$3 OR id = 'AP-' \|\| \$3\)`).
-		WithArgs("2026-11-15", scope.Company, "INV001").
+	mock.ExpectExec(`UPDATE gl_subledger_documents SET payload = jsonb_set\(COALESCE\(payload::jsonb, '{}'::jsonb\), '{due_date}', to_jsonb\(\$1::text\)\) WHERE company = \$2 AND id = \$3`).
+		WithArgs("2026-11-15", scope.Company, "AR-INV001").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`INSERT INTO erp_doc_events .*`).

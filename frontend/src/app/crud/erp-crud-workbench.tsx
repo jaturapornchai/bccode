@@ -14,6 +14,7 @@ import {
   Info,
   Clock,
 } from "lucide-react";
+import { ApPreparePullDialog } from "@/components/ap-payment-prepare-screen";
 import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,9 @@ import {
   type ErpTransactionDoc,
   type ErpDetailItem,
   erpDocLifecycle,
+  erpDecimalSign,
   erpDocTotals,
+  erpDueDate,
   erpLineAmount,
   erpMoneyDisplay,
   getErpModuleConfig,
@@ -40,8 +43,9 @@ import {
   saveErpTransaction,
   deleteErpTransaction,
 } from "@/lib/erp-transaction";
-import { ERP_AUTO_POSTING_MODULES } from "@/lib/erp-transaction-modules";
-import { formatAmount } from "@/lib/general-ledger";
+import { ERP_AUTO_POSTING_MODULES, ERP_DUE_DATE_MODULES } from "@/lib/erp-transaction-modules";
+import { payLinesFromPrepare, prepareRequest, type ApPrepareDoc, type ApPrepareListRow } from "@/lib/ap-payment-prepare";
+import { fillText, formatAmount } from "@/lib/general-ledger";
 import { useScreenActions } from "@/lib/use-screen-actions";
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
 
@@ -115,6 +119,7 @@ export function ErpCrudWorkbench({
   const [formDoc, setFormDoc] = useState<Partial<ErpTransactionDoc>>({});
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const [showPreparePull, setShowPreparePull] = useState(false);
 
   const docPrintType: ThaiDocPrintType = useMemo(() => {
     if (route.includes("purchase") || route.includes("rfq")) return "purchase_order";
@@ -419,6 +424,60 @@ export function ErpCrudWorkbench({
     await loadData();
   };
 
+  // ใบจ่ายชำระหนี้: Ctrl+F3 ดึงบรรทัดจากใบเตรียมจ่าย (design ap-payment-prepare §4.7) — ยอด = ยอดที่ยังดึงได้ของแต่ละหนี้
+  const canPullPrepare = config?.apiPath === "pay" && isEditing && !loading;
+  useEffect(() => {
+    if (!canPullPrepare) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F3" && (e.ctrlKey || e.metaKey) && !e.altKey) {
+        e.preventDefault();
+        setShowPreparePull(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canPullPrepare]);
+
+  const pullPrepare = async (row: ApPrepareListRow) => {
+    setShowPreparePull(false);
+    const result = await prepareRequest<ApPrepareDoc>(`/${encodeURIComponent(row.docno)}`, language);
+    if (!result.ok) {
+      showAlert("ap_prepare_load_failed", result.message || undefined);
+      return;
+    }
+    const prepare = result.data;
+    const custcode = formDoc.custcode?.trim() ?? "";
+    if (custcode && custcode !== prepare.partner_code) {
+      showAlert(
+        "gl_err_ap_pay_prepare_creditor_mismatch",
+        fillText(backendText(dictionary, "gl_err_ap_pay_prepare_creditor_mismatch", "ใบเตรียมจ่าย {0} เป็นของเจ้าหนี้รายอื่น"), prepare.docno),
+      );
+      return;
+    }
+    // แถวว่างที่จอสร้างให้ตอนเริ่มเอกสารไม่ต้องเก็บไว้
+    const kept = (formDoc.details ?? [])
+      .filter((item) => item.itemcode?.trim() || item.itemname?.trim() || erpDecimalSign(item.sumamount) !== 0)
+      .map((item, i) => ({ ...item, linenumber: i + 1 }));
+    const pulled = payLinesFromPrepare(prepare, kept);
+    if (pulled.length === 0) {
+      showAlert(
+        "ap_pay_pull_nothing_open",
+        fillText(backendText(dictionary, "ap_pay_pull_nothing_open", "ใบเตรียมจ่าย {0} ไม่มียอดคงเหลือให้ดึง"), prepare.docno),
+      );
+      return;
+    }
+    const nextDetails = [...kept, ...pulled];
+    setFormDoc({
+      ...formDoc,
+      custcode: prepare.partner_code,
+      custname: prepare.partner_name,
+      details: nextDetails,
+      ...erpDocTotals(nextDetails, formDoc.vattype, formDoc.vatrate),
+    });
+    setIsDirty(true);
+    showAlert(null);
+  };
+
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
   useFormShortcuts({
     onSave: handleSaveDoc,
@@ -475,6 +534,16 @@ export function ErpCrudWorkbench({
         doc={selectedDoc}
         docType={docPrintType}
       />
+
+      {showPreparePull && canPullPrepare ? (
+        <ApPreparePullDialog
+          language={language}
+          dictionary={dictionary}
+          partnerCode={formDoc.custcode ?? ""}
+          onPick={(row) => void pullPrepare(row)}
+          onClose={() => setShowPreparePull(false)}
+        />
+      ) : null}
 
       <ErpDocEventsDialog
         module={config.apiPath}
@@ -864,12 +933,56 @@ export function ErpCrudWorkbench({
                     type="date"
                     value={formDoc.docdatetime?.split("T")[0] || ""}
                     onChange={(e) => {
-                      setFormDoc({ ...formDoc, docdatetime: `${e.target.value}T09:00:00Z` });
+                      // วันครบกำหนดเลื่อนตามวันที่เอกสารเมื่อมีวันเครดิต (Champ คำนวณใหม่ทุกครั้งที่แก้วันที่)
+                      const duedate = formDoc.creditday === undefined ? formDoc.duedate : erpDueDate(e.target.value, formDoc.creditday);
+                      setFormDoc({ ...formDoc, docdatetime: `${e.target.value}T09:00:00Z`, duedate });
                       setIsDirty(true);
                     }}
                     className="h-9 text-sm"
                   />
                 </div>
+
+                {config && ERP_DUE_DATE_MODULES.includes(config.apiPath) ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1" htmlFor="erp-creditday">
+                        {backendText(dictionary, "credit_days", "เครดิต (วัน)")}
+                      </label>
+                      <Input
+                        id="erp-creditday"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={5}
+                        value={formDoc.creditday === undefined ? "" : String(formDoc.creditday)}
+                        onChange={(e) => {
+                          // ว่าง = ใช้วันเครดิตของเจ้าหนี้ในทะเบียน (backend) — รับเฉพาะตัวเลข
+                          const digits = e.target.value.replace(/\D/g, "");
+                          const creditday = digits === "" ? undefined : Number(digits);
+                          const docDate = formDoc.docdatetime?.split("T")[0] || "";
+                          setFormDoc({ ...formDoc, creditday, duedate: creditday === undefined ? "" : erpDueDate(docDate, creditday) });
+                          setIsDirty(true);
+                        }}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1" htmlFor="erp-duedate">
+                        {backendText(dictionary, "gl_detail_documents_due_date", "วันครบกำหนด")}
+                      </label>
+                      <Input
+                        id="erp-duedate"
+                        type="date"
+                        value={formDoc.duedate || ""}
+                        min={formDoc.docdatetime?.split("T")[0] || undefined}
+                        onChange={(e) => {
+                          setFormDoc({ ...formDoc, duedate: e.target.value });
+                          setIsDirty(true);
+                        }}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </>
+                ) : null}
 
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">
@@ -909,6 +1022,19 @@ export function ErpCrudWorkbench({
                     <span className="font-semibold text-sm text-foreground">
                       {backendText(dictionary, "line_items_title", "รายการสินค้า / บริการ")}
                     </span>
+                    {canPullPrepare ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPreparePull(true)}
+                        className="ml-auto mr-2 h-8 text-xs"
+                        title={backendText(dictionary, "ap_pay_pull_prepare_hint", "Ctrl+F3=ใบเตรียมจ่าย")}
+                      >
+                        <FileText className="mr-1 size-3.5" aria-hidden />
+                        {backendText(dictionary, "ap_pay_pull_prepare_hint", "Ctrl+F3=ใบเตรียมจ่าย")}
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       variant="outline"

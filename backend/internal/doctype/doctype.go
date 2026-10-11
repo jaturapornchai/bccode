@@ -50,6 +50,9 @@ const (
 	SaleInvoiceReturn = 48
 	StockTransfer     = 62
 	GoodsReceive      = 401
+	ApDebitNote       = 404
+	ApCreditNote      = 405
+	ApOtherDebt       = 406
 )
 
 var registry = []DocType{
@@ -97,9 +100,9 @@ var registry = []DocType{
 	{"goodsreceive", GoodsReceive, "GR", StockIn, "purchase-partial"},          // บันทึกรับสินค้าจากการซื้อ
 	{"invoicereceive", 402, "IR", StockNone, "accrual-receive"},                // บันทึกตั้งหนี้จากการซื้อ
 	{"landedcost", 403, "LC", StockNone, "purchase-landed-cost"},               // บันทึกต้นทุนแฝง
-	{"apdebitnote", 404, "APDN", StockNone, "purchase-credit-note"},            // บันทึกเพิ่มหนี้/เพิ่มสินค้า(เจ้าหนี้)
-	{"apcreditnote", 405, "APCN", StockNone, "purchase-debit-note"},            // บันทึกส่งคืนสินค้า/ลดหนี้
-	{"apotherdebt", 406, "APOD", StockNone, "ap-other-debt"},                   // บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ
+	{"apdebitnote", ApDebitNote, "APDN", StockNone, "purchase-credit-note"},    // บันทึกเพิ่มหนี้/เพิ่มสินค้า(เจ้าหนี้)
+	{"apcreditnote", ApCreditNote, "APCN", StockNone, "purchase-debit-note"},   // บันทึกส่งคืนสินค้า/ลดหนี้
+	{"apotherdebt", ApOtherDebt, "APOD", StockNone, "ap-other-debt"},           // บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ
 	{"apbaddebt", 407, "APBD", StockNone, "ap-bad-debt"},                       // บันทึกตัดหนี้สูญ(เจ้าหนี้)
 	{"receiveadvance", 408, "RADV", StockNone, "receive-advance"},              // บันทึกใบรับเงินล่วงหน้า
 	{"temporaryreceipt", 409, "TRC", StockNone, "temporary-receipt"},           // บันทึกใบเสร็จชั่วคราว
@@ -231,8 +234,11 @@ func StockFlags() []int {
 
 // postingFlags คือประเภทเอกสารที่ลงบัญชีตอนบันทึก (ประเภทอื่นบันทึกเอกสารอย่างเดียว)
 // บัญชีและสมุดรายวันของแต่ละประเภทมาจากรูปแบบลงบัญชี (GL mappings) ที่ผู้ใช้ตั้งไว้ ไม่ได้ฝังในโค้ด
+// เพิ่มหนี้/ลดหนี้/ตั้งเจ้าหนี้อื่นๆ ลงบัญชีตาม Champ (GL source 4 BCDebitNote2, 3 BCStkRefund, 31 BCApOtherDebt) จึงเกิดหนี้ในบัญชีย่อยให้เตรียมจ่ายได้;
+// เจ้าหนี้ยกมา (BCApInvBalance) Champ ไม่ลงบัญชี — ยอดยกมาอยู่ในยอดยกมาของบัญชีแยกประเภท (เอกสารยกมาของจอบัญชี) แล้ว
 var postingFlags = map[int]bool{
 	Purchase: true, PurchaseReturn: true, Expense: true, Paid: true, Pay: true, SaleInvoice: true, SaleInvoiceReturn: true,
+	ApDebitNote: true, ApCreditNote: true, ApOtherDebt: true,
 }
 
 // PostsToGL บอกว่าเอกสารประเภทนี้ลงบัญชีตอนบันทึกหรือไม่

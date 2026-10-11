@@ -46,6 +46,14 @@ func normalizePartner(p *SubledgerPartner) {
 	p.TaxBranch = normalizeTaxBranch(p.TaxBranch)
 }
 
+// CreditDaysMax - จำนวนวันเครดิตสูงสุด เท่าชนิด SMALLINT ของ Champ (BCAP.CreditDay, Script/SQLSERVER_Script.sql:139)
+const CreditDaysMax = 32767
+
+// CreditDaysInvalidError - วันเครดิตต้องเป็นจำนวนเต็ม 0..CreditDaysMax (ทะเบียนเจ้าหนี้และหัวเอกสารหนี้ ERP ใช้ข้อความเดียวกัน)
+func CreditDaysInvalidError(field string) *UserError {
+	return fieldError("erp_credit_days_invalid", field, "จำนวนวันเครดิตต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป")
+}
+
 // PartnerCodeMaxRunes - gl_partners.partner_code VARCHAR(20) (mydocs/datamodels/gl/partners.sql, ar.sql, ap.sql)
 const PartnerCodeMaxRunes = 20
 
@@ -80,6 +88,8 @@ func validatePartner(p *SubledgerPartner) error {
 		return fieldError("partner_addr_district_too_long", "addr_district", "อำเภอ/เขตของคู่ค้าต้องไม่เกิน 50 ตัวอักษร — ใส่เฉพาะชื่ออำเภอหรือเขต เช่น เขตบางนา (เว้นว่างได้)")
 	case utf8.RuneCountInString(p.AddrProvince) > 50:
 		return fieldError("partner_addr_province_too_long", "addr_province", "จังหวัดของคู่ค้าต้องไม่เกิน 50 ตัวอักษร — ใส่เฉพาะชื่อจังหวัด เช่น กรุงเทพมหานคร (เว้นว่างได้)")
+	case p.CreditDays < 0 || p.CreditDays > CreditDaysMax:
+		return CreditDaysInvalidError("credit_days")
 	case p.AddrPostcode != "" && !subledgerPostcode.MatchString(p.AddrPostcode):
 		return fieldError("partner_addr_postcode_invalid", "addr_postcode", "รหัสไปรษณีย์ของคู่ค้าต้องเป็นตัวเลข 5 หลัก เช่น 10110 (เว้นว่างได้ถ้าไม่ระบุ)")
 	}

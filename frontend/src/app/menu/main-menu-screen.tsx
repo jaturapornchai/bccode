@@ -133,6 +133,7 @@ import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
 import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
+import { ApPaymentPrepareScreen } from "@/components/ap-payment-prepare-screen";
 import { ScreenFontSettings } from "@/components/screen-font-settings";
 import { BankCodeScreen } from "@/components/bank-code-screen";
 import { BankContactScreen } from "@/components/bank-contact-screen";
@@ -2317,6 +2318,10 @@ function WorkTabPanel({
 
   if (activeTab.route === "/ar/billing-note-auto-print") {
     return <BillingNoteAutoPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
+  }
+
+  if (activeTab.route === "/ap/payment-prepare") {
+    return <ApPaymentPrepareScreen language={language} auth={auth} workspace={workspace} />;
   }
 
   if (activeTab.route === "/settings/font") {

@@ -1,6 +1,6 @@
 import { amountUnits } from "./general-ledger";
 /** คู่ค้า — title_name/addr_district/addr_province/addr_postcode ไม่บังคับ (ไฟล์ยื่นด้วยสื่อ Format กลาง: คำนำหน้าทุกแบบ, ที่อยู่แยกช่องใน ภ.ง.ด.3) */
-export type GLDetailPartner = {partner_code:string;name_th:string;title_name?:string;tax_id?:string;tax_branch_no?:string;address?:string;addr_district?:string;addr_province?:string;addr_postcode?:string;is_customer:boolean;is_supplier:boolean;is_active:boolean;version?:number};
+export type GLDetailPartner = {partner_code:string;name_th:string;title_name?:string;tax_id?:string;tax_branch_no?:string;address?:string;addr_district?:string;addr_province?:string;addr_postcode?:string;is_customer:boolean;is_supplier:boolean;is_active:boolean;credit_days?:number;version?:number};
 /** ความยาวสูงสุด (ตัวอักษร) ของช่องคู่ค้าที่ไม่บังคับ — ตรงกับที่ backend ตรวจ (C:/tmp/rdfile/spec.md §3a) */
 export const PARTNER_TEXT_LIMITS = {title_name: 100, addr_district: 50, addr_province: 50} as const;
 export type GLDetailBankAccount = {bank_account_code:string;bank_name:string;account_number:string;account_name:string;gl_account_code:string;currency_code:string;is_active:boolean;version?:number};

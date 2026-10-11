@@ -392,7 +392,9 @@ func TestIntegrationSettledPurchaseCannotBeEditedOrDeleted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("purchase: %v", err)
 	}
-	payment := &ErpTransactionDoc{DocDateTime: erpDocDay.Format(time.RFC3339), CustCode: "S101", DocRef: bought.DocNo, TotalAmount: amt("1070")}
+	// ใบจ่ายชำระหนี้ตัดหนี้รายบรรทัด (debt_document_id) — docref ที่หัวเหลือไว้เป็นการอ้างอิงเอกสาร
+	payment := &ErpTransactionDoc{DocDateTime: erpDocDay.Format(time.RFC3339), CustCode: "S101", DocRef: bought.DocNo, TotalAmount: amt("1070"),
+		Details: []ErpDetailItem{{LineNumber: 1, DebtDocumentID: "AP-" + bought.DocNo, DocRef: bought.DocNo, SumAmount: amt("1070")}}}
 	paid, err := store.SaveDoc(ctx, db, scope, pay, payment, false)
 	if err != nil {
 		t.Fatalf("pay: %v", err)
@@ -853,7 +855,8 @@ func TestIntegrationPaymentSettlesOnlyGLDebtDocuments(t *testing.T) {
 		id, amount string
 		side       int
 	}{{"INV-GL-001", "500", 1}, {"PMT-GL-001", "300", 2}} {
-		payload, _ := json.Marshal(map[string]any{"id": row.id, "balance_side": row.side, "amount": row.amount})
+		// payload เหมือนที่จอบัญชีเขียน (SubledgerDocument): มีเลขที่และวันที่เอกสารเสมอ
+		payload, _ := json.Marshal(map[string]any{"id": row.id, "balance_side": row.side, "amount": row.amount, "document_no": row.id, "document_date": erpDocDay.Format("2006-01-02")})
 		if _, err = db.Exec(`INSERT INTO gl_subledger_documents (company, id, ledger, partner_code, branch_code, control_account_code, amount, side, version, created_journal_id, payload)
 			VALUES ($1, $2, 'ap', 'S101', $3, $4, $5, $6, 1, $7, $8)`, testCompany, row.id, branch, control, row.amount, row.side, journalID, payload); err != nil {
 			t.Fatal(err)
@@ -864,14 +867,16 @@ func TestIntegrationPaymentSettlesOnlyGLDebtDocuments(t *testing.T) {
 		}
 	}
 	payFor := func(ref string, amount string) (*ErpTransactionDoc, error) {
-		return store.SaveDoc(ctx, db, scope, pay, &ErpTransactionDoc{DocDateTime: erpDocDay.Format(time.RFC3339), CustCode: "S101", DocRef: ref, TotalAmount: amt(amount)}, false)
+		return store.SaveDoc(ctx, db, scope, pay, &ErpTransactionDoc{DocDateTime: erpDocDay.Format(time.RFC3339), CustCode: "S101", TotalAmount: amt(amount),
+			Details: []ErpDetailItem{{LineNumber: 1, DebtDocumentID: ref, DocRef: ref, SumAmount: amt(amount)}}}, false)
 	}
 	settlements := func(id string) string {
 		return scalarString(t, db, `SELECT count(*)::text FROM gl_subledger_settlements WHERE company=$1 AND (debt_id=$2 OR payment_id=$2)`, testCompany, id)
 	}
 
-	if _, err = payFor("PMT-GL-001", "100"); err != nil {
-		t.Fatalf("pay against a GL payment document: %v", err)
+	// เอกสารฝั่งจ่ายของจอบัญชีไม่ใช่หนี้ที่ใบจ่ายตัดได้ — บรรทัดที่อ้างถึงถูกปฏิเสธทั้งใบ
+	if _, err = payFor("PMT-GL-001", "100"); userErrorCode(err) != "ap_pay_settle_mismatch" {
+		t.Fatalf("pay against a GL payment document = %v, want ap_pay_settle_mismatch", err)
 	}
 	if n := settlements("PMT-GL-001"); n != "0" {
 		t.Fatalf("settlements on a GL payment document = %s, want 0", n)

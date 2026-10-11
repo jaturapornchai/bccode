@@ -26,6 +26,11 @@ type ErpDetailItem struct {
 	LocationCode   string          `json:"locationcode,omitempty"`
 	Description    string          `json:"description,omitempty"`
 	DocRef         string          `json:"docref,omitempty"`
+	// บรรทัดใบจ่ายชำระหนี้ที่ตัดหนี้รายใบ (Champ BCPaymentSub.PaybillNo/RefType): debt_document_id = แถวหนี้ในบัญชีย่อย,
+	// paybillno = ใบเตรียมจ่ายที่ดึงมา (reftype 1); ว่าง/0 = ไม่อ้างอิง
+	DebtDocumentID string `json:"debt_document_id,omitempty"`
+	PayBillNo      string `json:"paybillno,omitempty"`
+	RefType        int    `json:"reftype,omitempty"`
 }
 
 type ErpTransactionDoc struct {
@@ -46,7 +51,9 @@ type ErpTransactionDoc struct {
 	TotalAfterVat   decimal.Decimal `json:"totalaftervat,omitzero"`
 	VatType         int             `json:"vattype,omitempty"`
 	VatRate         decimal.Decimal `json:"vatrate,omitzero"`
-	Status          int             `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
+	CreditDay       *int            `json:"creditday,omitempty"` // วันเครดิตเอกสารหนี้เจ้าหนี้ (Champ CreditDay); ไม่ส่ง = ของเจ้าหนี้ในทะเบียน
+	DueDate         string          `json:"duedate,omitempty"`   // วันครบกำหนด YYYY-MM-DD (doc.perioddatetime, Champ DueDate)
+	Status          int             `json:"status,omitempty"`    // 0=Draft, 1=Approved, 2=Cancelled
 	IsClosed        bool            `json:"isclosed,omitempty"`
 	IsCancel        bool            `json:"iscancel,omitempty"`
 	ApprovalStatus  string          `json:"approvalstatus,omitempty"`

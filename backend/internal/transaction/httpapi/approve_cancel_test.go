@@ -60,7 +60,7 @@ func TestApproveDocTransitions(t *testing.T) {
 		docColumns := []string{"id", "docno", "docdatetime", "transflag", "custcode", "totalamount", "totalvalue_doc",
 			"totaldiscount_doc", "totalvatvalue_doc", "totalbeforevat_doc", "totalaftervat_doc", "iscancel", "isclosed",
 			"branchid", "custname", "description", "remark", "created_at", "modified_at",
-			"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
+			"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason", "creditday", "perioddatetime"}
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
 		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
@@ -79,14 +79,14 @@ func TestApproveDocTransitions(t *testing.T) {
 			WithArgs(testCompany, pr.Flag, "PR003").
 			WillReturnRows(sqlmock.NewRows(docColumns).AddRow(1, "PR003", "2026-10-10T08:00:00Z", pr.Flag, "V01",
 				100.0, 100.0, 0.0, 0.0, 100.0, 100.0, false, false, testBranch, "ผู้จำหน่าย", "ขอซื้อ", "", stamp, stamp,
-				"approved", testActor, stamp, "", nil, ""))
+				"approved", testActor, stamp, "", nil, "", 0, nil))
 		mock.ExpectQuery(`SELECT docnoref, docnoreftransflag FROM docref`).
 			WithArgs(testCompany, "PR003").
 			WillReturnRows(sqlmock.NewRows([]string{"docnoref", "docnoreftransflag"}))
 		mock.ExpectQuery(`FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
 			WithArgs(testCompany, pr.Flag, "PR003").
 			WillReturnRows(sqlmock.NewRows([]string{"id", "linenumber", "itemcode", "barcode", "unitcode", "totalqty",
-				"price", "sumamount", "description", "whcode", "locationcode", "docref"}))
+				"price", "sumamount", "description", "whcode", "locationcode", "docref", "debt_document_id", "paybillno", "reftype"}))
 
 		approved, err := store.ApproveDoc(ctx, db, testScope(), pr, "PR003")
 		if err != nil {
@@ -186,7 +186,7 @@ func TestCancelDocTransitions(t *testing.T) {
 		docColumns := []string{"id", "docno", "docdatetime", "transflag", "custcode", "totalamount", "totalvalue_doc",
 			"totaldiscount_doc", "totalvatvalue_doc", "totalbeforevat_doc", "totalaftervat_doc", "iscancel", "isclosed",
 			"branchid", "custname", "description", "remark", "created_at", "modified_at",
-			"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
+			"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason", "creditday", "perioddatetime"}
 
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
@@ -200,7 +200,8 @@ func TestCancelDocTransitions(t *testing.T) {
 		expectDateOpen(mock, testDocDay, false)
 		// GL reversal
 		mock.ExpectQuery(`FROM gl_subledger_settlements`).
-			WithArgs(testCompany, "AP-"+docNo, "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))
+			WithArgs(testCompany, "AP-"+docNo, "", "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))
+		expectNotReserved(mock, "AP-"+docNo)
 		mock.ExpectExec(`DELETE FROM gl_subledger_documents WHERE company=\$1 AND id=\$2`).
 			WithArgs(testCompany, "AP-"+docNo).WillReturnResult(sqlmock.NewResult(0, 0))
 		mock.ExpectQuery(`FROM erp_doc_journals WHERE businesscode=\$1 AND transflag=\$2 AND docno=\$3 AND voided_at IS NULL`).
@@ -224,14 +225,14 @@ func TestCancelDocTransitions(t *testing.T) {
 			WithArgs(testCompany, pur.Flag, docNo).
 			WillReturnRows(sqlmock.NewRows(docColumns).AddRow(1, docNo, "2026-10-10T08:00:00Z", pur.Flag, "V01",
 				500.0, 500.0, 0.0, 0.0, 500.0, 500.0, true, false, testBranch, "ผู้จำหน่าย", "ซื้อสินค้า", "", stamp, stamp,
-				"", "", nil, testActor, stamp, "สั่งซื้อผิดพลาด"))
+				"", "", nil, testActor, stamp, "สั่งซื้อผิดพลาด", 0, nil))
 		mock.ExpectQuery(`SELECT docnoref, docnoreftransflag FROM docref`).
 			WithArgs(testCompany, docNo).
 			WillReturnRows(sqlmock.NewRows([]string{"docnoref", "docnoreftransflag"}))
 		mock.ExpectQuery(`FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
 			WithArgs(testCompany, pur.Flag, docNo).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "linenumber", "itemcode", "barcode", "unitcode", "totalqty",
-				"price", "sumamount", "description", "whcode", "locationcode", "docref"}))
+				"price", "sumamount", "description", "whcode", "locationcode", "docref", "debt_document_id", "paybillno", "reftype"}))
 
 		res, err := store.CancelDoc(ctx, db, testScope(), pur, docNo, "สั่งซื้อผิดพลาด")
 		if err != nil {

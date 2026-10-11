@@ -15,7 +15,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
   "/report/vatsummary", "/customer/label-print",
-  "/ar/billing-note-auto-print",
+  "/ar/billing-note-auto-print", "/ap/payment-prepare",
   "/settings/font",
   "/banking/contacts",
   "/bookbankscreen",

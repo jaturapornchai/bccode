@@ -159,12 +159,14 @@ func (s *Store) SaveDeliveryDates(ctx context.Context, db *sql.DB, scope gl.Scop
 		if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'gl_subledger_documents')`).Scan(&hasSubledger); err != nil {
 			return 0, fmt.Errorf("check subledger table: %w", err)
 		}
-		if hasSubledger {
+		// เฉพาะแถวหนี้ของเอกสารนี้ (คำนำหน้าของประเภท + เลขที่ เช่น AP-/APDN-/APOD-) ไม่แตะหนี้ประเภทอื่นที่เลขที่ซ้ำกัน
+		spec, postsSubledger := subledgerSpecs[dt.Key]
+		if hasSubledger && postsSubledger {
 			if _, err := tx.ExecContext(ctx, `
 				UPDATE gl_subledger_documents
 				SET payload = jsonb_set(COALESCE(payload::jsonb, '{}'::jsonb), '{due_date}', to_jsonb($1::text))
-				WHERE company = $2 AND (id = $3 OR id = 'AR-' || $3 OR id = 'AP-' || $3)
-			`, newDueDateStr, scope.Company, docno); err != nil {
+				WHERE company = $2 AND id = $3
+			`, newDueDateStr, scope.Company, spec.docPrefix+docno); err != nil {
 				return 0, fmt.Errorf("update subledger due date %s: %w", docno, err)
 			}
 		}

@@ -28,8 +28,8 @@ func (r *statementRecorder) add(query string) {
 	r.statements = append(r.statements, query)
 }
 
-// touchedLedger: ทุกเอกสารอ่านปีบัญชี/งวดล็อกจาก gl_records ได้ (ตรวจว่างวดของวันที่เอกสารยังเปิด)
-// แต่ห้ามเขียนตาราง gl_ ใดๆ หรืออ่านตารางบัญชีอื่น
+// touchedLedger: ทุกเอกสารอ่านปีบัญชี/งวดล็อกจาก gl_records ได้ (ตรวจว่างวดของวันที่เอกสารยังเปิด) และอ่านทะเบียนคู่ค้า
+// gl_subledger_partners ได้ (วันเครดิตของเจ้าหนี้) แต่ห้ามเขียนตาราง gl_ ใดๆ หรืออ่านตารางบัญชีอื่น
 func (r *statementRecorder) touchedLedger() bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -37,7 +37,7 @@ func (r *statementRecorder) touchedLedger() bool {
 		if !strings.Contains(q, "gl_") {
 			continue
 		}
-		if strings.HasPrefix(strings.TrimSpace(q), "SELECT") && strings.Count(q, "gl_") == strings.Count(q, "gl_records") {
+		if strings.HasPrefix(strings.TrimSpace(q), "SELECT") && strings.Count(q, "gl_") == strings.Count(q, "gl_records")+strings.Count(q, "gl_subledger_partners") {
 			continue
 		}
 		return true
@@ -144,20 +144,26 @@ func newTestDoc() *ErpTransactionDoc {
 }
 
 // expectCreate คาดคำสั่งของการสร้างเอกสารใหม่ที่ไม่ลงบัญชี/ไม่ตัดสต็อก: ออกเลขที่ ตรวจเลขซ้ำ หัวเอกสาร และรายการ 1 บรรทัด
-func expectCreate(mock sqlmock.Sqlmock, flag int) {
+// เอกสารหนี้ที่มีวันครบกำหนด (dueDateDocs) อ่านวันเครดิตของเจ้าหนี้จากทะเบียนก่อน — คืนไม่พบ = เครดิต 0 วัน
+func expectCreate(mock sqlmock.Sqlmock, dt doctype.DocType) {
+	flag := dt.Flag
 	mock.ExpectBegin()
 	mock.ExpectQuery(`SELECT docno FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno LIKE \$3`).
 		WithArgs(testCompany, flag, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"docno"}))
+	if dueDateDocs[dt.Key] {
+		mock.ExpectQuery(`FROM gl_subledger_partners WHERE company = \$1 AND code = \$2`).
+			WithArgs(testCompany, "C101").WillReturnError(sql.ErrNoRows)
+	}
 	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3\)`).
 		WithArgs(testCompany, flag, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	expectDateOpen(mock, testDocDay, false)
 	mock.ExpectQuery(`INSERT INTO doc \(`).
-		WithArgs(withAny([]driver.Value{testCompany, flag}, 17)...).
+		WithArgs(withAny([]driver.Value{testCompany, flag}, 19)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
 	mock.ExpectExec(`INSERT INTO docdetail \(`).
-		WithArgs(withAny([]driver.Value{testCompany, flag}, 13)...).
+		WithArgs(withAny([]driver.Value{testCompany, flag}, 16)...).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 }
 
@@ -180,11 +186,11 @@ func TestLookupDocTypeFollowsRegistry(t *testing.T) {
 	}
 }
 
-// ลงบัญชีและตัดสต็อกตามทะเบียนประเภทเอกสาร (doctype) ที่เดียว: ลงบัญชี 7 ประเภท เคลื่อนไหวสต็อกทุกประเภทที่ทะเบียนระบุรับเข้า/จ่ายออก
+// ลงบัญชีและตัดสต็อกตามทะเบียนประเภทเอกสาร (doctype) ที่เดียว: ลงบัญชี 10 ประเภท เคลื่อนไหวสต็อกทุกประเภทที่ทะเบียนระบุรับเข้า/จ่ายออก
 // ประเภทที่ปรับสต็อกตามบรรทัด (โอนคลัง ปรับปรุงสต็อก) ยังไม่ตัด — ทำเมื่อลุงจืดสั่ง
 func TestSideEffectsFollowRegistry(t *testing.T) {
 	posting := map[string]bool{"purchase": true, "purchase-return": true, "expense": true, "paid": true, "pay": true,
-		"sale-invoice": true, "sale-invoice-return": true}
+		"sale-invoice": true, "sale-invoice-return": true, "apdebitnote": true, "apcreditnote": true, "apotherdebt": true}
 	stock := map[string]bool{"stock-balance": true, "stock-receive-product": true, "stock-pickup-product": true,
 		"stock-return-product": true, "goodsreceive": true, "purchase": true, "purchase-return": true,
 		"sale-invoice": true, "sale-invoice-return": true}
@@ -210,7 +216,7 @@ func TestSaveDocStoreOnlyTypesTouchNeitherGLNorStock(t *testing.T) {
 		}
 		t.Run(dt.Key, func(t *testing.T) {
 			db, mock, rec := newRecordedMock(t)
-			expectCreate(mock, dt.Flag)
+			expectCreate(mock, dt)
 			mock.ExpectCommit()
 
 			saved, err := NewStore().SaveDoc(context.Background(), db, testScope(), dt, newTestDoc(), false)
@@ -273,8 +279,8 @@ func TestSaveDocInfersReferenceTypeFromDocNo(t *testing.T) {
 		key, ref string
 		refFlag  int
 	}{
-		{"apdebitnote", "PO6910-0007", doctype.PurchaseOrder},
-		{"apcreditnote", "PUR6910-0003", doctype.Purchase},
+		{"goods-inspection", "PO6910-0007", doctype.PurchaseOrder},
+		{"apbillingreceipt", "PUR6910-0003", doctype.Purchase},
 		{"cashdeposit", "PRET6910-0002", doctype.PurchaseReturn},
 	}
 	for _, tc := range cases {
@@ -287,7 +293,7 @@ func TestSaveDocInfersReferenceTypeFromDocNo(t *testing.T) {
 				t.Fatalf("%s posts or moves stock; this test covers store-only types", tc.key)
 			}
 			db, mock, rec := newRecordedMock(t)
-			expectCreate(mock, dt.Flag)
+			expectCreate(mock, dt)
 			mock.ExpectExec(`DELETE FROM docref WHERE businesscode=\$1 AND docno=\$2`).
 				WithArgs(testCompany, sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 0))
 			mock.ExpectExec(`INSERT INTO docref`).
@@ -322,7 +328,7 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	db, mock, rec := newRecordedMock(t)
 
 	// Create
-	expectCreate(mock, dt.Flag)
+	expectCreate(mock, dt)
 	mock.ExpectCommit()
 	saved, err := store.SaveDoc(ctx, db, testScope(), dt, newTestDoc(), false)
 	if err != nil {
@@ -343,9 +349,9 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 		"branchid", "custname", "description", "remark", "created_at", "modified_at",
 		"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
 	docRow := func() *sqlmock.Rows {
-		return sqlmock.NewRows(docColumns).AddRow(7, docNo, "2026-10-08T00:00:00Z", dt.Flag, "C101",
+		return sqlmock.NewRows(append(append([]string(nil), docColumns...), "creditday", "perioddatetime")).AddRow(7, docNo, "2026-10-08T00:00:00Z", dt.Flag, "C101",
 			5350.0, 5000.0, 0.0, 350.0, 5000.0, 5350.0, false, false, testBranch, "บริษัท รุ่งเรืองก่อสร้าง จำกัด", "ซื้อปูนซีเมนต์", "ส่งภายในสัปดาห์นี้", stamp, stamp,
-			"", "", nil, "", nil, "")
+			"", "", nil, "", nil, "", 0, nil)
 	}
 	listRow := func() *sqlmock.Rows {
 		return sqlmock.NewRows(append(append([]string(nil), docColumns...), "creator_code")).AddRow(7, docNo, "2026-10-08T00:00:00Z", dt.Flag, "C101",
@@ -359,8 +365,8 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	mock.ExpectQuery(`FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
 		WithArgs(testCompany, dt.Flag, docNo).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "linenumber", "itemcode", "barcode", "unitcode", "totalqty",
-			"price", "sumamount", "description", "whcode", "locationcode", "docref"}).
-			AddRow(1, 1, "P-1001", "", "PCS", 1.0, 5000.0, 5000.0, "", "WH01", "", ""))
+			"price", "sumamount", "description", "whcode", "locationcode", "docref", "debt_document_id", "paybillno", "reftype"}).
+			AddRow(1, 1, "P-1001", "", "PCS", 1.0, 5000.0, 5000.0, "", "WH01", "", "", "", "", 0))
 	got, err := store.GetDoc(ctx, db, testCompany, dt.Flag, docNo)
 	if err != nil || got == nil {
 		t.Fatalf("GetDoc = %+v, %v", got, err)
@@ -388,11 +394,11 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"iscancel", "approval_status", "docdatetime"}).AddRow(false, "", testDocDate))
 	expectDateOpen(mock, testDocDay, false)
 	mock.ExpectQuery(`UPDATE doc SET docdatetime = \$1`).
-		WithArgs(append(withAny(nil, 14), testCompany, dt.Flag, docNo)...).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
+		WithArgs(append(withAny(nil, 16), testCompany, dt.Flag, docNo)...).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
 	mock.ExpectExec(`DELETE FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
 		WithArgs(testCompany, dt.Flag, docNo).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO docdetail \(`).
-		WithArgs(withAny([]driver.Value{testCompany, dt.Flag, docNo}, 12)...).WillReturnResult(sqlmock.NewResult(1, 1))
+		WithArgs(withAny([]driver.Value{testCompany, dt.Flag, docNo}, 15)...).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 	edit := newTestDoc()
 	edit.DocNo = docNo

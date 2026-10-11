@@ -17,6 +17,11 @@ export interface ErpDetailItem {
   discountamount?: string;
   sumamount: string;
   vatcal?: number;
+  docref?: string;
+  // ใบจ่ายชำระหนี้ตัดหนี้รายบรรทัด: id แถวหนี้ในบัญชีย่อยเจ้าหนี้ + เลขที่ใบเตรียมจ่ายที่ดึงมา (reftype backend ตั้งให้)
+  debt_document_id?: string;
+  paybillno?: string;
+  reftype?: number;
 }
 
 export interface ErpTransactionDoc {
@@ -49,6 +54,9 @@ export interface ErpTransactionDoc {
   iscancel?: boolean;
   branchcode?: string;
   remark?: string;
+  // เอกสารหนี้เจ้าหนี้ (ERP_DUE_DATE_MODULES): ไม่ส่ง creditday = ใช้วันเครดิตของเจ้าหนี้ในทะเบียน, ไม่ส่ง duedate = วันที่เอกสาร + วันเครดิต
+  creditday?: number;
+  duedate?: string;
   // ผลลงบัญชีตอนบันทึก (backend ตั้งให้): posted | no_mapping | no_amount; gldocno = เลขที่ใบสำคัญเมื่อ posted
   glstatus?: string;
   gldocno?: string;
@@ -138,11 +146,31 @@ export function erpMoneyDisplay(value: string | undefined): string {
   return exactString(roundExact(exact(value), 2));
 }
 
-/** ช่องตัวเลขที่ผู้ใช้ลบจนว่างส่งเป็น "0" — backend รับเฉพาะข้อความทศนิยมที่ถูกต้อง */
+/** ผลรวมทศนิยมตรงตัวของยอดที่มีเครื่องหมาย (sign −1 = หักออก) ไม่ปัด — ยอดรวมตัวอย่างของใบเตรียมจ่ายชำระหนี้ */
+export function erpSignedSum(items: readonly { amount: string | undefined; sign: number }[]): string {
+  return exactString(items.reduce((sum, item) => addExact(sum, item.sign < 0 ? negate(exact(item.amount)) : exact(item.amount)), ZERO));
+}
+
+/** เครื่องหมายของข้อความทศนิยม (ว่าง/ผิดรูป = 0) โดยไม่แปลงเป็น number */
+export function erpDecimalSign(value: string | undefined): -1 | 0 | 1 {
+  const units = exact(value).units;
+  return units > 0n ? 1 : units < 0n ? -1 : 0;
+}
+
+/** วันครบกำหนด = วันที่เอกสาร (YYYY-MM-DD) + วันเครดิต แบบเดียวกับ backend resolveDueDate — นับวันปฏิทิน ไม่ขึ้นกับเขตเวลาเครื่อง */
+export function erpDueDate(docDate: string, creditDays: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(docDate);
+  if (!match || !Number.isInteger(creditDays) || creditDays < 0) return "";
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + creditDays)).toISOString().slice(0, 10);
+}
+
+/** ช่องตัวเลขที่ผู้ใช้ลบจนว่างส่งเป็น "0" — backend รับเฉพาะข้อความทศนิยมที่ถูกต้อง; วันครบกำหนดว่าง = ไม่ส่ง (backend คำนวณ) */
 export function erpDocForSave(doc: Partial<ErpTransactionDoc>): Partial<ErpTransactionDoc> {
-  if (!doc.details) return doc;
+  const duedate = doc.duedate?.trim() || undefined;
+  if (!doc.details) return { ...doc, duedate };
   return {
     ...doc,
+    duedate,
     details: doc.details.map((item) => ({
       ...item,
       qty: blankAmountAsZero(item.qty),

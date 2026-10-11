@@ -63,6 +63,8 @@ func (h *Http) RegisterHttp() {
 
 	h.ms.GET("/transaction/billingnote/auto-print", h.listBillingNotesForPrint)
 	h.ms.GET("/transaction/:module/auto-print", h.listBillingNotesForPrint)
+
+	h.registerPrepare()
 }
 
 // การกระทำที่ตรวจสิทธิ์: "" = เข้าจอ/อ่าน, อื่นๆ ต้องมีทั้ง <เมนู> และ <เมนู>:<action> (กฎเดียวกับ GL)
@@ -88,21 +90,32 @@ type docAccess struct {
 // authorize ตรวจตามลำดับ module → session/สมาชิกภาพ → สิทธิ์รายเมนูของประเภทเอกสาร → เชื่อมฐานข้อมูล
 // ก่อนแตะข้อมูลใดๆ; ปฏิเสธ = ตอบ response เองแล้วคืน nil (ผู้เรียกคืน nil ต่อทันที)
 func (h *Http) authorize(request microservice.IContext, action string) *docAccess {
-	ctx := request.Request().Context()
-	lang := requestLanguage(request)
-
 	dt, ok := lookupDocType(request.Param("module"))
 	if !ok {
 		_ = fail(request, http.StatusBadRequest, "erp_err_invalid_module", request.Param("module"))
 		return nil
 	}
+	// ทุกคำสั่งเขียนตรวจงวดบัญชี (ปีบัญชี/งวดล็อก) ของวันที่เอกสาร และเอกสารที่ลงบัญชีเขียนใบสำคัญ/บัญชีย่อยในธุรกรรมเดียวกัน
+	// ตารางบัญชีจึงต้องพร้อมก่อน (อ่านอย่างเดียวไม่ต้อง)
+	access := h.openSession(request, action, func(session menuAccess) bool { return allowsDocType(session, dt, action) }, action != actionRead)
+	if access != nil {
+		access.dt = dt
+	}
+	return access
+}
+
+// openSession ตรวจ session/สมาชิกภาพ → สิทธิ์ (permits) → เชื่อมฐานข้อมูลของ holding + schema เอกสาร (และ schema บัญชีเมื่อ ledger)
+// ใช้ร่วมกันระหว่างเอกสาร ERP และใบเตรียมจ่าย — ไม่มีกฎสิทธิ์ชุดที่สอง; ปฏิเสธ = ตอบ response เองแล้วคืน nil
+func (h *Http) openSession(request microservice.IContext, action string, permits func(menuAccess) bool, ledger bool) *docAccess {
+	ctx := request.Request().Context()
+	lang := requestLanguage(request)
 	session, err := h.session(ctx, request)
 	if err != nil {
 		status, body := glhttp.SessionFailure(err, lang)
 		request.Response(status, body)
 		return nil
 	}
-	if !allowsDocType(session, dt, action) {
+	if !permits(session) {
 		key := "erp_err_action_forbidden"
 		if action == actionRead {
 			key = "erp_err_read_forbidden"
@@ -121,16 +134,14 @@ func (h *Http) authorize(request microservice.IContext, action string) *docAcces
 		_ = fail(request, http.StatusInternalServerError, "erp_err_internal")
 		return nil
 	}
-	// ทุกคำสั่งเขียนตรวจงวดบัญชี (ปีบัญชี/งวดล็อก) ของวันที่เอกสาร และเอกสารที่ลงบัญชีเขียนใบสำคัญ/บัญชีย่อยในธุรกรรมเดียวกัน
-	// ตารางบัญชีจึงต้องพร้อมก่อน (อ่านอย่างเดียวไม่ต้อง)
-	if action != actionRead {
+	if ledger {
 		if err := gl.EnsureSchema(ctx, db); err != nil {
 			request.Log(fmt.Sprintf("transaction: ensure ledger schema: %v", err))
 			_ = fail(request, http.StatusInternalServerError, "erp_err_internal")
 			return nil
 		}
 	}
-	return &docAccess{ctx: ctx, scope: session.Scope, db: db, dt: dt}
+	return &docAccess{ctx: ctx, scope: session.Scope, db: db}
 }
 
 // menuAccess คือส่วนของ glhttp.SessionAccess ที่ใช้ตรวจสิทธิ์ (แยกไว้ให้ทดสอบโดยไม่ต้องมีฐานข้อมูลกลาง)

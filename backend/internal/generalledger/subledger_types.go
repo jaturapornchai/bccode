@@ -27,6 +27,7 @@ type SubledgerPartner struct {
 	AddrDistrict string `json:"addr_district,omitempty"` // อำเภอ/เขต ≤ 50 ตัวอักษร
 	AddrProvince string `json:"addr_province,omitempty"` // จังหวัด ≤ 50 ตัวอักษร
 	AddrPostcode string `json:"addr_postcode,omitempty"` // รหัสไปรษณีย์ ตัวเลข 5 หลัก (ว่างได้)
+	CreditDays   int    `json:"credit_days,omitempty"`   // วันเครดิตเจ้าหนี้ (Champ BCAP.CreditDay) ตั้งต้นวันครบกำหนดของเอกสารหนี้ ERP
 	IsCustomer   bool   `json:"is_customer"`
 	IsSupplier   bool   `json:"is_supplier"`
 	IsActive     bool   `json:"is_active"`

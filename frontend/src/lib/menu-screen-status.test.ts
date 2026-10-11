@@ -25,7 +25,6 @@ describe("menu screen availability", () => {
   // 2026-10-11: จอ UI-only (ข้อมูลจำลอง/localStorage ไม่มี API+PostgreSQL จริง) ถอดเป็น "รอพัฒนา" จนกว่าจะสร้างจริง
   // (docs/kms/champ/design-2026-10-11/facade-screens.md). ลบ route ออกจากรายการนี้ใน commit เดียวกับที่สร้างจอจริง
   const CHAMP_PENDING_ROUTES: string[] = [
-    "/ap/payment-prepare",
     "/ar/billing-note-auto",
     "/banking/bank-service",
     "/banking/cheque-issued-prepare",

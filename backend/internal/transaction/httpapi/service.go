@@ -169,12 +169,14 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 		COALESCE(isclosed, false), COALESCE(branchid, ''),
 		COALESCE(custname, ''), COALESCE(description, ''), COALESCE(remark, ''), created_at, modified_at,
 		COALESCE(approval_status, ''), COALESCE(approved_by, ''), approved_at,
-		COALESCE(cancelled_by, ''), cancelled_at, COALESCE(cancelreason, '')
+		COALESCE(cancelled_by, ''), cancelled_at, COALESCE(cancelreason, ''),
+		creditday, perioddatetime
 		FROM doc %s LIMIT 1`, where)
 
 	var d ErpTransactionDoc
-	var idInt int
+	var idInt, creditDay int
 	var createdAt, modifiedAt *time.Time
+	var dueDate sql.NullTime
 	err := db.QueryRowContext(ctx, query, args...).Scan(
 		&idInt, &d.DocNo, &d.DocDateTime,
 		&d.TransFlag, &d.CustCode, &d.TotalAmount,
@@ -185,12 +187,19 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 		&d.CustName, &d.Description, &d.Remark, &createdAt, &modifiedAt,
 		&d.ApprovalStatus, &d.ApprovedBy, &d.ApprovedAt,
 		&d.CancelledBy, &d.CancelledAt, &d.CancelReason,
+		&creditDay, &dueDate,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get doc: %w", err)
+	}
+	if dt, ok := doctype.ByFlag(transflag); ok && dueDateDocs[dt.Key] {
+		d.CreditDay = &creditDay
+		if dueDate.Valid {
+			d.DueDate = businessDay(dueDate.Time)
+		}
 	}
 	d.ID = strconv.Itoa(idInt)
 	d.CreatedAt = createdAt
@@ -215,7 +224,7 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 	detailQuery := `SELECT id, linenumber, COALESCE(itemcode, ''), COALESCE(barcode, ''),
 		COALESCE(unitcode, ''), COALESCE(totalqty, 0), COALESCE(price, 0),
 		COALESCE(sumamount, 0), COALESCE(description, ''), COALESCE(whcode, ''), COALESCE(locationcode, ''),
-		COALESCE(docref, '')
+		COALESCE(docref, ''), debt_document_id, paybillno, reftype
 		FROM docdetail WHERE businesscode = $1 AND transflag = $2 AND docno = $3
 		ORDER BY linenumber`
 
@@ -232,7 +241,7 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 			&item.ID, &item.LineNumber, &item.ItemCode, &item.Barcode,
 			&item.UnitCode, &item.Qty, &item.Price,
 			&item.SumAmount, &item.Description, &item.WhCode, &item.LocationCode,
-			&item.DocRef,
+			&item.DocRef, &item.DebtDocumentID, &item.PayBillNo, &item.RefType,
 		); err != nil {
 			return nil, fmt.Errorf("scan doc detail: %w", err)
 		}

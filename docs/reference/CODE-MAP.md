@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit a44186a2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit 2503b528 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -430,62 +430,62 @@ Files indexed: 32
 | 1206 | const-arrow | `handleSave` |
 | 2366 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2378 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2383 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 224 | function | `mt` |
-| 229 | function | `isRecord` |
-| 233 | function | `stringValue` |
-| 237 | function | `stringArray` |
-| 250 | function | `normalizeSettingRecords` |
-| 270 | function | `fetchAllowedMenuIds` |
-| 306 | function | `fetchSessionStats` |
-| 353 | function | `sessionTimeText` |
-| 364 | function | `sessionRelativeText` |
-| 374 | function | `sessionStatsTooltip` |
-| 395 | function | `guardsUnsavedRoute` |
-| 399 | function | `MainMenuScreen` |
-| 407 | function | `MainMenuDashboard` |
-| 533 | function | `loadProfile` |
-| 561 | function | `loadMenuPermissions` |
-| 658 | function | `confirmLeaveLedger` |
-| 664 | function | `selectWorkTab` |
-| 669 | function | `openWorkspace` |
-| 673 | function | `openMenuItem` |
-| 720 | function | `openMenuItemInNewTab` |
-| 724 | function | `openManageShortcuts` |
-| 743 | function | `openOverview` |
-| 750 | function | `toggleSection` |
-| 757 | function | `closeAllTabs` |
-| 765 | function | `runMenuAction` |
-| 774 | function | `closeTab` |
-| 784 | function | `reorderTabs` |
-| 800 | function | `stopLinePolling` |
-| 807 | function | `handleLineLink` |
-| 858 | function | `startLinePolling` |
-| 872 | function | `pollLineLink` |
-| 906 | function | `closeLineDialog` |
-| 912 | function | `copyLineLoginUrl` |
-| 922 | function | `handleChangePassword` |
-| 974 | function | `logout` |
-| 983 | function | `handleContentScroll` |
-| 1011 | const-arrow | `onPointerMove` |
-| 1017 | const-arrow | `onPointerUp` |
-| 1703 | function | `SidebarButton` |
-| 1736 | function | `MenuSectionAccordion` |
-| 1830 | function | `MenuTreeFolder` |
-| 1882 | function | `MenuTreeItemButton` |
-| 1948 | function | `getVisibleItems` |
-| 1958 | function | `getBarTreeNodes` |
-| 1975 | function | `SectionIcon` |
-| 1993 | function | `OpenTabs` |
-| 2047 | function | `captureTabRects` |
-| 2058 | function | `getInsertSide` |
-| 2063 | function | `clearDragState` |
-| 2070 | function | `reorderFromPointer` |
-| 2195 | function | `WorkTabPanel` |
-| 2363 | function | `DashboardLoading` |
+| 225 | function | `mt` |
+| 230 | function | `isRecord` |
+| 234 | function | `stringValue` |
+| 238 | function | `stringArray` |
+| 251 | function | `normalizeSettingRecords` |
+| 271 | function | `fetchAllowedMenuIds` |
+| 307 | function | `fetchSessionStats` |
+| 354 | function | `sessionTimeText` |
+| 365 | function | `sessionRelativeText` |
+| 375 | function | `sessionStatsTooltip` |
+| 396 | function | `guardsUnsavedRoute` |
+| 400 | function | `MainMenuScreen` |
+| 408 | function | `MainMenuDashboard` |
+| 534 | function | `loadProfile` |
+| 562 | function | `loadMenuPermissions` |
+| 659 | function | `confirmLeaveLedger` |
+| 665 | function | `selectWorkTab` |
+| 670 | function | `openWorkspace` |
+| 674 | function | `openMenuItem` |
+| 721 | function | `openMenuItemInNewTab` |
+| 725 | function | `openManageShortcuts` |
+| 744 | function | `openOverview` |
+| 751 | function | `toggleSection` |
+| 758 | function | `closeAllTabs` |
+| 766 | function | `runMenuAction` |
+| 775 | function | `closeTab` |
+| 785 | function | `reorderTabs` |
+| 801 | function | `stopLinePolling` |
+| 808 | function | `handleLineLink` |
+| 859 | function | `startLinePolling` |
+| 873 | function | `pollLineLink` |
+| 907 | function | `closeLineDialog` |
+| 913 | function | `copyLineLoginUrl` |
+| 923 | function | `handleChangePassword` |
+| 975 | function | `logout` |
+| 984 | function | `handleContentScroll` |
+| 1012 | const-arrow | `onPointerMove` |
+| 1018 | const-arrow | `onPointerUp` |
+| 1704 | function | `SidebarButton` |
+| 1737 | function | `MenuSectionAccordion` |
+| 1831 | function | `MenuTreeFolder` |
+| 1883 | function | `MenuTreeItemButton` |
+| 1949 | function | `getVisibleItems` |
+| 1959 | function | `getBarTreeNodes` |
+| 1976 | function | `SectionIcon` |
+| 1994 | function | `OpenTabs` |
+| 2048 | function | `captureTabRects` |
+| 2059 | function | `getInsertSide` |
+| 2064 | function | `clearDragState` |
+| 2071 | function | `reorderFromPointer` |
+| 2196 | function | `WorkTabPanel` |
+| 2368 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 
@@ -749,7 +749,7 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1591 lines)
+## frontend/src/app/gl/gl-masters.tsx (1594 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -794,13 +794,13 @@ Files indexed: 32
 | 1231 | const-arrow | `handleTypeChange` |
 | 1241 | const-arrow | `handleParentChange` |
 | 1426 | function | `FiscalYearFields` |
-| 1464 | function | `isChequeMappingDoc` |
-| 1474 | function | `mappingSourceDocPatch` |
-| 1485 | function | `champMasterLabels` |
-| 1492 | function | `MasterFields` |
-| 1518 | function | `UntypedJournalBooksNotice` |
-| 1538 | function | `JournalBookTypeBadge` |
-| 1550 | function | `JournalBookFields` |
+| 1467 | function | `isChequeMappingDoc` |
+| 1477 | function | `mappingSourceDocPatch` |
+| 1488 | function | `champMasterLabels` |
+| 1495 | function | `MasterFields` |
+| 1521 | function | `UntypedJournalBooksNotice` |
+| 1541 | function | `JournalBookTypeBadge` |
+| 1553 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
@@ -1042,6 +1042,23 @@ Files indexed: 32
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1333 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 64 | function | `glNoticeFor` |
+| 78 | function | `ErpCrudWorkbench` |
+| 176 | const-arrow | `handleSelectRow` |
+| 198 | const-arrow | `handleStartEdit` |
+| 207 | const-arrow | `handleStartCreate` |
+| 255 | const-arrow | `handleCancelEdit` |
+| 303 | const-arrow | `handleDeleteDoc` |
+| 337 | const-arrow | `updateLineItem` |
+| 399 | const-arrow | `handleSaveDoc` |
+| 431 | const-arrow | `onKeyDown` |
+| 872 | section | `EDIT MODE FORM` |
+| 1167 | section | `READ-ONLY VIEW MODE` |
+
 ## frontend/src/app/tax/tax-filing-workbench.tsx (1276 lines)
 
 | Line | Kind | Name |
@@ -1054,39 +1071,42 @@ Files indexed: 32
 | 491 | function | `handleKeyDown` |
 | 1263 | function | `DuplicateInvoiceBadge` |
 
-## frontend/src/lib/erp-transaction.ts (1211 lines)
+## frontend/src/lib/erp-transaction.ts (1239 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 64 | function | `exact` |
-| 78 | function | `addExact` |
-| 82 | function | `negate` |
-| 85 | function | `mulExact` |
-| 89 | function | `roundExact` |
-| 97 | function | `exactString` |
-| 106 | function | `erpLineAmount` |
-| 116 | function | `erpDocTotals` |
-| 128 | function | `erpBeforeVatAmount` |
-| 137 | function | `erpMoneyDisplay` |
-| 142 | function | `erpDocForSave` |
-| 158 | function | `erpDocLifecycle` |
-| 863 | function | `isErpTransactionRoute` |
-| 868 | function | `getErpModuleConfig` |
-| 879 | function | `statusErrorKey` |
-| 886 | function | `userDetail` |
-| 890 | function | `fetchErpTransactions` |
-| 921 | function | `saveErpTransaction` |
-| 951 | function | `deleteErpTransaction` |
-| 994 | function | `approveErpDoc` |
-| 1016 | function | `unapproveErpDoc` |
-| 1039 | function | `cancelErpDoc` |
-| 1072 | function | `postBatchErpDocs` |
-| 1102 | function | `approveBatchErpDocs` |
-| 1111 | function | `unapproveBatchErpDocs` |
-| 1121 | function | `cancelBatchErpDocs` |
-| 1131 | function | `fetchErpDocEvents` |
-| 1164 | function | `fetchDeliveryDateInvoices` |
-| 1186 | function | `saveDeliveryDates` |
+| 72 | function | `exact` |
+| 86 | function | `addExact` |
+| 90 | function | `negate` |
+| 93 | function | `mulExact` |
+| 97 | function | `roundExact` |
+| 105 | function | `exactString` |
+| 114 | function | `erpLineAmount` |
+| 124 | function | `erpDocTotals` |
+| 136 | function | `erpBeforeVatAmount` |
+| 145 | function | `erpMoneyDisplay` |
+| 150 | function | `erpSignedSum` |
+| 155 | function | `erpDecimalSign` |
+| 161 | function | `erpDueDate` |
+| 168 | function | `erpDocForSave` |
+| 186 | function | `erpDocLifecycle` |
+| 891 | function | `isErpTransactionRoute` |
+| 896 | function | `getErpModuleConfig` |
+| 907 | function | `statusErrorKey` |
+| 914 | function | `userDetail` |
+| 918 | function | `fetchErpTransactions` |
+| 949 | function | `saveErpTransaction` |
+| 979 | function | `deleteErpTransaction` |
+| 1022 | function | `approveErpDoc` |
+| 1044 | function | `unapproveErpDoc` |
+| 1067 | function | `cancelErpDoc` |
+| 1100 | function | `postBatchErpDocs` |
+| 1130 | function | `approveBatchErpDocs` |
+| 1139 | function | `unapproveBatchErpDocs` |
+| 1149 | function | `cancelBatchErpDocs` |
+| 1159 | function | `fetchErpDocEvents` |
+| 1192 | function | `fetchDeliveryDateInvoices` |
+| 1214 | function | `saveDeliveryDates` |
 
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 
@@ -1129,22 +1149,6 @@ Files indexed: 32
 | 1136 | function | `UnlinkLine` |
 | 1161 | function | `DisableUser` |
 | 1205 | function | `authRequestLanguage` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1207 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 60 | function | `glNoticeFor` |
-| 74 | function | `ErpCrudWorkbench` |
-| 171 | const-arrow | `handleSelectRow` |
-| 193 | const-arrow | `handleStartEdit` |
-| 202 | const-arrow | `handleStartCreate` |
-| 250 | const-arrow | `handleCancelEdit` |
-| 298 | const-arrow | `handleDeleteDoc` |
-| 332 | const-arrow | `updateLineItem` |
-| 394 | const-arrow | `handleSaveDoc` |
-| 803 | section | `EDIT MODE FORM` |
-| 1041 | section | `READ-ONLY VIEW MODE` |
 
 ## frontend/src/app/asset/fixed-assets-screen.tsx (1183 lines)
 

@@ -240,6 +240,15 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 	}
 	doc.DocNo = docNo
 	normalizeLines(doc.Details)
+	normalizePayLines(dt, doc.Details)
+	dueDate, err := resolveDueDate(ctx, tx, company, dt, doc, docDate)
+	if err != nil {
+		return nil, err
+	}
+	creditDay := 0
+	if doc.CreditDay != nil {
+		creditDay = *doc.CreditDay
+	}
 
 	var docID int
 	if isEdit {
@@ -273,8 +282,9 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			totalvalue_doc = $4, totaldiscount_doc = $5, totalvatvalue_doc = $6,
 			totalbeforevat_doc = $7, totalaftervat_doc = $8,
 			custname = $9, description = $10, remark = $11,
-			branchid = $12, modifier_code = $13, modified_at = $14
-			WHERE businesscode = $15 AND transflag = $16 AND docno = $17 AND NOT COALESCE(isdelete, false)
+			branchid = $12, modifier_code = $13, modified_at = $14,
+			creditday = $15, perioddatetime = COALESCE($16::timestamptz, perioddatetime)
+			WHERE businesscode = $17 AND transflag = $18 AND docno = $19 AND NOT COALESCE(isdelete, false)
 			RETURNING id`
 		err = tx.QueryRowContext(ctx, updateQuery,
 			docDate, doc.CustCode, doc.TotalAmount,
@@ -282,6 +292,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			doc.TotalBeforeVat, doc.TotalAfterVat,
 			doc.CustName, doc.Description, doc.Remark,
 			branch, actor, now,
+			creditDay, dueDate,
 			company, transflag, docNo,
 		).Scan(&docID)
 		if err == sql.ErrNoRows {
@@ -310,13 +321,15 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			totalamount, totalvalue_doc, totaldiscount_doc, totalvatvalue_doc,
 			totalbeforevat_doc, totalaftervat_doc, branchid,
 			custname, description, remark,
-			creator_code, created_at, modifier_code, modified_at, checksum
+			creator_code, created_at, modifier_code, modified_at, checksum,
+			creditday, perioddatetime
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9,
 			$10, $11, $12,
 			$13, $14, $15,
-			$16, $17, $18, $19, ''
+			$16, $17, $18, $19, '',
+			$20, $21
 		) RETURNING id`
 		err = tx.QueryRowContext(ctx, insertQuery,
 			company, transflag, docNo, doc.CustCode, docDate,
@@ -324,6 +337,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			doc.TotalBeforeVat, doc.TotalAfterVat, branch,
 			doc.CustName, doc.Description, doc.Remark,
 			actor, now, actor, now,
+			creditDay, dueDate,
 		).Scan(&docID)
 		if err != nil {
 			return nil, fmt.Errorf("insert doc: %w", err)
@@ -333,11 +347,13 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 	insertDetailQuery := `INSERT INTO docdetail (
 		businesscode, transflag, docno, docdatetime, linenumber,
 		itemcode, barcode, unitcode, totalqty, price, sumamount,
-		description, whcode, locationcode, docref
+		description, whcode, locationcode, docref,
+		debt_document_id, paybillno, reftype
 	) VALUES (
 		$1, $2, $3, $4, $5,
 		$6, $7, $8, $9, $10, $11,
-		$12, $13, $14, $15
+		$12, $13, $14, $15,
+		$16, $17, $18
 	)`
 	docRefGlobal := strings.TrimSpace(doc.DocRef)
 	for _, item := range doc.Details {
@@ -353,8 +369,14 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			company, transflag, docNo, docDate, item.LineNumber,
 			item.ItemCode, item.Barcode, item.UnitCode, item.Qty, item.Price, item.SumAmount,
 			desc, item.WhCode, item.LocationCode, itemRef,
+			item.DebtDocumentID, item.PayBillNo, item.RefType,
 		); err != nil {
 			return nil, fmt.Errorf("insert docdetail line %d: %w", item.LineNumber, err)
+		}
+	}
+	if subledgerSpecs[dt.Key].lineSettle {
+		if err = checkPayPrepareLines(ctx, tx, company, doc, docNo); err != nil {
+			return nil, err
 		}
 	}
 
@@ -373,10 +395,13 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 			VALUES ($1, $2, $3, $4, $5)`, company, docNo, transflag, docRefGlobal, refTransFlag); err != nil {
 			return nil, fmt.Errorf("insert docref: %w", err)
 		}
-		// อัปเดตเอกสารต้นทาง (PO, SO, QT, INV, PUR) ให้เป็นอ้างอิงแล้วและปิดเอกสาร
-		if _, err = tx.ExecContext(ctx, `UPDATE doc SET isref = true, isclosed = true, modified_at = $1
-			WHERE businesscode = $2 AND docno = $3`, now, company, docRefGlobal); err != nil {
-			return nil, fmt.Errorf("close referenced doc: %w", err)
+		// อัปเดตเอกสารต้นทาง (PO, SO, QT, INV, PUR) ให้เป็นอ้างอิงแล้วและปิดเอกสาร — ยกเว้นเอกสารตัดหนี้รายบรรทัด (ใบจ่ายชำระหนี้):
+		// จ่ายบางส่วนต้องไม่ปิดเอกสารหนี้/ใบเตรียมจ่าย; "ปิด" ของเอกสารหนี้ = ยอดคงเหลือในบัญชีย่อยเป็น 0 (design ap-payment-prepare §4.5 ข้อ 5)
+		if !subledgerSpecs[dt.Key].lineSettle {
+			if _, err = tx.ExecContext(ctx, `UPDATE doc SET isref = true, isclosed = true, modified_at = $1
+				WHERE businesscode = $2 AND docno = $3`, now, company, docRefGlobal); err != nil {
+				return nil, fmt.Errorf("close referenced doc: %w", err)
+			}
 		}
 	}
 

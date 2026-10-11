@@ -16,11 +16,12 @@ import {
   erpLineAmount,
   erpDocTotals,
   erpDocForSave,
+  erpDueDate,
   erpBeforeVatAmount,
   erpMoneyDisplay,
   type ErpTransactionDoc,
 } from "./erp-transaction";
-import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
+import { ERP_AUTO_POSTING_MODULES, ERP_DUE_DATE_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
 import { flattenMenuItems } from "./menu-data";
 import { setupTestAuthSession } from "./test-auth-session";
 
@@ -138,7 +139,8 @@ describe("ERP Transaction domain configs and operations", () => {
   it("limits the auto-posting list to registry types the backend posts or moves stock for on save", () => {
     const source = readFileSync(resolve(process.cwd(), "../backend/internal/doctype/doctype.go"), "utf8");
     const stockMovers = [...source.matchAll(/^	{"([a-z-]+)", [A-Za-z0-9]+, "[A-Z]+", (StockIn|StockOut),/gm)].map((match) => match[1]);
-    const posting = ["expense", "paid", "pay", "purchase", "purchase-return", "sale-invoice", "sale-invoice-return"];
+    const posting = ["expense", "paid", "pay", "purchase", "purchase-return", "sale-invoice", "sale-invoice-return",
+      "apdebitnote", "apcreditnote", "apotherdebt"];
     for (const key of ERP_AUTO_POSTING_MODULES) expect(ERP_TRANSACTION_MODULES).toContain(key);
     expect(stockMovers.length).toBeGreaterThan(0);
     expect([...ERP_AUTO_POSTING_MODULES].sort()).toEqual([...new Set([...posting, ...stockMovers])].sort());
@@ -612,5 +614,30 @@ describe("ERP document amounts are exact decimal strings", () => {
     expect(sent).toMatchObject({ totalbeforevat: "0.3", totalvatvalue: "0.02", totalamount: "0.32" });
     expect(sent.details[0]).toMatchObject({ qty: "0", price: "0.1", sumamount: "0" });
     vi.unstubAllGlobals();
+  });
+
+  it("computes the due date as document date plus credit days like the backend", () => {
+    expect(erpDueDate("2026-10-08", 30)).toBe("2026-11-07");
+    expect(erpDueDate("2026-12-20", 15)).toBe("2027-01-04");
+    expect(erpDueDate("2028-02-28", 1)).toBe("2028-02-29");
+    expect(erpDueDate("2026-10-08", 0)).toBe("2026-10-08");
+    expect(erpDueDate("", 30)).toBe("");
+    expect(erpDueDate("2026-10-08", -1)).toBe("");
+  });
+
+  it("leaves a blank due date out of the request so the backend computes it", () => {
+    const sent = erpDocForSave({ docno: "PUR6910-0001", creditday: 30, duedate: "  ", details: [] });
+    expect(sent.duedate).toBeUndefined();
+    expect(sent.creditday).toBe(30);
+    expect(erpDocForSave({ docno: "PUR6910-0001", duedate: "2026-11-07" }).duedate).toBe("2026-11-07");
+  });
+
+  it("shows credit days and due date on exactly the backend due-date document types", () => {
+    const source = readFileSync(resolve(process.cwd(), "../backend/internal/transaction/httpapi/due_date.go"), "utf8");
+    const map = /var dueDateDocs = map\[string\]bool\{([^}]*)\}/.exec(source)?.[1] ?? "";
+    const keys = [...map.matchAll(/"([a-z-]+)": true/g)].map((match) => match[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    expect([...ERP_DUE_DATE_MODULES].sort()).toEqual(keys.sort());
+    for (const key of ERP_DUE_DATE_MODULES) expect(ERP_TRANSACTION_MODULES).toContain(key);
   });
 });

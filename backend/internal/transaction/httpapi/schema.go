@@ -79,6 +79,8 @@ ALTER TABLE doc ADD COLUMN IF NOT EXISTS approved_by text NOT NULL DEFAULT '';
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS approved_at timestamptz;
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS cancelled_by text NOT NULL DEFAULT '';
 ALTER TABLE doc ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
+-- วันเครดิตของเอกสารหนี้เจ้าหนี้ (Champ BCApInvoice.CreditDay SMALLINT); วันครบกำหนดอยู่ที่ perioddatetime
+ALTER TABLE doc ADD COLUMN IF NOT EXISTS creditday smallint NOT NULL DEFAULT 0 CHECK (creditday >= 0);
 DO $$
 BEGIN
 	IF NOT EXISTS (
@@ -138,6 +140,12 @@ CREATE INDEX IF NOT EXISTS idx_docdetail_itemcode_tr ON docdetail (itemcode, tra
 CREATE INDEX IF NOT EXISTS idx_docdetail_barcode ON docdetail (barcode);
 CREATE INDEX IF NOT EXISTS idx_docdetail_barcodemain ON docdetail (barcodemain);
 CREATE INDEX IF NOT EXISTS idx_docdetail_isupdated ON docdetail (isupdated);
+-- บรรทัดใบจ่ายชำระหนี้ที่ตัดหนี้รายใบ (Champ BCPaymentSub.PaybillNo/RefType): reftype 0 = ไม่อ้างอิง, 1 = ใบเตรียมจ่าย, 2 = ใบรับวางบิล
+-- (Champ ใช้ 0 = ใบรับวางบิล แต่จอ PV ไม่บันทึก RefType จริง จึงตั้ง 0 เป็นไม่อ้างอิงให้บรรทัดเดิมไม่ถูกตีความผิด)
+ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS paybillno text NOT NULL DEFAULT '';
+ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS reftype smallint NOT NULL DEFAULT 0 CHECK (reftype IN (0, 1, 2));
+ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS debt_document_id text NOT NULL DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_docdetail_paybillno ON docdetail (businesscode, paybillno) WHERE paybillno <> '';
 
 CREATE TABLE IF NOT EXISTS docref (
 	id serial PRIMARY KEY,

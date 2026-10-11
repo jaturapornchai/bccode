@@ -74,7 +74,13 @@ export const ERP_TRANSACTION_MODULES: readonly string[] = [
 ];
 
 /**
- * ประเภทเอกสารที่ backend ทำอะไรต่อให้ตอนบันทึก — ลงบัญชี (7 ประเภท) หรือเคลื่อนไหวสต็อก (รับเข้า/จ่ายออกตามทะเบียน)
+ * เอกสารหนี้เจ้าหนี้ที่มีช่องวันเครดิต/วันครบกำหนดบนหัวเอกสาร (Champ CreditDay/DueDate) — ตรงกับ dueDateDocs ใน
+ * backend/internal/transaction/httpapi/due_date.go (มีเทสต์เทียบ)
+ */
+export const ERP_DUE_DATE_MODULES: readonly string[] = ["purchase", "creditorbeginningbalance", "apotherdebt", "apdebitnote"];
+
+/**
+ * ประเภทเอกสารที่ backend ทำอะไรต่อให้ตอนบันทึก — ลงบัญชี (10 ประเภท) หรือเคลื่อนไหวสต็อก (รับเข้า/จ่ายออกตามทะเบียน)
  * ประเภทอื่นทุกชนิด "เก็บเอกสารอย่างเดียว"; ตรงกับ doctype.go (postingFlags + Stock = StockIn/StockOut) — มีเทสต์เทียบ
  */
 export const ERP_AUTO_POSTING_MODULES: readonly string[] = [
@@ -85,6 +91,9 @@ export const ERP_AUTO_POSTING_MODULES: readonly string[] = [
   "pay",
   "sale-invoice",
   "sale-invoice-return",
+  "apdebitnote",
+  "apcreditnote",
+  "apotherdebt",
   "goodsreceive",
   "stock-balance",
   "stock-receive-product",

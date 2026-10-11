@@ -363,7 +363,6 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/procurement/delivery-dates": "calendarCheck",
   "/pending/sale-reservation": "fileText",
   "/pending/sale-dispatch": "truck",
-  "/pending/ap-payment-prepare": "payment",
   "/pending/cheque-issued-prepare": "fileText",
   "/pending/cheque-movement": "list",
   "/pending/bank-service": "bank",

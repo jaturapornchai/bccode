@@ -236,7 +236,7 @@ func TestEveryTypeHasItsOwnPermissionScreen(t *testing.T) {
 
 // ลิสต์นี้ซ้ำใน frontend (MAPPING_SOURCE_DOCS ของ gl-masters.tsx) — เพิ่ม/ลดประเภทที่ลงบัญชีแล้วต้องแก้ทั้งสองที่
 func TestPostingKeysAreTheErpDocumentsThatPostToGL(t *testing.T) {
-	want := []string{"purchase", "purchase-return", "expense", "paid", "pay", "sale-invoice", "sale-invoice-return"}
+	want := []string{"purchase", "purchase-return", "expense", "paid", "pay", "sale-invoice", "sale-invoice-return", "apdebitnote", "apcreditnote", "apotherdebt"}
 	if got := PostingKeys(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("PostingKeys = %v, want %v", got, want)
 	}

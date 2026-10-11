@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -60,6 +61,13 @@ func ledgerFail(err error) error {
 // (ภาษาอื่น glhttp แปลจากแถวเดียวกัน) — ไม่มีข้อความผู้ใช้ฝังในโค้ด
 func erpError(code, field string, args ...string) *gl.UserError {
 	return &gl.UserError{Code: code, Message: thText("gl_err_"+code, args...), Field: field, Args: args}
+}
+
+// erpBadRequest คือ erpError ที่ตอบ 400 (ข้อมูลในคำขอผิดรูปแบบ/ไม่ครบ ไม่ใช่สถานะเอกสารชนกัน)
+func erpBadRequest(code, field string, args ...string) *gl.UserError {
+	e := erpError(code, field, args...)
+	e.Status = http.StatusBadRequest
+	return e
 }
 
 func amountInvalidError() *gl.UserError {
@@ -349,6 +357,9 @@ type subledgerSpec struct {
 	// excessAsCredit: ยอดเกินหนี้คงค้างไม่ปฏิเสธ — ตัดหนี้เท่าที่ค้าง ส่วนเกินคงเป็นเครดิตค้างของเอกสารนี้ให้ใช้ภายหลัง
 	// (รับคืน/ส่งคืนสินค้า: Champ BILLFrmInvCreditNote4.cpp:4336-4350 ปิดการตรวจยอดเกินไว้ และ :1172-1181 ใบลดหนี้เก็บยอดคงเหลือของตัวเอง)
 	excessAsCredit bool
+	// lineSettle: ตัดหนี้รายบรรทัดตาม debt_document_id ของแต่ละบรรทัด (ใบจ่ายชำระหนี้ Champ PaymentProcessBill
+	// bcprocess.cpp:348-470) แทนการอ้างหัว DocRef ใบเดียว — id การตัดหนี้ = settlePrefix + เลขที่ + "-" + เลขบรรทัด
+	lineSettle bool
 }
 
 var subledgerSpecs = map[string]subledgerSpec{
@@ -357,14 +368,23 @@ var subledgerSpecs = map[string]subledgerSpec{
 	"paid":                {ledger: "ar", docPrefix: "RCP-", side: 2, controlSide: gl.MappingSideCredit, settleSide: 1, settlePrefix: "SET-AR-"},
 	"purchase":            {ledger: "ap", docPrefix: "AP-", side: 2, controlSide: gl.MappingSideCredit, debt: true},
 	"purchase-return":     {ledger: "ap", docPrefix: "PRN-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-PRN-", excessAsCredit: true},
-	"pay":                 {ledger: "ap", docPrefix: "PAY-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-AP-"},
+	"pay":                 {ledger: "ap", docPrefix: "PAY-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-AP-", lineSettle: true},
+	// เพิ่มหนี้ / ตั้งเจ้าหนี้อื่นๆ เป็นหนี้ฝั่งเดียวกับใบซื้อ; ลดหนี้ (ส่งคืน/ลดหนี้) ตัดหนี้ที่อ้างถึงแบบเดียวกับส่งคืนสินค้า
+	"apdebitnote":  {ledger: "ap", docPrefix: "APDN-", side: 2, controlSide: gl.MappingSideCredit, debt: true},
+	"apotherdebt":  {ledger: "ap", docPrefix: "APOD-", side: 2, controlSide: gl.MappingSideCredit, debt: true},
+	"apcreditnote": {ledger: "ap", docPrefix: "APCN-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-APCN-", excessAsCredit: true},
 }
 
-func debtPrefix(ledger string) string {
-	if ledger == "ar" {
-		return "AR-"
+// debtPrefixes คือ prefix ของแถวหนี้ทุกประเภทในบัญชีย่อยหนึ่ง (เช่น AP-, APDN-, APOD-) เรียงคงที่ — เอกสารที่อ้างเลขที่หนี้หาได้ทุกประเภท
+func debtPrefixes(ledger string) []string {
+	var prefixes []string
+	for _, spec := range subledgerSpecs {
+		if spec.debt && spec.ledger == ledger {
+			prefixes = append(prefixes, spec.docPrefix)
+		}
 	}
-	return "AP-"
+	sort.Strings(prefixes)
+	return prefixes
 }
 
 func controlAccount(rules []gl.MappingRule, side string) string {
@@ -406,7 +426,11 @@ func (s *Store) writeSubledger(ctx context.Context, tx *sql.Tx, scope gl.Scope, 
 	amount := total.StringFixed(2)
 	payload := map[string]any{"doc_no": docNo, "doc_date": date, "journal_id": journalID, "total": amount, "description": description}
 	if spec.debt {
+		// วันครบกำหนดจากหัวเอกสาร (resolveDueDate) — เอกสารหนี้ที่ไม่มีช่องวันครบกำหนดครบกำหนดวันเดียวกับเอกสาร
 		payload["due_date"] = date
+		if doc.DueDate != "" {
+			payload["due_date"] = doc.DueDate
+		}
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -419,13 +443,20 @@ func (s *Store) writeSubledger(ctx context.Context, tx *sql.Tx, scope gl.Scope, 
 		scope.Company, ownID, spec.ledger, partner, scope.Branch, control, amount, spec.side, journalID, body); err != nil {
 		return fmt.Errorf("insert subledger document: %w", err)
 	}
+	if spec.lineSettle {
+		return settleLines(ctx, tx, scope, spec, doc, docNo, ownID, partner, control, date, journalID, total, now)
+	}
 
 	ref := strings.TrimSpace(doc.DocRef)
 	if spec.settleSide == 0 || ref == "" {
 		return nil
 	}
 	var debtID string
-	for _, candidate := range []string{debtPrefix(spec.ledger) + ref, ref} {
+	candidates := []string{}
+	for _, prefix := range debtPrefixes(spec.ledger) {
+		candidates = append(candidates, prefix+ref)
+	}
+	for _, candidate := range append(candidates, ref) {
 		// FOR UPDATE: การตัดหนี้ใบเดียวกันพร้อมกันต้องรอกัน แล้วอ่านยอดคงเหลือหลังอีกฝั่ง commit
 		// หนี้ต้องเป็นของคู่ค้าและบัญชีคุมเดียวกัน (และสาขาเดียวกันเมื่อทำงานในสาขา) แบบเดียวกับการตัดหนี้ของจอบัญชี
 		// (subledger_allocations.go settlement) — อ้างเลขที่ของคู่ค้าอื่น = ไม่มีหนี้ให้ตัด
@@ -505,21 +536,32 @@ func cleanSubledger(ctx context.Context, tx *sql.Tx, scope gl.Scope, dt doctype.
 		return nil
 	}
 	ownID := spec.docPrefix + docNo
-	ownSettlement := ""
-	if spec.settleSide != 0 {
+	// การตัดหนี้ของเอกสารนี้เอง: แบบหัวเอกสาร id = prefix+เลขที่; แบบรายบรรทัด id ขึ้นต้น prefix+เลขที่+"-" และ payment_id = ตัวเอง
+	// (เทียบ payment_id ด้วย เลขที่ "PV001-1" จึงไม่ไปโดนการตัดหนี้บรรทัดของ "PV001")
+	ownSettlement, ownLinePrefix := "", ""
+	switch {
+	case spec.lineSettle:
+		ownLinePrefix = spec.settlePrefix + docNo + "-"
+	case spec.settleSide != 0:
 		ownSettlement = spec.settlePrefix + docNo
 	}
+	const own = `(id=$3 OR ($4<>'' AND payment_id=$2 AND left(id, length($4))=$4))`
 	var bound int
 	if err := tx.QueryRowContext(ctx, `SELECT
-		(SELECT count(*) FROM gl_subledger_settlements WHERE company=$1 AND (debt_id=$2 OR payment_id=$2) AND id<>$3)
-		+ (SELECT count(*) FROM gl_subledger_allocations WHERE company=$1 AND document_id=$2)`, scope.Company, ownID, ownSettlement).Scan(&bound); err != nil {
+		(SELECT count(*) FROM gl_subledger_settlements WHERE company=$1 AND (debt_id=$2 OR payment_id=$2) AND NOT `+own+`)
+		+ (SELECT count(*) FROM gl_subledger_allocations WHERE company=$1 AND document_id=$2)`, scope.Company, ownID, ownSettlement, ownLinePrefix).Scan(&bound); err != nil {
 		return fmt.Errorf("check subledger bindings: %w", err)
 	}
 	if bound > 0 {
 		return settledError(docNo)
 	}
-	if ownSettlement != "" {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM gl_subledger_settlements WHERE company=$1 AND id=$2`, scope.Company, ownSettlement); err != nil {
+	if spec.debt {
+		if err := checkNotReserved(ctx, tx, scope.Company, ownID, docNo); err != nil {
+			return err
+		}
+	}
+	if ownSettlement != "" || ownLinePrefix != "" {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM gl_subledger_settlements WHERE company=$1 AND `+own, scope.Company, ownID, ownSettlement, ownLinePrefix); err != nil {
 			return fmt.Errorf("remove subledger settlement: %w", err)
 		}
 	}

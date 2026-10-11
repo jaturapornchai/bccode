@@ -6,7 +6,6 @@ describe("ERP Menu Completeness Audit", () => {
   // 2026-10-11: จอ UI-only 29 จอเป็น "รอพัฒนา" จนกว่าจะสร้างจริง — ประวัติรายการ/เหตุผลที่ docs/kms/champ/design-2026-10-11/facade-screens.md
   // เมื่อสร้างจอใดจริง ให้ลบ route นั้นออกจากรายการนี้ (และ CHAMP_PENDING_ROUTES ใน menu-screen-status.test.ts) ใน commit เดียวกัน
   const FACADE_PENDING_ROUTES = [
-    "/ap/payment-prepare",
     "/ar/billing-note-auto",
     "/banking/bank-service",
     "/banking/cheque-issued-prepare",

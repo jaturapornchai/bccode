@@ -37,6 +37,8 @@ type subledgerMutation struct {
 	previousVats map[string]SubledgerVat
 	// strict - ผ่านรายการ: ตรวจกฎทุกแถวแม้ไม่เปลี่ยน เพราะแถวจะเข้ารายงานภาษีทันที
 	strict bool
+	// reservedBefore - ยอดจองใบเตรียมจ่ายของหนี้ที่ใบนี้สร้าง/จัดสรร ก่อนคำสั่งนี้ (checkReservations)
+	reservedBefore map[string]APReservation
 }
 
 func cloneJournalDetails(details *JournalDetails) (*JournalDetails, error) {
@@ -95,6 +97,11 @@ func (s *PostgresStore) syncJournalDetails(ctx context.Context, tx *sql.Tx, scop
 		m.rememberWithholdings(old.Details)
 		m.rememberVats(old.Details)
 	}
+	if old != nil {
+		if err = m.snapshotReservations(); err != nil {
+			return nil, err
+		}
+	}
 	m.strict = action == "post"
 	if len(effectiveDate) > 0 {
 		m.reversalDate = effectiveDate[0]
@@ -103,7 +110,7 @@ func (s *PostgresStore) syncJournalDetails(ctx context.Context, tx *sql.Tx, scop
 		if err = m.reverseJournal(); err != nil {
 			return nil, err
 		}
-		return m.relatedChanges()
+		return m.finish()
 	}
 	if old != nil && old.Status == "draft" && (action == "update" || action == "delete") {
 		if err = m.clearDraftLinks(); err != nil {
@@ -114,7 +121,7 @@ func (s *PostgresStore) syncJournalDetails(ctx context.Context, tx *sql.Tx, scop
 		if err = m.audit("delete", old.Details); err != nil {
 			return nil, err
 		}
-		return m.relatedChanges()
+		return m.finish()
 	}
 	if len(details.Withdrawals) > 0 {
 		return nil, fmt.Errorf("use reconcile for withdrawal")
@@ -133,7 +140,7 @@ func (s *PostgresStore) syncJournalDetails(ctx context.Context, tx *sql.Tx, scop
 	if err = m.audit(action, details); err != nil {
 		return nil, err
 	}
-	return m.relatedChanges()
+	return m.finish()
 }
 
 func (m *subledgerMutation) touchDetails(d *JournalDetails) error {

@@ -36,7 +36,8 @@ func TestDeleteDocReleasesLedgerAndStockForBothLookupForms(t *testing.T) {
 				WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			expectDateOpen(mock, testDocDay, false)
 			mock.ExpectQuery(`FROM gl_subledger_settlements`).
-				WithArgs(testCompany, "AP-"+docNo, "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))
+				WithArgs(testCompany, "AP-"+docNo, "", "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))
+			expectNotReserved(mock, "AP-"+docNo)
 			mock.ExpectExec(`DELETE FROM gl_subledger_documents WHERE company=\$1 AND id=\$2`).
 				WithArgs(testCompany, "AP-"+docNo).WillReturnResult(sqlmock.NewResult(0, 0))
 			mock.ExpectQuery(`FROM erp_doc_journals WHERE businesscode=\$1 AND transflag=\$2 AND docno=\$3 AND voided_at IS NULL`).
@@ -87,7 +88,7 @@ func TestDeleteDocRefusedWhenSettled(t *testing.T) {
 	mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
 		WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	expectDateOpen(mock, testDocDay, false)
-	mock.ExpectQuery(`FROM gl_subledger_settlements`).WithArgs(testCompany, "AP-"+docNo, "").
+	mock.ExpectQuery(`FROM gl_subledger_settlements`).WithArgs(testCompany, "AP-"+docNo, "", "").
 		WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(1))
 	mock.ExpectRollback()
 
