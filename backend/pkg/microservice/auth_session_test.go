@@ -60,11 +60,11 @@ func TestSessionRefreshRotationRejectsReplay(t *testing.T) {
 		t.Fatalf("new access token must be active: %v", err)
 	}
 	accessTTL, err := cacheTTL(cacher, accessKey)
-	if err != nil || accessTTL <= 0 || accessTTL > accessTokenMaxAge {
+	if err != nil || accessTTL <= 0 || accessTTL > accessTokenMaxAge+cacheClockSkew {
 		t.Fatalf("access token TTL = %v, want (0,%v]; err=%v", accessTTL, accessTokenMaxAge, err)
 	}
 	refreshTTL, err := cacheTTL(cacher, refreshPrefix+refreshToken)
-	if err != nil || refreshTTL <= 0 || refreshTTL > sessionMaxAge {
+	if err != nil || refreshTTL <= 0 || refreshTTL > sessionMaxAge+cacheClockSkew {
 		t.Fatalf("refresh token TTL = %v, want (0,%v]; err=%v", refreshTTL, sessionMaxAge, err)
 	}
 
@@ -306,6 +306,10 @@ func newTestPostgresCacher(t *testing.T) *Cacher {
 }
 
 // cacheTTL is the remaining lifetime of a cache key (its earliest expiring field).
+// expires_at comes from the Go clock, cacheTTL measures with PostgreSQL now(): a test on the host against
+// a Docker container sees up to ~1s of clock skew (TTL 15m0.7s), so allow it. Same host in production.
+const cacheClockSkew = 2 * time.Second
+
 func cacheTTL(cacher *Cacher, key string) (time.Duration, error) {
 	var seconds float64
 	err := cacher.db.QueryRowContext(context.Background(),
