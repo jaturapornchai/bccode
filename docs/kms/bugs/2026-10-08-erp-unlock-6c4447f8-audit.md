@@ -60,7 +60,7 @@ fixed: partial
 - Auto-GL hard-code ผัง/ปีบัญชี fallback `"2569"` ; จำนวนเงิน `float64` (Rule 20) ; ความผิดพลาดของ auto-GL/สต็อกแค่ `fmt.Printf`
 - ประเภท ByLine (`stock-transfer`, `stock-adjustment`) ไม่เขียน `calcflag` → ไม่เคลื่อนสต็อก ; ไม่มีตัวกัน stock ติดลบ ; `apdebitnote`/`apcreditnote`/`ardebitnote` ผลต่อสต็อกรอตัดสิน
 - `status` draft/approved ไม่ถูกเก็บ ; เลขที่เอกสารต่อบริษัทแบบ Champ (`DocFormat`) ; ใบเช็ค/บัตรเครดิตไม่มีวงจรสถานะแบบ Champ
-- รายงานหนี้ 8 query ปนบริษัท (`d.company = '01'`) ; มูลค่าสต็อกไม่เลือกงวดล่าสุด ; ฟิลเตอร์รายงานตาม handoff ข้อ [2] เดิม ; `TestBuildDebtReportQuery` ล้มที่ HEAD
+- ~~รายงานหนี้ 8 query ปนบริษัท (`d.company = '01'`) ; มูลค่าสต็อกไม่เลือกงวดล่าสุด~~ **แก้แล้ว 2026-10-11** (`b394e44d`: กรองบริษัทเดียว, `DISTINCT ON (itemcode, whcode)` งวดล่าสุด `inventory/service.go:436`) ; ฟิลเตอร์รายงานตาม handoff ข้อ [2] เดิม ; ~~`TestBuildDebtReportQuery` ล้มที่ HEAD~~ ผ่านแล้ว 2026-10-11
 - BFF `userErrorStatusOk` แปลง 4xx เป็น 200 แต่ `saveErpTransaction`/`deleteErpTransaction` เช็คแค่ `res.ok` (ยังไม่ทดสอบบนจอ)
 - จอ `/price_history`, `/product_barcode_shelf` แบบ standalone ยังไม่ guard (มีมาก่อน)
 
