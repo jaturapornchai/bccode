@@ -87,6 +87,8 @@ interface CompanyBranchTreeViewProps {
 
 interface CompanyWorkspace {
   shop: { holdingcode: string; role?: number };
+  company?: { code?: string } | null;
+  branch?: { guidfixed?: string } | null;
   shopInfo?: {
     settings?: {
       language?: string;
@@ -909,6 +911,10 @@ export function CompanyBranchTreeView({
   const ensureActiveWorkspaceHolding = useCallback(async () => {
     const holdingcode = workspace?.shop?.holdingcode?.trim();
     if (!auth || !holdingcode) return;
+    // Keep the selected company/branch: re-selecting the holding alone drops the session to holding level
+    // and every GL screen opened afterwards answers 409 "please select a company".
+    const businesscode = workspace?.company?.code?.trim();
+    const branchuid = businesscode ? workspace?.branch?.guidfixed?.trim() : "";
 
     const res = await authFetch("/api/workspace/select-holding", {
       method: "POST",
@@ -917,7 +923,12 @@ export function CompanyBranchTreeView({
         "x-bc-backend-url": auth.backendUrl,
         Authorization: `Bearer ${auth.token}`,
       },
-      body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
+      body: JSON.stringify({
+        backendUrl: auth.backendUrl,
+        holdingcode,
+        ...(businesscode ? { businesscode } : {}),
+        ...(branchuid ? { branchuid } : {}),
+      }),
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok || json.success === false) {
