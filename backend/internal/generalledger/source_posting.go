@@ -32,6 +32,10 @@ func ExecuteSourceTx(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command) 
 	if cmd.Action != "create" && cmd.ID == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกรายการบัญชี")
 	}
+	if cmd.Action == "create" && (cmd.Journal == nil || !moduleSourceSystems[cmd.Journal.SourceSystem]) {
+		return Result{}, fmt.Errorf("source voucher must carry a source system listed in moduleSourceSystems")
+	}
+	cmd.fromModule = true
 	return (&PostgresStore{}).executeInTx(ctx, tx, scope, cmd)
 }
 
@@ -96,6 +100,34 @@ func SourceAccountIsCash(ctx context.Context, tx *sql.Tx, scope Scope, code stri
 		return false, err
 	}
 	return accounts[code].IsCash, nil
+}
+
+// Source systems of the modules in this program that post vouchers for their own documents through ExecuteSourceTx.
+// Like Champ BCTrans.Source != 0, such a voucher changes only through its source document (see mutateJournal).
+const (
+	SourceSystemERP    = "erp"
+	SourceSystemCheque = "cheque"
+)
+
+var moduleSourceSystems = map[string]bool{SourceSystemERP: true, SourceSystemCheque: true}
+
+const (
+	codeJournalFromModule           = "journal_from_module"
+	codeJournalSourceSystemReserved = "journal_source_system_reserved"
+)
+
+// journalFromModuleError refuses a GL edit, delete or reversal of a module voucher (Champ JONAL_MESS_NOT_SAVE /
+// JONAL_MESS_NOT_DELETE, glfrmjournal.cpp:524-529, :721-724); the Thai text is the th cell of its languages.tsv row.
+func journalFromModuleError(docNo string) *UserError {
+	e := userError(codeJournalFromModule, strings.ReplaceAll(language.Text("gl_err_"+codeJournalFromModule, "th"), "{0}", docNo))
+	e.Args = []string{docNo}
+	return e
+}
+
+func sourceSystemReservedError(system string) *UserError {
+	e := fieldError(codeJournalSourceSystemReserved, "source_system", strings.ReplaceAll(language.Text("gl_err_"+codeJournalSourceSystemReserved, "th"), "{0}", system))
+	e.Args = []string{system}
+	return e
 }
 
 const (

@@ -240,7 +240,7 @@ func (s *Store) postDocument(ctx context.Context, tx *sql.Tx, scope gl.Scope, dt
 		Reference:      docNo,
 		BranchCode:     scope.Branch,
 		Kind:           "manual",
-		SourceSystem:   "erp",
+		SourceSystem:   gl.SourceSystemERP,
 		SourceRecordID: sourceRecordID,
 		Lines:          mappingLines(mapping.Rules, amounts, description),
 	}

@@ -139,7 +139,7 @@ func (Ledger) Post(ctx context.Context, tx *sql.Tx, scope cheque.Scope, p cheque
 		Reference:      p.DocNo,
 		BranchCode:     s.Branch,
 		Kind:           "manual",
-		SourceSystem:   "cheque",
+		SourceSystem:   gl.SourceSystemCheque,
 		SourceRecordID: fmt.Sprintf("%s:%s:r%d", dt.Key, p.DocNo, p.Revision),
 		Lines:          lines,
 	}

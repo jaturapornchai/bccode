@@ -268,19 +268,21 @@ type Command struct {
 	prepared   *preparedProcess
 	// postBatchNo is set only by the batch post (post_batches.go) when it reuses the single-journal post path.
 	postBatchNo string
-	Resource    string      `json:"resource"`
-	ID          string      `json:"id"`
-	Action      string      `json:"action"`
-	RequestID   string      `json:"requestid"`
-	Version     int64       `json:"version"`
-	Reason      string      `json:"reason"`
-	Date        string      `json:"date"`
-	DocNo       string      `json:"docno"`
-	Account     *Account    `json:"account,omitempty"`
-	FiscalYear  *FiscalYear `json:"fiscalyear,omitempty"`
-	Master      *Master     `json:"master,omitempty"`
-	Journal     *Journal    `json:"journal,omitempty"`
-	Budget      *Budget     `json:"budget,omitempty"`
+	// fromModule is set only by ExecuteSourceTx: the command comes from the module that owns the voucher's document.
+	fromModule bool
+	Resource   string      `json:"resource"`
+	ID         string      `json:"id"`
+	Action     string      `json:"action"`
+	RequestID  string      `json:"requestid"`
+	Version    int64       `json:"version"`
+	Reason     string      `json:"reason"`
+	Date       string      `json:"date"`
+	DocNo      string      `json:"docno"`
+	Account    *Account    `json:"account,omitempty"`
+	FiscalYear *FiscalYear `json:"fiscalyear,omitempty"`
+	Master     *Master     `json:"master,omitempty"`
+	Journal    *Journal    `json:"journal,omitempty"`
+	Budget     *Budget     `json:"budget,omitempty"`
 	// PostBatch: filters of the posting screen (action "check") or the journals to post (create).
 	PostBatch *PostBatchInput `json:"postbatch,omitempty"`
 	// VatAdjust: the purchase VAT rows to change at once (resource "vat-adjustments", vat_adjust.go).

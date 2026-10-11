@@ -565,6 +565,9 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if contains([]string{"closing", "reversal", "mapping"}, j.Kind) {
 			return nil, errJournalKindNotAllowed
 		}
+		if !cmd.fromModule && moduleSourceSystems[j.SourceSystem] {
+			return nil, sourceSystemReservedError(j.SourceSystem)
+		}
 		j.Lines = append([]Line(nil), j.Lines...)
 		// The new-journal form starts with no branch; it belongs to the branch the session works in.
 		// Without this a branch-scoped session rejected every new journal as "not found" (UAT 2026-09-24).
@@ -620,6 +623,11 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		return nil, err
 	}
 	previous := old
+	// Champ BCTrans.Source != 0 (glfrmjournal.cpp:524-529 save, :721-724 delete, :1554-1557 cancel): the voucher of a
+	// module document changes only through that document; the GL may still post it (Champ 5512 posts every source).
+	if !cmd.fromModule && cmd.Action != "post" && moduleSourceSystems[old.SourceSystem] {
+		return nil, journalFromModuleError(old.DocNo)
+	}
 
 	if cmd.Action == "delete" {
 		if err := s.protectGeneratedOpening(ctx, tx, scope, old); err != nil {

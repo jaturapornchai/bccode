@@ -187,3 +187,55 @@ func isCode(err error, code string) bool {
 	user, ok := AsUserError(err)
 	return ok && user.Code == code
 }
+
+// Champ BCTrans.Source != 0 (glfrmjournal.cpp:524-529 save, :721-724 delete, :1554-1557 cancel): a voucher a module
+// posted for its own document changes only through that document; the GL screen may post it but never edit, delete
+// or reverse it, and a GL caller cannot borrow a module's source system for its own voucher.
+func TestGLCommandCannotChangeModuleVoucherIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	voucher := func(doc string) *Journal {
+		return &Journal{DocNo: doc, Date: "2026-03-01", BookCode: "SV", FiscalYear: "2026", Description: "ขายสินค้า " + doc, Kind: "manual", BranchCode: "B1", SourceSystem: SourceSystemERP, SourceRecordID: "sale-invoice:" + doc + ":r1",
+			Lines: []Line{{AccountCode: "1000", Debit: Amount("107.00"), Credit: Amount("0")}, {AccountCode: "4000", Debit: Amount("0"), Credit: Amount("100.00")}, {AccountCode: "5000", Debit: Amount("0"), Credit: Amount("7.00")}}}
+	}
+	var draft, toPost Result
+	f.inTx(func(tx *sql.Tx) {
+		var err error
+		if draft, err = ExecuteSourceTx(f.ctx, tx, f.scope, Command{Resource: "journals", Action: "create", RequestID: uuid.NewString(), Journal: voucher("INV-D")}); err != nil {
+			t.Fatal(err)
+		}
+		if toPost, err = ExecuteSourceTx(f.ctx, tx, f.scope, Command{Resource: "journals", Action: "create", RequestID: uuid.NewString(), Journal: voucher("INV-P")}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	refused := func(cmd Command, code string) {
+		t.Helper()
+		if _, err := f.execute(f.scope, cmd); err == nil {
+			t.Fatalf("GL %s was accepted", cmd.Action)
+		} else if user, ok := AsUserError(err); !ok || user.Code != code {
+			t.Fatalf("GL %s error = %v, want code %s", cmd.Action, err, code)
+		}
+	}
+
+	edited := f.journal(draft.ID)
+	edited.Description = "แก้จากจอบัญชีแยกประเภท"
+	refused(Command{Resource: "journals", Action: "update", RequestID: uuid.NewString(), ID: draft.ID, Version: draft.Version, Journal: &edited}, codeJournalFromModule)
+	refused(Command{Resource: "journals", Action: "delete", RequestID: uuid.NewString(), ID: draft.ID, Version: draft.Version}, codeJournalFromModule)
+
+	posted, err := f.execute(f.scope, Command{Resource: "journals", Action: "post", RequestID: uuid.NewString(), ID: toPost.ID, Version: toPost.Version})
+	if err != nil {
+		t.Fatalf("GL post of a module voucher: %v", err)
+	}
+	reverse := Command{Resource: "journals", Action: "reverse", RequestID: uuid.NewString(), ID: toPost.ID, Version: posted.Version, DocNo: "RV-INV-P", Date: "2026-03-02", Reason: "ลูกค้าคืนสินค้าทั้งใบ"}
+	refused(reverse, codeJournalFromModule)
+	refused(Command{Resource: "journals", Action: "create", RequestID: uuid.NewString(), Journal: voucher("INV-S")}, codeJournalSourceSystemReserved)
+
+	f.inTx(func(tx *sql.Tx) {
+		reverse.RequestID = uuid.NewString()
+		if _, err := ExecuteSourceTx(f.ctx, tx, f.scope, reverse); err != nil {
+			t.Fatalf("module reversal of its own voucher: %v", err)
+		}
+	})
+	if j := f.journal(toPost.ID); j.Status != "reversed" {
+		t.Fatalf("status = %s, want reversed", j.Status)
+	}
+}
