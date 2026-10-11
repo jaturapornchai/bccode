@@ -2,6 +2,8 @@
 
 Full version (reasons, examples, history): `docs/kms/rules/agents-full.md` — open only the section you need
 
+**Talk to ลุงจืด in Thai — every message ลุงจืด sees** (progress updates, summaries, questions, tool descriptions); this file is English only to save tokens, not a reason to answer in English
+
 ## Router (`D:\bccode`)
 - KMS `docs/kms/` (`00`-`22` no `12`; `README.md` index; `decisions/` ADR; `bugs/`; `architecture/`; `snippets/`) = what code does, not business rules; unclear requirement→ask ลุงจืด, no guessing; code=truth (docs≠code→fix docs in same commit)
 - Read only needed files (map `docs/README.md`); no sweeping folders/opening handoff early; `docs/kms/00-source-router.md` only to locate code evidence
@@ -117,7 +119,7 @@ ADR `2026-10-09-champ-parity-purpose-additive-extras.md`, `2026-10-11-champ-proc
 
 ## Opus lead+5.5 children
 - Orchestration Rule in `~/.agents/AGENTS.md` (5.5 family; fable only when ordered): `opus`=accounting/tax/money (Rule 20)/security/auth/permissions/verify; `sonnet`=explore/UI/unit+test; `haiku`=mechanical + short Thai drafts (UI microcopy, `languages.tsv` th/en rows, menu descriptions; Lead checks before commit), never tax/law/accounting explanations, accounting KMS or completeness audits (Champ parity, secret scan, flag removal)
-- Develop first, verify once: mid-work only `go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>`, no per-step agent reviews; end of batch: `npm run verify:all`+one combined `git diff` review (money/tax/permissions→opus, else sonnet)+one Demo UAT (psql per operation still)+one screenshot round→commit→deploy; not done before that passes
+- Develop first, verify once: mid-work only `go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>`, no per-step agent reviews; end of batch: `npm run verify:all`+one combined `git diff` review (money/tax/permissions→opus, else sonnet)+one Demo UAT (psql per operation still)+one screenshot round→collect every failure from that run→group by root cause→plan→fix all in one pass (regression test that fails first per fix, one commit per root cause, disjoint files→parallel children)→one full rerun; blockers (build/login/preflight) first→commit→deploy; not done before that passes
 - Children=draft: Opus re-runs verify/tests/PostgreSQL queries; children never commit/push/deploy/touch `mydocs/`; no other-vendor AI unless ordered
 
 ## Dev: forward only
