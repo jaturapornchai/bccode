@@ -73,7 +73,7 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(243);
+    expect(items).toHaveLength(251);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();
@@ -122,7 +122,7 @@ describe("menu screen availability", () => {
   it("connects every ledger workflow including the monthly budget entry screen (2026-09-25)", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual([]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(29);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(37);
     expect(isMenuScreenPending("/gl/unposting")).toBe(false);
     expect(isMenuScreenPending("/gl/budget")).toBe(false);
     expect(isMenuScreenPending("/gl/journal-books")).toBe(false);
