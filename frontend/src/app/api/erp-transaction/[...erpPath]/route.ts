@@ -10,6 +10,32 @@ function sanitizeSegments(segments: string[]): boolean {
   return segments.every((seg) => /^[\p{L}\p{M}\p{N}_.-]+$/u.test(seg) && seg !== "." && seg !== "..");
 }
 
+// partner = จอวันที่ส่งของ; from_/to_*, sale_code = จอปรับปรุงสถานะใบรับสินค้าและพิมพ์ใบวางบิลอัตโนมัติ (ชื่อตรงกับที่ backend อ่านจริง)
+const ALLOWED_GET_PARAMS = [
+  "q",
+  "page",
+  "limit",
+  "offset",
+  "fromdate",
+  "todate",
+  "custcode",
+  "branchcode",
+  "status",
+  "lang",
+  "partner",
+  "from_date",
+  "to_date",
+  "from_docno",
+  "to_docno",
+  "from_vendor",
+  "to_vendor",
+  "from_dept",
+  "to_dept",
+  "from_cust",
+  "to_cust",
+  "sale_code",
+];
+
 export async function GET(request: Request, context: Context) {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
@@ -27,9 +53,8 @@ export async function GET(request: Request, context: Context) {
 
   try {
     const query = new URLSearchParams();
-    const allowedParams = ["q", "page", "limit", "offset", "fromdate", "todate", "custcode", "branchcode", "status", "lang"];
     new URL(request.url).searchParams.forEach((val, key) => {
-      if (allowedParams.includes(key)) query.set(key, val);
+      if (ALLOWED_GET_PARAMS.includes(key)) query.set(key, val);
     });
 
     const targetPath = `/transaction/${erpPath.map(encodeURIComponent).join("/")}?${query.toString()}`;

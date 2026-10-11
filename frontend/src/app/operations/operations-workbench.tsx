@@ -19,6 +19,7 @@ import {
   type PendingApprovalDoc,
 } from "@/lib/erp-operations";
 import { getAuthSession } from "@/lib/client-auth-session";
+import type { BatchApproveItemResult } from "@/lib/erp-transaction";
 import type { LanguageCode } from "@/lib/i18n";
 import { ErpDocEventsDialog } from "@/components/erp-doc-events-dialog";
 import { DeliveryDateOverhaulScreen } from "@/components/delivery-date-overhaul";
@@ -56,6 +57,11 @@ const MESSAGES: Record<string, { key: string; th: string }> = {
   holding_required: { key: "holding_required", th: "ยังไม่ได้เลือกกิจการ" },
   docno_required: { key: "ops_msg_document_number_is_missing", th: "ไม่พบเลขที่เอกสาร" },
   unauthorized: { key: "ops_msg_you_do_not_have_permission", th: "ไม่มีสิทธิ์ดำเนินการรายการนี้" },
+  erp_err_action_forbidden: { key: "ops_msg_you_do_not_have_permission", th: "ไม่มีสิทธิ์ดำเนินการรายการนี้" },
+  module_not_available: {
+    key: "module_not_available",
+    th: "จอนี้ยังไม่เปิดใช้งาน ระบบยังไม่รองรับเอกสารชนิดนี้ กรุณาติดต่อผู้ดูแลระบบ",
+  },
   load_failed: { key: "load_data_failed", th: "โหลดข้อมูลไม่สำเร็จ" },
   connection_error: { key: "ops_msg_unable_to_connect_to_the", th: "เชื่อมต่อระบบไม่ได้" },
   action_failed: { key: "ops_msg_action_failed_please_try_again", th: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" },
@@ -63,11 +69,18 @@ const MESSAGES: Record<string, { key: string; th: string }> = {
   unapprove_success: { key: "erp_msg_unapproved", th: "ยกเลิกการอนุมัติเอกสารเรียบร้อยแล้ว" },
   cancel_success: { key: "erp_msg_cancelled", th: "ยกเลิกเอกสารเรียบร้อยแล้ว" },
   reject_success: { key: "reject_success", th: "บันทึกการไม่อนุมัติเรียบร้อยแล้ว" },
+  batch_partial: {
+    key: "ops_batch_partial_success",
+    th: "ดำเนินการสำเร็จบางรายการ กรุณาตรวจสอบรายการที่ไม่สำเร็จด้านล่าง",
+  },
 };
 
+// backend คืนได้สูงสุด 200 แถวต่อหน้า (ค่าเริ่มต้น 50)
+const PAGE_SIZE = 50;
+
 function messageText(key: string, tr: BackendTextFn): string {
-  const message = MESSAGES[key];
-  if (!message) return key;
+  // คีย์ที่ไม่รู้จักห้ามหลุดเป็นรหัสให้ผู้ใช้เห็น
+  const message = MESSAGES[key] ?? MESSAGES.action_failed;
   return tr(message.key, message.th);
 }
 
@@ -97,6 +110,7 @@ export function OperationsWorkbench({
   }
   return (
     <OperationsApprovalWorkbench
+      key={route}
       route={route}
       embedded={embedded}
       language={language}
@@ -132,6 +146,9 @@ function OperationsApprovalWorkbench({
   const [noticeKey, setNoticeKey] = useState<string | null>(null);
   const [noticeOk, setNoticeOk] = useState<boolean>(false);
   const [actionDetail, setActionDetail] = useState<string | null>(null);
+  const [batchFailures, setBatchFailures] = useState<{ id: string; text: string }[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
   const [selectedDocnos, setSelectedDocnos] = useState<Set<string>>(new Set());
   const [reasonInput, setReasonInput] = useState<string>("");
   const [pendingAction, setPendingAction] = useState<{
@@ -149,11 +166,21 @@ function OperationsApprovalWorkbench({
     if (!approvalReady) return;
     setLoading(true);
     setErrorKey(null);
-    const result = await fetchPendingApprovals({ code: reportCode, holdingcode });
+    const result = await fetchPendingApprovals({
+      code: reportCode,
+      holdingcode,
+      offset: (page - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    });
     setDocs(result.docs);
+    setTotal(result.total);
     setErrorKey(result.error ?? null);
     setLoading(false);
-  }, [approvalReady, reportCode, holdingcode]);
+    // ทำรายการหน้าสุดท้ายจนหมด → ถอยไปหน้าที่ยังมีข้อมูล (effect โหลดซ้ำเอง)
+    if (!result.error && result.docs.length === 0 && result.total > 0 && page > 1) {
+      setPage(Math.max(1, Math.ceil(result.total / PAGE_SIZE)));
+    }
+  }, [approvalReady, reportCode, holdingcode, page]);
 
   useEffect(() => {
     void loadDocs();
@@ -189,27 +216,60 @@ function OperationsApprovalWorkbench({
     }
   }, [selectedDocnos.size, filteredDocs]);
 
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // ค้นหาในหน้าที่โหลดอยู่ — มีคำค้นให้นับตามที่เห็น ไม่มีให้นับทั้งหมดจาก backend
+  const shownCount = searchTerm.trim() ? filteredDocs.length : total;
+
+  const changePage = useCallback((nextPage: number) => {
+    setSelectedDocnos(new Set());
+    setPage(nextPage);
+  }, []);
+
+  // ปุ่มทำรายการเป็นชุด: ข้อความที่มี {0} แทนด้วยจำนวนที่เลือก ไม่มี {0} ต่อท้ายด้วย (จำนวน)
+  const withSelectedCount = (label: string) =>
+    label.includes("{0}") ? label.replace("{0}", String(selectedDocnos.size)) : `${label} (${selectedDocnos.size})`;
+
+  // backend ตอบผลทีละใบ — HTTP สำเร็จแต่บางใบไม่ผ่านต้องบอกว่าใบไหนและเพราะอะไร (ข้อความตามภาษาผ่านคีย์ gl_err_<code>)
+  function showBatchOutcome(
+    result: { success: boolean; messageKey: string; detail?: string; total: number; items?: BatchApproveItemResult[] },
+    done: number,
+    summary: { key: string; fallback: string },
+  ) {
+    const failed = (result.items ?? []).filter((item) => !item.success);
+    setBatchFailures(
+      failed.map((item) => ({
+        id: item.id,
+        text: item.code ? tr(`gl_err_${item.code}`, item.message ?? item.code) : (item.message ?? ""),
+      })),
+    );
+    setNoticeOk(result.success && failed.length === 0);
+    setNoticeKey(
+      !result.success || failed.length === 0 ? result.messageKey : done === 0 ? "action_failed" : "batch_partial",
+    );
+    if (result.detail) {
+      setActionDetail(result.detail);
+    } else if (result.success) {
+      setActionDetail(
+        tr(summary.key, summary.fallback).replace("{0}", String(done)).replace("{1}", String(result.total)),
+      );
+    }
+  }
+
   async function handleBatchApprove() {
     if (selectedDocnos.size === 0) return;
     setSubmitting(true);
     setActionDetail(null);
+    setBatchFailures([]);
     const result = await submitBatchApprove({
       code: reportCode,
       docnos: Array.from(selectedDocnos),
       language,
     });
     setSubmitting(false);
-    setNoticeKey(result.messageKey);
-    setNoticeOk(result.success);
-    if (result.detail) {
-      setActionDetail(result.detail);
-    } else if (result.success) {
-      setActionDetail(
-        tr("ops_batch_approve_summary", "อนุมัติสำเร็จ {0} จาก {1} รายการ")
-          .replace("{0}", String(result.approved))
-          .replace("{1}", String(result.total)),
-      );
-    }
+    showBatchOutcome(result, result.approved, {
+      key: "ops_batch_approve_summary",
+      fallback: "อนุมัติสำเร็จ {0} จาก {1} รายการ",
+    });
     setSelectedDocnos(new Set());
     await loadDocs();
   }
@@ -220,6 +280,7 @@ function OperationsApprovalWorkbench({
     const reason = reasonInput.trim();
     setSubmitting(true);
     setActionDetail(null);
+    setBatchFailures([]);
     if (pendingBatchAction === "unapprove") {
       const result = await submitBatchUnapprove({
         code: reportCode,
@@ -228,17 +289,10 @@ function OperationsApprovalWorkbench({
         language,
       });
       setSubmitting(false);
-      setNoticeKey(result.messageKey);
-      setNoticeOk(result.success);
-      if (result.detail) {
-        setActionDetail(result.detail);
-      } else if (result.success) {
-        setActionDetail(
-          tr("ops_batch_unapprove_summary", "ยกเลิกการอนุมัติสำเร็จ {0} จาก {1} รายการ")
-            .replace("{0}", String(result.unapproved))
-            .replace("{1}", String(result.total)),
-        );
-      }
+      showBatchOutcome(result, result.unapproved, {
+        key: "ops_batch_unapprove_summary",
+        fallback: "ยกเลิกการอนุมัติสำเร็จ {0} จาก {1} รายการ",
+      });
     } else {
       const result = await submitBatchCancel({
         code: reportCode,
@@ -247,17 +301,10 @@ function OperationsApprovalWorkbench({
         language,
       });
       setSubmitting(false);
-      setNoticeKey(result.messageKey);
-      setNoticeOk(result.success);
-      if (result.detail) {
-        setActionDetail(result.detail);
-      } else if (result.success) {
-        setActionDetail(
-          tr("ops_batch_cancel_summary", "ยกเลิกเอกสารสำเร็จ {0} จาก {1} รายการ")
-            .replace("{0}", String(result.cancelled))
-            .replace("{1}", String(result.total)),
-        );
-      }
+      showBatchOutcome(result, result.cancelled, {
+        key: "ops_batch_cancel_summary",
+        fallback: "ยกเลิกเอกสารสำเร็จ {0} จาก {1} รายการ",
+      });
     }
     setPendingBatchAction(null);
     setReasonInput("");
@@ -270,6 +317,7 @@ function OperationsApprovalWorkbench({
     const actionby = getAuthSession()?.username ?? "";
     setSubmitting(true);
     setActionDetail(null);
+    setBatchFailures([]);
     const result = await submitApprovalAction({
       code: reportCode,
       holdingcode,
@@ -341,7 +389,7 @@ function OperationsApprovalWorkbench({
               className="gap-2 min-h-[44px]"
             >
               <CheckCircle className="h-4 w-4" />
-              {tr("ops_batch_approve", "อนุมัติรายการที่เลือก")} ({selectedDocnos.size})
+              {withSelectedCount(tr("ops_batch_approve", "อนุมัติรายการที่เลือก"))}
             </Button>
           )}
 
@@ -356,7 +404,7 @@ function OperationsApprovalWorkbench({
               className="gap-2 min-h-[44px] text-amber-600 hover:text-amber-700 border-amber-300 dark:border-amber-700"
             >
               <Undo2 className="h-4 w-4" />
-              {tr("ops_batch_unapprove", "ยกเลิกการอนุมัติที่เลือก")} ({selectedDocnos.size})
+              {withSelectedCount(tr("ops_batch_unapprove", "ยกเลิกการอนุมัติที่เลือก"))}
             </Button>
           )}
 
@@ -371,7 +419,7 @@ function OperationsApprovalWorkbench({
               className="gap-2 min-h-[44px]"
             >
               <Ban className="h-4 w-4" />
-              {tr("ops_batch_cancel", "ยกเลิกเอกสารที่เลือก")} ({selectedDocnos.size})
+              {withSelectedCount(tr("ops_batch_cancel", "ยกเลิกเอกสารที่เลือก"))}
             </Button>
           )}
 
@@ -415,12 +463,23 @@ function OperationsApprovalWorkbench({
             {actionDetail && (
               <span className="text-xs font-normal pl-7 opacity-90">{actionDetail}</span>
             )}
+            {batchFailures.length > 0 && (
+              <ul className="mt-1 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-12 text-xs font-normal">
+                {batchFailures.map((failure) => (
+                  <li key={failure.id}>
+                    <span className="font-mono font-semibold">{failure.id}</span>
+                    {failure.text ? `: ${failure.text}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <button
             type="button"
             onClick={() => {
               setNoticeKey(null);
               setActionDetail(null);
+              setBatchFailures([]);
             }}
             className="rounded-md px-2 py-1 text-xs underline"
             aria-label={tr("ops_dismiss_message", "ปิดข้อความแจ้งเตือน")}
@@ -449,16 +508,16 @@ function OperationsApprovalWorkbench({
                 {actionType === "approve"
                   ? tr("ops_pending_approvals_count", "รายการรอการอนุมัติ ({0} รายการ)").replace(
                       "{0}",
-                      String(filteredDocs.length),
+                      String(shownCount),
                     )
                   : actionType === "unapprove"
                   ? tr("ops_approved_docs_count", "รายการที่อนุมัติแล้ว ({0} รายการ)").replace(
                       "{0}",
-                      String(filteredDocs.length),
+                      String(shownCount),
                     )
                   : tr("ops_active_docs_count", "รายการเอกสารที่ใช้งานอยู่ ({0} รายการ)").replace(
                       "{0}",
-                      String(filteredDocs.length),
+                      String(shownCount),
                     )}
               </span>
             </div>
@@ -477,17 +536,15 @@ function OperationsApprovalWorkbench({
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
-                  {actionType === "approve" && (
-                    <th className="px-3 py-3 w-10 text-center">
-                      <input
-                        type="checkbox"
-                        checked={filteredDocs.length > 0 && selectedDocnos.size === filteredDocs.length}
-                        onChange={toggleSelectAll}
-                        aria-label={tr("ops_select_all", "เลือกทั้งหมด")}
-                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                      />
-                    </th>
-                  )}
+                  <th className="px-3 py-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filteredDocs.length > 0 && selectedDocnos.size === filteredDocs.length}
+                      onChange={toggleSelectAll}
+                      aria-label={tr("ops_select_all", "เลือกทั้งหมด")}
+                      className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-4 py-3">{tr("document_no", "เลขที่เอกสาร")}</th>
                   <th className="px-4 py-3">{tr("date", "วันที่")}</th>
                   <th className="px-4 py-3">{tr("ops_requested_by", "ผู้ขออนุมัติ")}</th>
@@ -499,7 +556,7 @@ function OperationsApprovalWorkbench({
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={actionType === "approve" ? 7 : 6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         {tr("ops_loading_data", "กำลังโหลดข้อมูลจากระบบ...")}
@@ -508,7 +565,7 @@ function OperationsApprovalWorkbench({
                   </tr>
                 ) : filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={actionType === "approve" ? 7 : 6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
                       {errorKey
                         ? messageText(errorKey, tr)
                         : tr("ops_no_pending_documents", "ไม่มีเอกสารในรายการ")}
@@ -517,17 +574,15 @@ function OperationsApprovalWorkbench({
                 ) : (
                   filteredDocs.map((doc) => (
                     <tr key={doc.docno} className="hover:bg-muted/30 transition-colors">
-                      {actionType === "approve" && (
-                        <td className="px-3 py-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedDocnos.has(doc.docno)}
-                            onChange={() => toggleSelectDoc(doc.docno)}
-                            aria-label={`Select ${doc.docno}`}
-                            className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                          />
-                        </td>
-                      )}
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedDocnos.has(doc.docno)}
+                          onChange={() => toggleSelectDoc(doc.docno)}
+                          aria-label={`${tr("ops_select_doc", "เลือกเอกสาร")} ${doc.docno}`}
+                          className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3 font-semibold text-primary font-mono">{doc.docno}</td>
                       <td className="px-4 py-3 font-mono text-xs">{doc.docdate || "-"}</td>
                       <td className="px-4 py-3">{doc.requestorname || "-"}</td>
@@ -667,6 +722,35 @@ function OperationsApprovalWorkbench({
               </tbody>
             </table>
           </div>
+
+          {pageCount > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3 text-sm">
+              <span>
+                {tr("ops_page_of", "หน้า {0} จาก {1} · {2} รายการ")
+                  .replace("{0}", String(page))
+                  .replace("{1}", String(pageCount))
+                  .replace("{2}", total.toLocaleString("th-TH"))}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="min-h-[44px]"
+                  disabled={loading || page <= 1}
+                  onClick={() => changePage(page - 1)}
+                >
+                  {tr("previous", "ก่อนหน้า")}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="min-h-[44px]"
+                  disabled={loading || page >= pageCount}
+                  onClick={() => changePage(page + 1)}
+                >
+                  {tr("next", "ถัดไป")}
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

@@ -74,8 +74,8 @@ describe("ErpCrudWorkbench Master-Detail Contract (.agents/skills/datacrud/SKILL
     expect(workbenchSource).toContain("!screenActions.create ? null");
     expect(workbenchSource).toContain("{screenActions.update ? (");
     expect(workbenchSource).toContain("{screenActions.delete ? (");
-    expect(workbenchSource).toContain("if (!screenActions.update) return;");
-    expect(workbenchSource).toContain("!screenActions.delete) return;");
+    expect(workbenchSource).toContain("if (!screenActions.update || erpDocLifecycle(doc)");
+    expect(workbenchSource).toContain("!screenActions.delete || erpDocLifecycle(doc)");
     expect(workbenchSource).toContain("erp_err_action_forbidden");
     expect(mainMenuSource).toContain("route={activeTab.route} auth={auth} workspace={workspace}");
   });
@@ -89,5 +89,33 @@ describe("ErpCrudWorkbench Master-Detail Contract (.agents/skills/datacrud/SKILL
     expect(mainMenuSource).toContain("isErpTransactionRoute");
     expect(mainMenuSource).toContain("<ErpCrudWorkbench");
     expect(statusSource).toContain("isErpTransactionRoute");
+  });
+});
+
+describe("ErpCrudWorkbench approved / cancelled document lock", () => {
+  it("derives the lifecycle from the shared helper instead of status === 1 only", () => {
+    expect(workbenchSource).toContain("erpDocLifecycle");
+    expect(workbenchSource).not.toContain("item.status === 1");
+    expect(workbenchSource).not.toContain("selectedDoc.status === 1");
+  });
+
+  it("filters the draft/approved tabs by the lifecycle helper because the backend omits status 0", () => {
+    expect(workbenchSource).toContain('statusFilter === "draft" && erpDocLifecycle(item) !== "draft"');
+    expect(workbenchSource).toContain('statusFilter === "approved" && erpDocLifecycle(item) !== "approved"');
+    expect(workbenchSource).not.toContain("item.status !== 0");
+    expect(workbenchSource).not.toContain("item.status !== 1");
+  });
+
+  it("shows a cancelled badge and a lock hint with language keys", () => {
+    expect(workbenchSource).toContain('backendText(dictionary, "cancelled"');
+    expect(workbenchSource).toContain("erp_doc_locked_cancelled_hint");
+    expect(workbenchSource).toContain("erp_doc_locked_approved_hint");
+  });
+
+  it("disables edit and delete for locked rows with title and aria-label, and guards the handlers", () => {
+    expect(workbenchSource).toContain("disabled={!!lockedHint}");
+    expect(workbenchSource).toContain("aria-label={lockedHint ||");
+    expect(workbenchSource).toContain("disabled={!!selectedLockedHint}");
+    expect(workbenchSource).toContain('erpDocLifecycle(doc) !== "draft"');
   });
 });

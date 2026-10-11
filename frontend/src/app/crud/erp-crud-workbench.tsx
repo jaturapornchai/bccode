@@ -31,6 +31,7 @@ import { ThaiDocumentPrintModal, type ThaiDocPrintType } from "@/components/thai
 import {
   type ErpTransactionDoc,
   type ErpDetailItem,
+  erpDocLifecycle,
   getErpModuleConfig,
   fetchErpTransactions,
   saveErpTransaction,
@@ -186,7 +187,7 @@ export function ErpCrudWorkbench({
 
   // Start Edit Mode explicitly from Pencil
   const handleStartEdit = (doc: ErpTransactionDoc) => {
-    if (!screenActions.update) return;
+    if (!screenActions.update || erpDocLifecycle(doc) !== "draft") return;
     setSelectedDoc(doc);
     setFormDoc(JSON.parse(JSON.stringify(doc)));
     setIsEditing(true);
@@ -259,9 +260,39 @@ export function ErpCrudWorkbench({
     setIsDirty(false);
   };
 
+  // เอกสารที่อนุมัติหรือยกเลิกแล้ว backend ไม่ให้แก้ไข/ลบ (erp_doc_locked) — ว่าง = ยังแก้ไขได้
+  const lockedHintFor = (doc: Parameters<typeof erpDocLifecycle>[0]): string => {
+    const lifecycle = erpDocLifecycle(doc);
+    if (lifecycle === "cancelled") {
+      return backendText(dictionary, "erp_doc_locked_cancelled_hint", "เอกสารนี้ถูกยกเลิกแล้ว จึงแก้ไขหรือลบไม่ได้");
+    }
+    if (lifecycle === "approved") {
+      return backendText(
+        dictionary,
+        "erp_doc_locked_approved_hint",
+        "เอกสารนี้อนุมัติแล้ว จึงแก้ไขหรือลบไม่ได้ ต้องยกเลิกการอนุมัติก่อน",
+      );
+    }
+    return "";
+  };
+
+  const lifecycleBadge = (doc: Parameters<typeof erpDocLifecycle>[0], approvedLabel: string) => {
+    const lifecycle = erpDocLifecycle(doc);
+    if (lifecycle === "cancelled") {
+      return { label: backendText(dictionary, "cancelled", "ยกเลิกแล้ว"), className: "bg-destructive/15 text-destructive" };
+    }
+    if (lifecycle === "approved") {
+      return { label: approvedLabel, className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" };
+    }
+    return {
+      label: backendText(dictionary, "draft", "ฉบับร่าง"),
+      className: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    };
+  };
+
   // Delete Document
   const handleDeleteDoc = async (doc: ErpTransactionDoc) => {
-    if (!config || !doc.id || !screenActions.delete) return;
+    if (!config || !doc.id || !screenActions.delete || erpDocLifecycle(doc) !== "draft") return;
     const ok = await confirm({
       title: backendText(dictionary, "delete_document_confirm_title", "ยืนยันการลบเอกสาร {0}?").replace(
         "{0}",
@@ -413,8 +444,8 @@ export function ErpCrudWorkbench({
   // Filtered list
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      if (statusFilter === "draft" && item.status !== 0) return false;
-      if (statusFilter === "approved" && item.status !== 1) return false;
+      if (statusFilter === "draft" && erpDocLifecycle(item) !== "draft") return false;
+      if (statusFilter === "approved" && erpDocLifecycle(item) !== "approved") return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -425,6 +456,9 @@ export function ErpCrudWorkbench({
       );
     });
   }, [items, statusFilter, searchQuery]);
+
+  const selectedBadge = lifecycleBadge(selectedDoc ?? {}, backendText(dictionary, "approved_status", "อนุมัติเรียบร้อย"));
+  const selectedLockedHint = lockedHintFor(selectedDoc ?? {});
 
   if (!config) {
     return (
@@ -675,6 +709,8 @@ export function ErpCrudWorkbench({
               <tbody className="divide-y divide-border/40">
                 {filteredItems.map((item) => {
                   const isSelected = selectedDoc?.id === item.id;
+                  const lockedHint = lockedHintFor(item);
+                  const badge = lifecycleBadge(item, backendText(dictionary, "approve", "อนุมัติ"));
                   return (
                     <tr
                       key={item.id || item.docno}
@@ -698,13 +734,9 @@ export function ErpCrudWorkbench({
                       </td>
                       <td className="py-2 px-2 text-center">
                         <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold ${
-                            item.status === 1
-                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                              : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          }`}
+                          className={`inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold ${badge.className}`}
                         >
-                          {item.status === 1 ? (backendText(dictionary, "approve", "อนุมัติ")) : (backendText(dictionary, "draft", "ฉบับร่าง"))}
+                          {badge.label}
                         </span>
                       </td>
                       <td className="py-2 px-2 text-center">
@@ -712,12 +744,14 @@ export function ErpCrudWorkbench({
                           {screenActions.update ? (
                             <button
                               type="button"
-                              title={backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
+                              disabled={!!lockedHint}
+                              title={lockedHint || backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
+                              aria-label={lockedHint || backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleStartEdit(item);
                               }}
-                              className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
+                              className="p-1 rounded text-primary hover:bg-primary/20 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                             >
                               <Pencil className="size-3.5" />
                             </button>
@@ -725,12 +759,14 @@ export function ErpCrudWorkbench({
                           {screenActions.delete ? (
                             <button
                               type="button"
-                              title={backendText(dictionary, "delete_document", "ลบเอกสาร")}
+                              disabled={!!lockedHint}
+                              title={lockedHint || backendText(dictionary, "delete_document", "ลบเอกสาร")}
+                              aria-label={lockedHint || backendText(dictionary, "delete_document", "ลบเอกสาร")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteDoc(item);
                               }}
-                              className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
+                              className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                             >
                               <Trash2 className="size-3.5" />
                             </button>
@@ -1023,14 +1059,8 @@ export function ErpCrudWorkbench({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-primary font-mono">{selectedDoc.docno}</span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          selectedDoc.status === 1
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                        }`}
-                      >
-                        {selectedDoc.status === 1 ? (backendText(dictionary, "approved_status", "อนุมัติเรียบร้อย")) : (backendText(dictionary, "draft", "ฉบับร่าง"))}
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${selectedBadge.className}`}>
+                        {selectedBadge.label}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -1064,6 +1094,9 @@ export function ErpCrudWorkbench({
                       variant="default"
                       size="sm"
                       className="h-9 text-xs bg-primary text-primary-foreground font-semibold"
+                      disabled={!!selectedLockedHint}
+                      title={selectedLockedHint || undefined}
+                      aria-label={selectedLockedHint || backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
                       onClick={() => handleStartEdit(selectedDoc)}
                     >
                       <Pencil className="mr-1.5 size-3.5" />

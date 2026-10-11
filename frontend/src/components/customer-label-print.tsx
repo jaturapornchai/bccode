@@ -96,7 +96,7 @@ export function CustomerLabelPrintScreen({
         limit: 1000,
       };
 
-      const res = await apiFetch("/api/customer/labels/query", {
+      const res = await apiFetch("/api/goapi/api/customer/labels/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

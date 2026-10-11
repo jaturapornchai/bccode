@@ -78,7 +78,7 @@ export function BillingNoteAutoPrintScreen({
       if (toCust) params.append("to_cust", toCust);
       if (saleCode) params.append("sale_code", saleCode);
 
-      const res = await apiFetch(`/transaction/billingnote/auto-print?${params.toString()}`);
+      const res = await apiFetch(`/api/erp-transaction/billingnote/auto-print?${params.toString()}`);
       if (!res.ok) {
         throw new Error("HTTP " + res.status);
       }

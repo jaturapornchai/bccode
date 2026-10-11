@@ -34,6 +34,8 @@ const POST_ALLOWED_EXACT = [
   "api/report/tax/etax/generate-xml",
   "api/report/debt/query",
   "api/report/sales/by-document",
+  // พิมพ์ฉลากชื่อ-ที่อยู่ลูกค้า (customer-label-print.tsx) → CustomerLabelsHandler (bootstrap.go)
+  "api/customer/labels/query",
 ];
 
 // ปลายทางที่ backend ตอบเป็นไฟล์ (PDF ใบ 50 ทวิ/แบบยื่นภาษี, .txt ไฟล์ยื่นด้วยสื่อ Format กลาง) — ส่งต่อ byte ตรง ๆ

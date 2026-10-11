@@ -34,12 +34,14 @@ export interface ErpTransactionDoc {
   vattype?: number;
   vatrate?: number;
   status?: number; // 0=Draft, 1=Approved/Completed, 2=Cancelled
-  approval_status?: number; // 0=Draft/Pending, 1=Approved, 2=Cancelled
-  approved_by?: string;
-  approved_at?: string;
-  cancelled_by?: string;
-  cancelled_at?: string;
+  // คีย์ตรงกับ backend/internal/transaction/httpapi/models.go: approvalstatus เป็น 'approved' หรือ '' (ว่าง = รออนุมัติ)
+  approvalstatus?: string;
+  approvedby?: string;
+  approvedat?: string;
+  cancelledby?: string;
+  cancelledat?: string;
   cancelreason?: string;
+  createdby?: string;
   isclosed?: boolean;
   iscancel?: boolean;
   branchcode?: string;
@@ -48,6 +50,15 @@ export interface ErpTransactionDoc {
   glstatus?: string;
   gldocno?: string;
   details: ErpDetailItem[];
+}
+
+export type ErpDocLifecycle = "draft" | "approved" | "cancelled";
+
+// สถานะของเอกสารจากคีย์ที่ backend ส่ง — ยกเลิกชนะอนุมัติ; เอกสารที่อนุมัติหรือยกเลิกแล้วแก้ไข/ลบไม่ได้ (docLockedError ฝั่ง backend)
+export function erpDocLifecycle(doc: Pick<ErpTransactionDoc, "status" | "iscancel" | "approvalstatus">): ErpDocLifecycle {
+  if (doc.iscancel || doc.status === 2) return "cancelled";
+  if (doc.approvalstatus === "approved" || doc.status === 1) return "approved";
+  return "draft";
 }
 
 export interface ErpModuleConfig {
@@ -872,9 +883,11 @@ export interface ErpDocEvent {
   createdat?: string;
 }
 
+// ผลของเอกสารแต่ละใบในงานเป็นชุด — id คือเลขที่เอกสารที่ส่งไป, code = คีย์ข้อความ (gl_err_<code>) เมื่อไม่สำเร็จ
 export interface BatchApproveItemResult {
-  docno: string;
+  id: string;
   success: boolean;
+  code?: string;
   message?: string;
 }
 
@@ -946,39 +959,53 @@ export async function cancelErpDoc(
   }
 }
 
-export async function approveBatchErpDocs(
-  module: string,
-  docnos: string[],
-  language = "th",
-): Promise<{
+interface BatchResult {
   success: boolean;
   items?: BatchApproveItemResult[];
   total?: number;
-  approved?: number;
   message?: string;
   detail?: string;
-}> {
+}
+
+// backend ตอบ data เป็น array ผลทีละใบ {id, success, code, message} (BatchApproveResponse) — HTTP 200 ไม่ได้แปลว่าทุกใบสำเร็จ
+// จึงนับสำเร็จจาก success ของแต่ละใบ และคืน items ให้หน้าจอแสดงใบที่ไม่สำเร็จ
+async function postBatchErpDocs(
+  module: string,
+  action: "approve" | "unapprove" | "cancel",
+  body: { docnos: string[]; reason?: string },
+  language: string,
+): Promise<BatchResult & { succeeded?: number }> {
   try {
-    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/approve-batch`, {
+    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/${action}-batch`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...languageHeader(language) },
-      body: JSON.stringify({ docnos }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
     }
     const data = await res.json().catch(() => null);
     if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
+    const items: BatchApproveItemResult[] = Array.isArray(data?.data) ? data.data : [];
     return {
       success: true,
-      items: data?.data?.items ?? [],
-      total: data?.data?.total ?? docnos.length,
-      approved: data?.data?.approved ?? 0,
-      message: "approve_success",
+      items,
+      total: items.length || body.docnos.length,
+      succeeded: items.filter((item) => item.success).length,
+      message: `${action}_success`,
     };
   } catch {
     return { success: false, message: "connection_error" };
   }
+}
+
+export async function approveBatchErpDocs(
+  module: string,
+  docnos: string[],
+  language = "th",
+): Promise<BatchResult & { approved?: number }> {
+  const { succeeded, ...result } = await postBatchErpDocs(module, "approve", { docnos }, language);
+  return { ...result, approved: succeeded };
 }
 
 export async function unapproveBatchErpDocs(
@@ -986,36 +1013,9 @@ export async function unapproveBatchErpDocs(
   docnos: string[],
   reason?: string,
   language = "th",
-): Promise<{
-  success: boolean;
-  items?: BatchApproveItemResult[];
-  total?: number;
-  unapproved?: number;
-  message?: string;
-  detail?: string;
-}> {
-  try {
-    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/unapprove-batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...languageHeader(language) },
-      body: JSON.stringify({ docnos, reason }),
-    });
-    if (!res.ok) {
-      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
-    }
-    const data = await res.json().catch(() => null);
-    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
-    const items: BatchApproveItemResult[] = Array.isArray(data?.data) ? data.data : (data?.data?.items ?? []);
-    return {
-      success: true,
-      items,
-      total: items.length || docnos.length,
-      unapproved: items.filter((item) => item.success).length,
-      message: "unapprove_success",
-    };
-  } catch {
-    return { success: false, message: "connection_error" };
-  }
+): Promise<BatchResult & { unapproved?: number }> {
+  const { succeeded, ...result } = await postBatchErpDocs(module, "unapprove", { docnos, reason }, language);
+  return { ...result, unapproved: succeeded };
 }
 
 export async function cancelBatchErpDocs(
@@ -1023,36 +1023,9 @@ export async function cancelBatchErpDocs(
   docnos: string[],
   reason: string,
   language = "th",
-): Promise<{
-  success: boolean;
-  items?: BatchApproveItemResult[];
-  total?: number;
-  cancelled?: number;
-  message?: string;
-  detail?: string;
-}> {
-  try {
-    const res = await apiFetch(`/api/erp-transaction/${encodeURIComponent(module)}/cancel-batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...languageHeader(language) },
-      body: JSON.stringify({ docnos, reason }),
-    });
-    if (!res.ok) {
-      return { success: false, message: statusErrorKey(res.status, "action_failed", "erp_err_action_forbidden") };
-    }
-    const data = await res.json().catch(() => null);
-    if (data?.success === false) return { success: false, message: "action_failed", detail: userDetail(data) };
-    const items: BatchApproveItemResult[] = Array.isArray(data?.data) ? data.data : (data?.data?.items ?? []);
-    return {
-      success: true,
-      items,
-      total: items.length || docnos.length,
-      cancelled: items.filter((item) => item.success).length,
-      message: "cancel_success",
-    };
-  } catch {
-    return { success: false, message: "connection_error" };
-  }
+): Promise<BatchResult & { cancelled?: number }> {
+  const { succeeded, ...result } = await postBatchErpDocs(module, "cancel", { docnos, reason }, language);
+  return { ...result, cancelled: succeeded };
 }
 
 export async function fetchErpDocEvents(

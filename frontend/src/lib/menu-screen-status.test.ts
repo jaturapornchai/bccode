@@ -15,7 +15,7 @@ describe("menu screen availability", () => {
   // Champ parity 2026-09-19: all Champ pending routes are now fully connected!
   const CHAMP_PENDING_ROUTES: string[] = [];
 
-  // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench but no approval API exists (pending like the first six).
+  // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench (connected to the approval API since 2026-10-10).
   const CHAMP_OPERATIONS_ROUTES = [
     "/procurement/requisition-cancellation",
     "/procurement/requisition-approval-cancellation",
@@ -86,14 +86,15 @@ describe("menu screen availability", () => {
 
 describe("Menu data readiness", () => {
   it("flags screens that render but have no live API behind them", () => {
-    // รายงาน: มี API จริง 12 ตัว (4 รายงานสินค้า/ขาย + 8 รายงานเจ้าหนี้/ลูกหนี้)
+    // รายงาน: มี API จริง 14 ตัว (4 รายงานสินค้า/ขาย + 10 รายงานเจ้าหนี้/ลูกหนี้ รวมอายุลูกหนี้/เจ้าหนี้)
     expect(isMenuDataPending("/report/salesreportbydocument")).toBe(false);
     expect(isMenuDataPending("/report/stockbalanceitem")).toBe(false);
     expect(isMenuDataPending("/report/apmovement")).toBe(false);
     expect(isMenuDataPending("/report/apstatus")).toBe(false);
     expect(isMenuDataPending("/report/armovement")).toBe(false);
     expect(isMenuDataPending("/report/arstatus")).toBe(false);
-    expect(isMenuDataPending("/report/araging")).toBe(true);
+    expect(isMenuDataPending("/report/araging")).toBe(false);
+    expect(isMenuDataPending("/report/apaging")).toBe(false);
     expect(isMenuDataPending("/report/xbrl")).toBe(true);
 
     // เครื่องมือ: ยังไม่มีเครื่องมือใดต่อ API (เครื่องมือตรวจ/สร้างยอดสินค้าใหม่ถูกตัดตาม Champ 2026-09-19)

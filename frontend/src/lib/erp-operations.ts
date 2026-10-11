@@ -270,7 +270,11 @@ export interface PendingApprovalDoc {
   counterpartyname: string;
   totalamount: number;
   requiredlevelname?: string;
-  approval_status?: number;
+  // คีย์ตรงกับ backend models.go: approvalstatus = 'approved' หรือ '' (รออนุมัติ)
+  approvalstatus?: string;
+  approvedby?: string;
+  cancelledby?: string;
+  cancelreason?: string;
   status?: number;
   iscancel?: boolean;
 }
@@ -287,7 +291,8 @@ export const APPROVAL_OPERATIONS: Record<string, ApprovalOperationMeta> = {
   qt_approval: { module: "quotation", actionType: "approve", statusFilter: "pending" },
   so_approval: { module: "sale-order", actionType: "approve", statusFilter: "pending" },
   pr_approval_cancellation: { module: "purchase-requisition", actionType: "unapprove", statusFilter: "approved" },
-  pr_cancellation: { module: "purchase-requisition", actionType: "cancel", statusFilter: "active" },
+  // backend ยกเลิก PR ได้เฉพาะที่ยังรออนุมัติ (erp_doc_not_pending) — ที่อนุมัติแล้วต้องยกเลิกการอนุมัติก่อน
+  pr_cancellation: { module: "purchase-requisition", actionType: "cancel", statusFilter: "pending" },
   po_cancellation: { module: "purchase-order", actionType: "cancel", statusFilter: "active" },
   qt_cancellation: { module: "quotation", actionType: "cancel", statusFilter: "active" },
   so_cancellation: { module: "sale-order", actionType: "cancel", statusFilter: "active" },
@@ -330,12 +335,15 @@ function mapDocItem(item: Record<string, unknown>): PendingApprovalDoc {
   return {
     id: toText(item.id || item.docno),
     docno: toText(item.docno),
-    docdate: toText(item.docdatetime) || toText(item.createdat),
-    requestorname: toText(item.createdbyname) || toText(item.createdby),
+    docdate: toText(item.docdatetime) || toText(item.created_at),
+    requestorname: toText(item.createdby),
     counterpartyname: toText(item.custname) || toText(item.custcode),
     totalamount: toNumber(item.totalamount),
     requiredlevelname: toText(item.requiredlevelname),
-    approval_status: toNumber(item.approval_status),
+    approvalstatus: toText(item.approvalstatus),
+    approvedby: toText(item.approvedby),
+    cancelledby: toText(item.cancelledby),
+    cancelreason: toText(item.cancelreason),
     status: toNumber(item.status),
     iscancel: Boolean(item.iscancel),
   };

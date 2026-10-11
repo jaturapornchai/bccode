@@ -9,6 +9,10 @@ import {
   saveErpTransaction,
   deleteErpTransaction,
   fetchErpDocEvents,
+  approveBatchErpDocs,
+  unapproveBatchErpDocs,
+  cancelBatchErpDocs,
+  erpDocLifecycle,
   type ErpTransactionDoc,
 } from "./erp-transaction";
 import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
@@ -436,5 +440,97 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(res2.success).toBe(false);
     expect(res2.events.length).toBe(0);
     expect(res2.error).toBe("erp_err_read_forbidden");
+  });
+});
+
+describe("ERP batch approve / unapprove / cancel helpers", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const reply = (ok: boolean, status: number, body: unknown): Response =>
+    ({ ok, status, json: async () => body }) as unknown as Response;
+
+  const stubFetch = (response: Response) => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => response);
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  };
+
+  it("parses the per-document array and counts successes on partial failure", async () => {
+    const fetchMock = stubFetch(
+      reply(true, 200, {
+        success: true,
+        data: [
+          { id: "PR-1", success: true },
+          { id: "PR-2", success: false, code: "erp_doc_not_pending", message: "เอกสารนี้ไม่ได้รออนุมัติ" },
+          { id: "PR-3", success: true },
+        ],
+      }),
+    );
+
+    const res = await approveBatchErpDocs("purchase-requisition", ["PR-1", "PR-2", "PR-3"]);
+
+    expect(res.success).toBe(true);
+    expect(res.approved).toBe(2);
+    expect(res.total).toBe(3);
+    expect(res.items?.filter((item) => !item.success)).toEqual([
+      { id: "PR-2", success: false, code: "erp_doc_not_pending", message: "เอกสารนี้ไม่ได้รออนุมัติ" },
+    ]);
+    expect(String(fetchMock.mock.calls[0][0])).toBe("/api/erp-transaction/purchase-requisition/approve-batch");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ docnos: ["PR-1", "PR-2", "PR-3"] });
+  });
+
+  it("reports zero approved when every document in a 200 response failed", async () => {
+    stubFetch(
+      reply(true, 200, {
+        success: true,
+        data: [
+          { id: "PO-1", success: false, code: "erp_doc_locked" },
+          { id: "PO-2", success: false, code: "erp_doc_locked" },
+        ],
+      }),
+    );
+
+    const res = await approveBatchErpDocs("purchase-order", ["PO-1", "PO-2"]);
+
+    expect(res.approved).toBe(0);
+    expect(res.total).toBe(2);
+  });
+
+  it("posts unapprove with the reason and cancel with the mandatory reason", async () => {
+    const fetchMock = stubFetch(reply(true, 200, { success: true, data: [{ id: "SO-1", success: true }] }));
+
+    const unapproved = await unapproveBatchErpDocs("sale-order", ["SO-1"], "ขอทบทวนยอด");
+    expect(unapproved.unapproved).toBe(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe("/api/erp-transaction/sale-order/unapprove-batch");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ docnos: ["SO-1"], reason: "ขอทบทวนยอด" });
+
+    const cancelled = await cancelBatchErpDocs("sale-order", ["SO-1"], "ลูกค้ายกเลิก");
+    expect(cancelled.cancelled).toBe(1);
+    expect(String(fetchMock.mock.calls[1][0])).toBe("/api/erp-transaction/sale-order/cancel-batch");
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({ docnos: ["SO-1"], reason: "ลูกค้ายกเลิก" });
+  });
+
+  it("returns a failure key for forbidden responses and for success:false bodies", async () => {
+    stubFetch(reply(false, 403, {}));
+    const forbidden = await cancelBatchErpDocs("quotation", ["QT-1"], "เหตุผล");
+    expect(forbidden.success).toBe(false);
+    expect(forbidden.message).toBe("erp_err_action_forbidden");
+
+    stubFetch(reply(true, 200, { success: false, message: "ไม่สำเร็จ" }));
+    const rejected = await cancelBatchErpDocs("quotation", ["QT-1"], "เหตุผล");
+    expect(rejected.success).toBe(false);
+    expect(rejected.message).toBe("action_failed");
+  });
+
+  it("maps document lifecycle: cancelled beats approved beats draft", () => {
+    expect(erpDocLifecycle({ status: 0, iscancel: false, approvalstatus: "" })).toBe("draft");
+    expect(erpDocLifecycle({})).toBe("draft");
+    expect(erpDocLifecycle({ status: 1, iscancel: false, approvalstatus: "approved" })).toBe("approved");
+    expect(erpDocLifecycle({ approvalstatus: "approved" })).toBe("approved");
+    expect(erpDocLifecycle({ status: 2 })).toBe("cancelled");
+    expect(erpDocLifecycle({ status: 1, iscancel: true, approvalstatus: "approved" })).toBe("cancelled");
   });
 });

@@ -78,7 +78,7 @@ export function PurchaseReceiptAdjustmentScreen({
       if (fromDept) params.append("from_dept", fromDept);
       if (toDept) params.append("to_dept", toDept);
 
-      const res = await apiFetch(`/transaction/goodsreceive/receipt-adjustments?${params.toString()}`);
+      const res = await apiFetch(`/api/erp-transaction/goodsreceive/receipt-adjustments?${params.toString()}`);
       if (!res.ok) {
         throw new Error("HTTP " + res.status);
       }
@@ -139,7 +139,7 @@ export function PurchaseReceiptAdjustmentScreen({
     setShowConfirm(false);
 
     try {
-      const res = await apiFetch("/transaction/goodsreceive/receipt-adjustments", {
+      const res = await apiFetch("/api/erp-transaction/goodsreceive/receipt-adjustments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -152,6 +152,13 @@ export function PurchaseReceiptAdjustmentScreen({
       }
 
       const result = await res.json();
+      // BFF ส่งต่อเหตุผลที่ผู้ใช้แก้ได้เป็น HTTP 200 + success:false — ห้ามนับเป็นสำเร็จ
+      if (result.success === false) {
+        throw new Error(
+          (typeof result.message === "string" && result.message.trim()) ||
+            backendText(dictionary, "ops_msg_action_failed_please_try_again", "ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"),
+        );
+      }
       const count = result.adjusted_count ?? selectedDocs.size;
       setNotice({
         type: "success",

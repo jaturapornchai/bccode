@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  APPROVAL_OPERATIONS,
   OPERATIONS_CONFIGS,
   isOperationsRoute,
   getOperationsConfig,
   isApprovalApiReady,
   fetchPendingApprovals,
   submitApprovalAction,
+  submitBatchApprove,
+  submitBatchUnapprove,
+  submitBatchCancel,
 } from "./erp-operations";
 import { setupTestAuthSession } from "./test-auth-session";
 
@@ -135,7 +139,10 @@ describe("approval workflow API", () => {
                   custname: "ผู้จำหน่าย ก",
                   totalamount: 1500,
                   createdby: "staff",
-                  approval_status: 0,
+                  approvalstatus: "",
+                  approvedby: "",
+                  cancelledby: "",
+                  cancelreason: "",
                   status: 0,
                   iscancel: false,
                 },
@@ -157,6 +164,11 @@ describe("approval workflow API", () => {
     expect(list.docs).toHaveLength(1);
     expect(list.docs[0].docno).toBe("PR-202610-001");
     expect(list.docs[0].totalamount).toBe(1500);
+    expect(list.docs[0].requestorname).toBe("staff");
+    expect(list.docs[0].docdate).toBe("2026-10-10");
+    expect(list.docs[0].approvalstatus).toBe("");
+    expect(list.docs[0].status).toBe(0);
+    expect(list.docs[0].iscancel).toBe(false);
 
     // Approve
     const approved = await submitApprovalAction({
@@ -187,5 +199,113 @@ describe("approval workflow API", () => {
     });
     expect(unapproved.success).toBe(true);
     expect(unapproved.messageKey).toBe("unapprove_success");
+  });
+});
+
+describe("ERP operations list mapping and batch actions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("lists only pending PRs on the PR cancel screen (backend rejects cancelling an approved PR)", () => {
+    expect(APPROVAL_OPERATIONS.pr_cancellation.statusFilter).toBe("pending");
+    expect(APPROVAL_OPERATIONS.pr_approval_cancellation.statusFilter).toBe("approved");
+    expect(APPROVAL_OPERATIONS.po_cancellation.statusFilter).toBe("active");
+  });
+
+  it("maps backend JSON keys (approvalstatus, approvedby, cancelledby, cancelreason, createdby) and falls back to created_at", async () => {
+    const fetchMock = vi.fn(async (_url: string) =>
+      Response.json({
+        success: true,
+        data: [
+          {
+            id: "uuid-1",
+            docno: "PO-1",
+            created_at: "2026-10-01T09:00:00Z",
+            custcode: "V001",
+            totalamount: 250,
+            createdby: "buyer1",
+            approvalstatus: "approved",
+            approvedby: "manager1",
+            status: 1,
+            iscancel: false,
+          },
+          {
+            id: "uuid-2",
+            docno: "PO-2",
+            docdatetime: "2026-10-02",
+            custname: "ผู้จำหน่าย ข",
+            approvalstatus: "",
+            cancelledby: "manager2",
+            cancelreason: "สั่งซ้ำ",
+            status: 2,
+            iscancel: true,
+          },
+        ],
+        pagination: { total: 2 },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const list = await fetchPendingApprovals({ code: "po_cancellation", holdingcode: "H01", offset: 100, limit: 50 });
+
+    expect(list.total).toBe(2);
+    expect(list.docs[0]).toMatchObject({
+      docno: "PO-1",
+      docdate: "2026-10-01T09:00:00Z",
+      counterpartyname: "V001",
+      requestorname: "buyer1",
+      approvalstatus: "approved",
+      approvedby: "manager1",
+      status: 1,
+      iscancel: false,
+    });
+    expect(list.docs[1]).toMatchObject({
+      docno: "PO-2",
+      counterpartyname: "ผู้จำหน่าย ข",
+      cancelledby: "manager2",
+      cancelreason: "สั่งซ้ำ",
+      status: 2,
+      iscancel: true,
+    });
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("limit=50");
+    expect(url).toContain("offset=100");
+    expect(url).toContain("status=active");
+  });
+
+  it("batch helpers return per-document items and unsuccessful counts for all three actions", async () => {
+    const partial = {
+      success: true,
+      data: [
+        { id: "A", success: true },
+        { id: "B", success: false, code: "erp_doc_not_pending", message: "ไม่ได้รออนุมัติ" },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(partial)),
+    );
+
+    const approved = await submitBatchApprove({ code: "pr_approval", docnos: ["A", "B"] });
+    expect(approved).toMatchObject({ success: true, approved: 1, total: 2, messageKey: "approve_success" });
+    expect(approved.items?.[1].code).toBe("erp_doc_not_pending");
+
+    const unapproved = await submitBatchUnapprove({ code: "pr_approval_cancellation", docnos: ["A", "B"], comment: "ทบทวน" });
+    expect(unapproved).toMatchObject({ success: true, unapproved: 1, total: 2, messageKey: "unapprove_success" });
+
+    const cancelled = await submitBatchCancel({ code: "po_cancellation", docnos: ["A", "B"], comment: "ซ้ำ" });
+    expect(cancelled).toMatchObject({ success: true, cancelled: 1, total: 2, messageKey: "cancel_success" });
+  });
+
+  it("batch helpers refuse screens without an approval endpoint", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await submitBatchApprove({ code: "order_dates", docnos: ["A"] })).toMatchObject({ success: false, messageKey: "approval_not_available" });
+    expect(await submitBatchUnapprove({ code: "order_dates", docnos: ["A"] })).toMatchObject({ success: false, messageKey: "approval_not_available" });
+    expect(await submitBatchCancel({ code: "order_dates", docnos: ["A"], comment: "x" })).toMatchObject({ success: false, messageKey: "approval_not_available" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
