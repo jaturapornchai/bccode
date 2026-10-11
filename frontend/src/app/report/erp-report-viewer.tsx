@@ -11,8 +11,15 @@ import {
   reportColumnLabel,
   reportText,
   fetchErpReportData,
+  agingColumnLabel,
+  isAgingReport,
+  DEFAULT_AGING_OVER_DAYS,
+  DEFAULT_AGING_RANGES,
+  type AgingCondition,
   type ErpReportRow,
+  type ReportColumn,
 } from "@/lib/erp-reports";
+import { amountString, displayAmountUnits, formatAmount } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
@@ -68,7 +75,80 @@ const ERROR_MESSAGES: Record<string, { key: string; th: string }> = {
   unauthorized: { key: "rpt_msg_you_do_not_have_permission", th: "ไม่มีสิทธิ์เข้าถึงข้อมูลนี้" },
   load_failed: { key: "load_data_failed", th: "โหลดข้อมูลไม่สำเร็จ" },
   connection_error: { key: "ops_msg_unable_to_connect_to_the", th: "เชื่อมต่อระบบไม่ได้" },
+  aging_ranges_invalid: { key: "aging_ranges_invalid", th: "ช่วงวันที่เกินกำหนดไม่ถูกต้อง" },
+  aging_condition_invalid: { key: "aging_condition_invalid", th: "วันที่พิมพ์รายงานหรือวิธีนับอายุหนี้ไม่ถูกต้อง" },
 };
+
+// เงื่อนไขรายงานอายุหนี้ตามจอ Champ: ช่องกรอกเก็บเป็นข้อความระหว่างพิมพ์ แปลงเป็นตัวเลขตอนกดประมวลผล
+interface AgingDraft {
+  asofdate: string;
+  agebasis: AgingCondition["agebasis"];
+  ranges: { from: string; to: string }[];
+  overdays: string;
+}
+
+const AGING_STORAGE_PREFIX = "bcai.report.aging.";
+
+function agingDraftFrom(ranges: readonly { from: number; to: number }[], overdays: number): AgingDraft {
+  return {
+    asofdate: formatDate(new Date()),
+    agebasis: "duedate",
+    ranges: ranges.map((range) => ({ from: String(range.from), to: String(range.to) })),
+    overdays: String(overdays),
+  };
+}
+
+// ช่วงอายุที่ใช้ล่าสุดของแต่ละรายงาน (Champ เก็บใน ini ของเครื่อง) — ค่าเสียหาย/ไม่ครบใช้ค่าเริ่มต้นของ Champ
+function loadAgingDraft(reportCode: string): AgingDraft {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem(AGING_STORAGE_PREFIX + reportCode) ?? "null");
+    if (saved && typeof saved === "object" && "ranges" in saved && "overdays" in saved) {
+      const { ranges, overdays } = saved as { ranges: unknown; overdays: unknown };
+      const isDay = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0;
+      if (
+        Array.isArray(ranges) &&
+        ranges.length === DEFAULT_AGING_RANGES.length &&
+        ranges.every((range) => isDay(range?.from) && isDay(range?.to)) &&
+        isDay(overdays)
+      ) {
+        return agingDraftFrom(ranges, overdays);
+      }
+    }
+  } catch {
+    // ค่าที่บันทึกไว้อ่านไม่ได้ ใช้ค่าเริ่มต้นแทน
+  }
+  return agingDraftFrom(DEFAULT_AGING_RANGES, DEFAULT_AGING_OVER_DAYS);
+}
+
+// ตรวจเบื้องต้นแค่ว่าเป็นจำนวนวันเต็ม ลำดับ/การทับกันของช่วง backend เป็นผู้ตรวจ
+function agingConditionFrom(draft: AgingDraft): AgingCondition | null {
+  const day = (text: string) => (/^\d{1,5}$/.test(text.trim()) ? Number.parseInt(text.trim(), 10) : null);
+  const ranges = draft.ranges.map((range) => ({ from: day(range.from), to: day(range.to) }));
+  const overdays = day(draft.overdays);
+  if (overdays === null || ranges.some((range) => range.from === null || range.to === null)) return null;
+  return {
+    asofdate: draft.asofdate,
+    agebasis: draft.agebasis,
+    ranges: ranges.map((range) => ({ from: range.from ?? 0, to: range.to ?? 0 })),
+    overdays,
+  };
+}
+
+function amountUnits(value: unknown): bigint | null {
+  if (typeof value !== "string") return null;
+  try {
+    return displayAmountUnits(value);
+  } catch {
+    return null;
+  }
+}
+
+function formatTotal(column: ReportColumn, total: string | number): string {
+  if (typeof total === "string") return formatAmount(total);
+  return column.isCurrency
+    ? total.toLocaleString("th-TH", { minimumFractionDigits: 2 })
+    : total.toLocaleString("th-TH");
+}
 
 export function ErpReportViewer({
   route,
@@ -95,30 +175,88 @@ export function ErpReportViewer({
   const reportPref = useReportPreferences();
 
   const [rawData, setRawData] = useState<ErpReportRow[]>([]);
+  const [reportTotals, setReportTotals] = useState<ErpReportRow | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
   const reportCode = config.code;
+  const isAging = isAgingReport(reportCode);
+  const [agingDraft, setAgingDraft] = useState<AgingDraft>(() =>
+    agingDraftFrom(DEFAULT_AGING_RANGES, DEFAULT_AGING_OVER_DAYS),
+  );
+  // null until the saved ranges are read, so the first fetch already uses them
+  const [agingApplied, setAgingApplied] = useState<AgingCondition | null>(null);
+
+  useEffect(() => {
+    if (!isAging) return;
+    const draft = loadAgingDraft(reportCode);
+    setAgingDraft(draft);
+    setAgingApplied(agingConditionFrom(draft));
+  }, [isAging, reportCode]);
 
   const loadData = useCallback(async () => {
     if (!isErpReportApiReady(reportCode)) {
       setRawData([]);
+      setReportTotals(null);
       setErrorKey("report_not_available");
       setLoading(false);
       return;
     }
+    if (isAging && !agingApplied) return;
     setLoading(true);
     setErrorKey(null);
     const { fromdate, todate } = computeDateRange(dateRange);
-    const result = await fetchErpReportData({ code: reportCode, holdingcode, fromdate, todate });
+    const result = await fetchErpReportData({
+      code: reportCode,
+      holdingcode,
+      fromdate,
+      todate,
+      aging: agingApplied ?? undefined,
+    });
     setRawData(result.rows);
+    setReportTotals(result.totals ?? null);
     setErrorKey(result.error ?? null);
     setLoading(false);
-  }, [reportCode, holdingcode, dateRange]);
+    if (agingApplied && !result.error) {
+      try {
+        window.localStorage.setItem(
+          AGING_STORAGE_PREFIX + reportCode,
+          JSON.stringify({ ranges: agingApplied.ranges, overdays: agingApplied.overdays }),
+        );
+      } catch {
+        // เก็บค่าไม่ได้ (เช่น storage เต็ม) ไม่กระทบรายงาน
+      }
+    }
+  }, [reportCode, holdingcode, dateRange, isAging, agingApplied]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  function handleAgingProcess() {
+    const condition = agingConditionFrom(agingDraft);
+    if (!condition) {
+      setRawData([]);
+      setReportTotals(null);
+      setErrorKey("aging_ranges_invalid");
+      return;
+    }
+    setAgingApplied(condition);
+  }
+
+  function updateAgingRange(index: number, field: "from" | "to", value: string) {
+    setAgingDraft((draft) => ({
+      ...draft,
+      ranges: draft.ranges.map((range, i) => (i === index ? { ...range, [field]: value } : range)),
+    }));
+  }
+
+  function columnLabel(col: ReportColumn): string {
+    return (
+      (agingApplied && agingColumnLabel(col.key, agingApplied, language, dictionary)) ||
+      reportColumnLabel(config, col, language, dictionary)
+    );
+  }
 
   // Filtered & Sorted Data
   const processedData = useMemo(() => {
@@ -134,11 +272,18 @@ export function ErpReportViewer({
     }
 
     if (sortKey) {
+      const sortsAmountText = config.columns.some((col) => col.key === sortKey && col.isCurrency);
       result.sort((a, b) => {
         const valA = a[sortKey];
         const valB = b[sortKey];
         if (typeof valA === "number" && typeof valB === "number") {
           return sortAsc ? valA - valB : valB - valA;
+        }
+        const unitsA = sortsAmountText ? amountUnits(valA) : null;
+        const unitsB = sortsAmountText ? amountUnits(valB) : null;
+        if (unitsA !== null && unitsB !== null) {
+          const order = unitsA < unitsB ? -1 : unitsA > unitsB ? 1 : 0;
+          return sortAsc ? order : -order;
         }
         return sortAsc
           ? String(valA ?? "").localeCompare(String(valB ?? ""))
@@ -147,13 +292,22 @@ export function ErpReportViewer({
     }
 
     return result;
-  }, [rawData, searchTerm, sortKey, sortAsc]);
+  }, [rawData, searchTerm, sortKey, sortAsc, config.columns]);
 
-  // Totals for numeric columns
+  // Totals for numeric columns: backend totals cover every row of the report; while searching,
+  // amount text is summed exactly over the visible rows.
   const columnTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
+    const totals: Record<string, string | number> = {};
+    const filtered = searchTerm.trim() !== "";
     for (const col of config.columns) {
-      if (col.isNumeric || col.isCurrency) {
+      if (!col.isNumeric && !col.isCurrency) continue;
+      const backendTotal = filtered ? undefined : reportTotals?.[col.key];
+      if (typeof backendTotal === "string" || typeof backendTotal === "number") {
+        totals[col.key] = backendTotal;
+      } else if (processedData.some((row) => typeof row[col.key] === "string")) {
+        const units = processedData.reduce((sum, row) => sum + (amountUnits(row[col.key]) ?? 0n), 0n);
+        totals[col.key] = amountString(units, 2);
+      } else {
         totals[col.key] = processedData.reduce(
           (sum, row) => sum + (Number(row[col.key]) || 0),
           0,
@@ -161,7 +315,7 @@ export function ErpReportViewer({
       }
     }
     return totals;
-  }, [config.columns, processedData]);
+  }, [config.columns, processedData, reportTotals, searchTerm]);
 
   function handleSort(key: string) {
     if (sortKey === key) {
@@ -173,7 +327,7 @@ export function ErpReportViewer({
   }
 
   function handleExportCsv() {
-    const headers = config.columns.map((col) => reportColumnLabel(config, col, language, dictionary));
+    const headers = config.columns.map((col) => columnLabel(col));
     const rows = processedData.map((row) =>
       config.columns.map((col) => `"${row[col.key] ?? ""}"`).join(","),
     );
@@ -247,11 +401,13 @@ export function ErpReportViewer({
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span>{tr("ops_period", "ช่วงเวลา:")}</span>
-            </div>
-            {(["today", "week", "month", "year"] as const).map((period) => (
+            {!isAging && (
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span>{tr("ops_period", "ช่วงเวลา:")}</span>
+              </div>
+            )}
+            {!isAging && (["today", "week", "month", "year"] as const).map((period) => (
               <Button
                 key={period}
                 size="sm"
@@ -292,6 +448,91 @@ export function ErpReportViewer({
           </div>
         </CardContent>
       </Card>
+
+      {/* เงื่อนไขรายงานอายุหนี้ (ตามจอ Champ): วันที่พิมพ์รายงาน วิธีนับอายุ และช่วงวันที่เกินกำหนด 4 ช่วง + เกินกว่า */}
+      {isAging && (
+        <Card>
+          <CardContent className="flex flex-wrap items-end gap-x-6 gap-y-4 p-4 text-sm">
+            <label className="flex flex-col gap-1.5">
+              <span className="font-medium text-muted-foreground">{tr("aging_as_of_date", "พิมพ์รายงานประจำวันที่")}</span>
+              <Input
+                type="date"
+                value={agingDraft.asofdate}
+                onChange={(e) => setAgingDraft((draft) => ({ ...draft, asofdate: e.target.value }))}
+                className="h-11 w-44"
+              />
+            </label>
+
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className="mb-1.5 font-medium text-muted-foreground">{tr("aging_basis_label", "นับอายุหนี้")}</legend>
+              <div className="flex flex-wrap items-center gap-4">
+                {(["duedate", "docdate"] as const).map((basis) => (
+                  <label key={basis} className="flex min-h-11 cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      name={`aging-basis-${reportCode}`}
+                      value={basis}
+                      checked={agingDraft.agebasis === basis}
+                      onChange={() => setAgingDraft((draft) => ({ ...draft, agebasis: basis }))}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span>
+                      {basis === "duedate"
+                        ? tr("aging_basis_due_date", "เริ่มจากวันถึงกำหนด")
+                        : tr("aging_basis_doc_date", "เริ่มจากวันที่เอกสาร")}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="flex flex-col gap-1.5">
+              <legend className="mb-1.5 font-medium text-muted-foreground">{tr("aging_ranges_title", "กำหนดช่วงวันที่เกินกำหนด")}</legend>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                {agingDraft.ranges.map((range, index) => {
+                  const rangeName = tr("aging_range_n", "ช่วงที่ {n}").replace("{n}", String(index + 1));
+                  return (
+                    <div key={index} className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">{rangeName}</span>
+                      <Input
+                        inputMode="numeric"
+                        value={range.from}
+                        onChange={(e) => updateAgingRange(index, "from", e.target.value)}
+                        aria-label={rangeName}
+                        className="h-11 w-16 text-right"
+                      />
+                      <span>{tr("to", "ถึง")}</span>
+                      <Input
+                        inputMode="numeric"
+                        value={range.to}
+                        onChange={(e) => updateAgingRange(index, "to", e.target.value)}
+                        aria-label={`${rangeName} ${tr("to", "ถึง")}`}
+                        className="h-11 w-16 text-right"
+                      />
+                    </div>
+                  );
+                })}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">{tr("aging_over_than", "เกินกว่า")}</span>
+                  <Input
+                    inputMode="numeric"
+                    value={agingDraft.overdays}
+                    onChange={(e) => setAgingDraft((draft) => ({ ...draft, overdays: e.target.value }))}
+                    aria-label={tr("aging_over_than", "เกินกว่า")}
+                    className="h-11 w-16 text-right"
+                  />
+                  <span>{tr("days", "วัน")}</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <Button onClick={handleAgingProcess} disabled={loading} className="h-11 min-w-28 gap-2">
+              <BarChart3 className="h-4 w-4" />
+              {tr("process", "ประมวลผล")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Data Status */}
       {loading && (
@@ -347,7 +588,7 @@ export function ErpReportViewer({
                     onClick={() => handleSort(col.key)}
                   >
                     <div className={`flex items-center gap-1.5 ${col.align === "right" ? "justify-end" : col.align === "center" ? "justify-center" : "justify-start"}`}>
-                      <span>{reportColumnLabel(config, col, language, dictionary)}</span>
+                      <span>{columnLabel(col)}</span>
                       <ArrowUpDown className="h-3 w-3 opacity-60" />
                     </div>
                   </th>
@@ -378,7 +619,9 @@ export function ErpReportViewer({
                                 : "text-left"
                           } ${col.isCurrency ? "font-medium" : ""}`}
                         >
-                          {col.isCurrency && typeof val === "number"
+                          {col.isCurrency && typeof val === "string"
+                            ? formatAmount(val)
+                            : col.isCurrency && typeof val === "number"
                             ? val.toLocaleString("th-TH", { minimumFractionDigits: 2 })
                             : col.isNumeric && typeof val === "number"
                               ? val.toLocaleString("th-TH")
@@ -393,22 +636,20 @@ export function ErpReportViewer({
             {processedData.length > 0 && (
               <tfoot className="border-t-2 bg-muted/40 font-bold">
                 <tr>
-                  <td className="px-3 py-3 text-center text-xs">รวม</td>
+                  <td className="px-3 py-3 text-center text-xs">{tr("total", "รวม")}</td>
                   {config.columns.map((col, idx) => {
                     const total = columnTotals[col.key];
                     if (idx === 0 && total === undefined) {
                       return (
                         <td key={col.key} className="px-4 py-3 text-xs text-muted-foreground">
-                          {processedData.length} รายการ
+                          {processedData.length} {tr("items", "รายการ")}
                         </td>
                       );
                     }
                     if (total !== undefined) {
                       return (
                         <td key={col.key} className="px-4 py-3 text-right font-mono text-primary">
-                          {col.isCurrency
-                            ? total.toLocaleString("th-TH", { minimumFractionDigits: 2 })
-                            : total.toLocaleString("th-TH")}
+                          {formatTotal(col, total)}
                         </td>
                       );
                     }

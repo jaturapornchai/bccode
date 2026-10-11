@@ -4,6 +4,9 @@ import {
   isErpReportRoute,
   isErpReportApiReady,
   fetchErpReportData,
+  agingColumnLabel,
+  DEFAULT_AGING_RANGES,
+  DEFAULT_AGING_OVER_DAYS,
 } from "./erp-reports";
 import { setupTestAuthSession } from "./test-auth-session";
 
@@ -93,7 +96,8 @@ describe("fetchErpReportData", () => {
     expect(isErpReportApiReady("product_status_report")).toBe(true);
     expect(isErpReportApiReady("product_price_setting_report")).toBe(true);
 
-    expect(isErpReportApiReady("ar_aging")).toBe(false);
+    expect(isErpReportApiReady("ar_aging")).toBe(true);
+    expect(isErpReportApiReady("ap_aging")).toBe(true);
     expect(isErpReportApiReady("dbd_xbrl_export")).toBe(false);
     expect(isErpReportApiReady("low_stock_report")).toBe(false);
   });
@@ -228,7 +232,7 @@ describe("fetchErpReportData", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchErpReportData({
-      code: "ar_aging",
+      code: "low_stock_report",
       holdingcode: "H01",
       fromdate: "2026-09-01",
       todate: "2026-09-30",
@@ -237,6 +241,85 @@ describe("fetchErpReportData", () => {
     expect(result.error).toBe("report_not_available");
     expect(result.rows).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the aging condition and keeps amounts and backend totals as exact text", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "success",
+        data: [
+          {
+            partycode: "C101",
+            partyname: "บริษัท ก่อสร้างมั่นคงเอ็นจิเนียริ่ง จำกัด",
+            notinrange: "0.00",
+            range1: "0.10",
+            range2: "0.20",
+            range3: "0.00",
+            range4: "0.00",
+            overrange: "1000.00",
+            debtdecrease: "-50.05",
+            earnestamount: "0.00",
+            totaldue: "950.25",
+            doccount: 4,
+          },
+        ],
+        totals: { notinrange: "0.00", range1: "0.10", range2: "0.20", range3: "0.00", range4: "0.00", overrange: "1000.00", debtdecrease: "-50.05", earnestamount: "0.00", totaldue: "950.25", doccount: 4 },
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const aging = {
+      asofdate: "2026-09-30",
+      agebasis: "docdate" as const,
+      ranges: [{ from: 1, to: 30 }, { from: 31, to: 60 }, { from: 61, to: 90 }, { from: 91, to: 120 }],
+      overdays: 120,
+    };
+
+    const result = await fetchErpReportData({ code: "ar_aging", holdingcode: "H01", fromdate: "2026-09-01", todate: "2026-09-30", aging });
+
+    expect(result.error).toBeUndefined();
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain("/api/goapi/api/report/debt/query");
+    const body = JSON.parse(String(init.body));
+    expect(body).toMatchObject({ holdingcode: "H01", reportcode: "ar_aging", asofdate: "2026-09-30", agebasis: "docdate", overdays: 120 });
+    expect(body.ranges).toEqual(aging.ranges);
+    expect(result.rows[0]).toEqual({
+      custcode: "C101",
+      custname: "บริษัท ก่อสร้างมั่นคงเอ็นจิเนียริ่ง จำกัด",
+      notinrange: "0.00",
+      range1: "0.10",
+      range2: "0.20",
+      range3: "0.00",
+      range4: "0.00",
+      overrange: "1000.00",
+      debtdecrease: "-50.05",
+      earnestamount: "0.00",
+      totaldue: "950.25",
+      doccount: 4,
+    });
+    expect(result.totals?.totaldue).toBe("950.25");
+    expect(result.totals?.earnestamount).toBe("0.00");
+    expect(result.totals?.doccount).toBe(4);
+  });
+
+  it("maps aging validation errors to Thai advice keys", async () => {
+    for (const [code, key] of [["AGING_RANGES_INVALID", "aging_ranges_invalid"], ["AGING_CONDITION_INVALID", "aging_condition_invalid"]]) {
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 400, json: async () => ({ success: false, code }) })));
+      const result = await fetchErpReportData({ code: "ap_aging", holdingcode: "H01", fromdate: "", todate: "" });
+      expect(result).toEqual({ rows: [], error: key });
+    }
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 400, json: async () => ({ code: "INVALID_REPORT_CODE" }) })));
+    expect((await fetchErpReportData({ code: "ap_aging", holdingcode: "H01", fromdate: "", todate: "" })).error).toBe("load_failed");
+  });
+
+  it("labels aging range columns from the ranges the report ran with", () => {
+    const condition = { ranges: [...DEFAULT_AGING_RANGES], overdays: DEFAULT_AGING_OVER_DAYS };
+    expect(agingColumnLabel("range1", condition, "th")).toBe("1 - 7 วัน");
+    expect(agingColumnLabel("range4", condition, "en")).toBe("22 - 28 days");
+    expect(agingColumnLabel("overrange", { ...condition, overdays: 30 }, "th")).toBe("เกิน 30 วัน");
+    expect(agingColumnLabel("range1", condition, "th", { aging_range_label: "{from}-{to} d" })).toBe("1-7 d");
+    expect(agingColumnLabel("totaldue", condition, "th")).toBeUndefined();
   });
 
   it("returns holding_required without fetching when holdingcode is empty", async () => {

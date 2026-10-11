@@ -26,6 +26,50 @@ export interface ErpReportConfig {
   defaultSortKey: string;
 }
 
+// รายงานอายุลูกหนี้/เจ้าหนี้ (Champ 5093/5016): ช่วงอายุผู้ใช้กำหนดเองได้ ค่าเริ่มต้นตาม Champ
+// (APRepAgingDlg.cpp:271-279) — backend ใช้ค่าเดียวกันเมื่อไม่ได้ส่งช่วงมา
+export interface AgingRange {
+  from: number;
+  to: number;
+}
+
+export interface AgingCondition {
+  asofdate: string; // "YYYY-MM-DD"
+  agebasis: "duedate" | "docdate";
+  ranges: AgingRange[];
+  overdays: number;
+}
+
+export const DEFAULT_AGING_RANGES: readonly AgingRange[] = [
+  { from: 1, to: 7 },
+  { from: 8, to: 14 },
+  { from: 15, to: 21 },
+  { from: 22, to: 28 },
+];
+export const DEFAULT_AGING_OVER_DAYS = 28;
+
+const AGING_RANGE_COLUMN_KEYS = ["range1", "range2", "range3", "range4"] as const;
+
+// Money columns keep the backend numeric text (Rule 20); range/over labels come from agingColumnLabel().
+const AGING_AMOUNT_COLUMNS: ReportColumn[] = [
+  { key: "notinrange", label: { th: "ไม่อยู่ในช่วง", en: "Not in range" }, align: "right", isCurrency: true },
+  ...AGING_RANGE_COLUMN_KEYS.map((key, index): ReportColumn => ({
+    key,
+    label: { th: `ช่วงที่ ${index + 1}`, en: `Range ${index + 1}` },
+    align: "right",
+    isCurrency: true,
+  })),
+  { key: "overrange", label: { th: "เกินกำหนด", en: "Over" }, align: "right", isCurrency: true },
+  { key: "debtdecrease", label: { th: "ยอดลดหนี้", en: "Debt reductions" }, align: "right", isCurrency: true },
+  { key: "earnestamount", label: { th: "ยอดเงินล่วงหน้า", en: "Advance payments" }, align: "right", isCurrency: true },
+  { key: "totaldue", label: { th: "ยอดหนี้รวม", en: "Total Due" }, align: "right", isCurrency: true },
+  { key: "doccount", label: { th: "จำนวนเอกสาร", en: "Document Count" }, align: "right", isNumeric: true },
+];
+
+export function isAgingReport(code: string): boolean {
+  return code === "ar_aging" || code === "ap_aging";
+}
+
 export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
   // --- สินค้าคงคลัง (Inventory) ---
   {
@@ -343,17 +387,12 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     code: "ar_aging",
     category: "ar",
     title: { th: "รายงานอายุลูกหนี้", en: "Accounts Receivable Aging Report" },
-    description: { th: "วิเคราะห์หนี้ค้างชำระแบ่งตามช่วงเวลา (ไม่เกินกำหนด, 1-30 วัน, 31-60 วัน, 61-90 วัน, เกิน 90 วัน)", en: "Debtor aging schedule with standard Thai accounting aging buckets" },
-    defaultSortKey: "totaldue",
+    description: { th: "วิเคราะห์ยอดลูกหนี้คงค้าง ณ วันที่เลือก แยกตามช่วงวันที่เกินกำหนดที่กำหนดได้เอง", en: "Outstanding receivables as of the chosen date, split by overdue day ranges you set" },
+    defaultSortKey: "custcode",
     columns: [
       { key: "custcode", label: { th: "รหัสลูกหนี้", en: "Code" } },
       { key: "custname", label: { th: "ชื่อลูกหนี้", en: "Customer / Debtor" } },
-      { key: "currentdue", label: { th: "ยังไม่ถึงกำหนด", en: "Current" }, align: "right", isCurrency: true },
-      { key: "days1_30", label: { th: "1-30 วัน", en: "1-30 Days" }, align: "right", isCurrency: true },
-      { key: "days31_60", label: { th: "31-60 วัน", en: "31-60 Days" }, align: "right", isCurrency: true },
-      { key: "days61_90", label: { th: "61-90 วัน", en: "61-90 Days" }, align: "right", isCurrency: true },
-      { key: "over90", label: { th: "เกิน 90 วัน", en: "> 90 Days" }, align: "right", isCurrency: true },
-      { key: "totaldue", label: { th: "ยอดหนี้รวม", en: "Total Due" }, align: "right", isCurrency: true },
+      ...AGING_AMOUNT_COLUMNS,
     ],
   },
   {
@@ -376,17 +415,12 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     code: "ap_aging",
     category: "ap",
     title: { th: "รายงานอายุเจ้าหนี้", en: "Accounts Payable Aging Report" },
-    description: { th: "วิเคราะห์หนี้ที่ต้องจ่ายให้เจ้าหนี้ตามระยะเวลาครบกำหนดชำระเพื่อบริหารสภาพคล่อง", en: "Creditor aging schedule to manage vendor payments and liquidity" },
-    defaultSortKey: "totaldue",
+    description: { th: "วิเคราะห์ยอดเจ้าหนี้คงค้าง ณ วันที่เลือก แยกตามช่วงวันที่เกินกำหนดที่กำหนดได้เอง", en: "Outstanding payables as of the chosen date, split by overdue day ranges you set" },
+    defaultSortKey: "vendorcode",
     columns: [
       { key: "vendorcode", label: { th: "รหัสเจ้าหนี้", en: "Code" } },
       { key: "vendorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor / Creditor" } },
-      { key: "currentdue", label: { th: "ยังไม่ถึงกำหนด", en: "Current" }, align: "right", isCurrency: true },
-      { key: "days1_30", label: { th: "1-30 วัน", en: "1-30 Days" }, align: "right", isCurrency: true },
-      { key: "days31_60", label: { th: "31-60 วัน", en: "31-60 Days" }, align: "right", isCurrency: true },
-      { key: "days61_90", label: { th: "61-90 วัน", en: "61-90 Days" }, align: "right", isCurrency: true },
-      { key: "over90", label: { th: "เกิน 90 วัน", en: "> 90 Days" }, align: "right", isCurrency: true },
-      { key: "totaldue", label: { th: "ยอดหนี้รวม", en: "Total Due" }, align: "right", isCurrency: true },
+      ...AGING_AMOUNT_COLUMNS,
     ],
   },
 
@@ -812,6 +846,8 @@ const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
   "ar_status",
   "ar_outstanding",
   "ar_credit_limit",
+  "ar_aging",
+  "ap_aging",
   "product_status_report",
   "product_price_setting_report",
 ]);
@@ -1141,6 +1177,37 @@ function mapArCreditLimit(source: Record<string, unknown>): ErpReportRow {
   return row;
 }
 
+const AGING_MONEY_KEYS = ["notinrange", ...AGING_RANGE_COLUMN_KEYS, "overrange", "debtdecrease", "earnestamount", "totaldue"] as const;
+
+// Aging amounts stay as backend numeric text; the viewer formats and sums them exactly.
+function mapAgingAmounts(source: Record<string, unknown>, row: ErpReportRow): ErpReportRow {
+  for (const key of AGING_MONEY_KEYS) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim() !== "") row[key] = value;
+  }
+  const doccount = toNumber(source.doccount);
+  if (doccount !== undefined) row.doccount = doccount;
+  return row;
+}
+
+function mapArAging(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const custcode = toText(source.partycode);
+  if (custcode !== undefined) row.custcode = custcode;
+  const custname = toText(source.partyname);
+  if (custname !== undefined) row.custname = custname;
+  return mapAgingAmounts(source, row);
+}
+
+function mapApAging(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const vendorcode = toText(source.partycode);
+  if (vendorcode !== undefined) row.vendorcode = vendorcode;
+  const vendorname = toText(source.partyname);
+  if (vendorname !== undefined) row.vendorname = vendorname;
+  return mapAgingAmounts(source, row);
+}
+
 const ROW_MAPPERS: Record<string, RowMapper> = {
   sales_by_document: mapSalesByDocument,
   gross_profit_document: mapGrossProfitDocument,
@@ -1156,6 +1223,8 @@ const ROW_MAPPERS: Record<string, RowMapper> = {
   ar_status: mapArStatus,
   ar_outstanding: mapArOutstanding,
   ar_credit_limit: mapArCreditLimit,
+  ar_aging: mapArAging,
+  ap_aging: mapApAging,
   product_status_report: mapProductStatusReport,
   product_price_setting_report: mapProductPriceSettingReport,
 };
@@ -1174,13 +1243,30 @@ function extractRows(
   return rows;
 }
 
+// Aging condition errors come back as HTTP 400 with a code; the screen shows the matching advice.
+const AGING_ERROR_KEYS: Record<string, string> = {
+  AGING_RANGES_INVALID: "aging_ranges_invalid",
+  AGING_CONDITION_INVALID: "aging_condition_invalid",
+};
+
+async function debtReportError(res: Response): Promise<string> {
+  if (res.status === 401 || res.status === 403) return "unauthorized";
+  if (res.status === 400) {
+    const body: unknown = await res.json().catch(() => null);
+    const key = isRecord(body) && typeof body.code === "string" ? AGING_ERROR_KEYS[body.code] : undefined;
+    if (key) return key;
+  }
+  return "load_failed";
+}
+
 export async function fetchErpReportData(params: {
   code: string;
   holdingcode: string;
   fromdate: string; // "YYYY-MM-DD"
   todate: string;   // "YYYY-MM-DD"
-}): Promise<{ rows: ErpReportRow[]; error?: string }> {
-  const { code, holdingcode, fromdate, todate } = params;
+  aging?: AgingCondition;
+}): Promise<{ rows: ErpReportRow[]; totals?: ErpReportRow; error?: string }> {
+  const { code, holdingcode, fromdate, todate, aging } = params;
 
   if (!holdingcode) {
     return { rows: [], error: "holding_required" };
@@ -1237,7 +1323,8 @@ export async function fetchErpReportData(params: {
       code === "ar_movement" ||
       code === "ar_status" ||
       code === "ar_outstanding" ||
-      code === "ar_credit_limit";
+      code === "ar_credit_limit" ||
+      isAgingReport(code);
 
     if (isDebtReport) {
       const res = await apiFetch("/api/goapi/api/report/debt/query", {
@@ -1248,22 +1335,22 @@ export async function fetchErpReportData(params: {
           reportcode: code,
           fromdate,
           todate,
+          ...(aging && isAgingReport(code) ? aging : {}),
           limit: 1000,
           offset: 0,
         }),
       });
       if (!res.ok) {
-        return {
-          rows: [],
-          error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
-        };
+        return { rows: [], error: await debtReportError(res) };
       }
       payload = await res.json();
       const rawRows = extractRows(payload, "data");
       if (rawRows === null) {
         return { rows: [], error: "load_failed" };
       }
-      return { rows: rawRows.map(mapper) };
+      // Aging returns totals over every partner (not just this page), computed by the backend.
+      const totals = isRecord(payload) && isRecord(payload.totals) ? mapper(payload.totals) : undefined;
+      return totals ? { rows: rawRows.map(mapper), totals } : { rows: rawRows.map(mapper) };
     }
 
     if (code === "stock_movement_cost" || code === "stock_movement_simple") {
@@ -1458,15 +1545,14 @@ const catalogKeys: Record<string, string> = {
   "expense_summary.col.deptname": "company_branch_department",
   "expense_summary.col.totalamount": "ops_total",
   "ar_aging.title": "ar_aging",
-  "ar_aging.description": "rpt_debtor_aging_schedule_with_standard",
+  "ar_aging.description": "rpt_ar_aging_ranges_description",
   "ar_aging.col.custcode": "debtor_code",
   "ar_aging.col.custname": "debtor_name",
-  "ar_aging.col.currentdue": "rpt_current",
-  "ar_aging.col.days1_30": "rpt_1_30_days",
-  "ar_aging.col.days31_60": "rpt_31_60_days",
-  "ar_aging.col.days61_90": "rpt_61_90_days",
-  "ar_aging.col.over90": "rpt_90_days",
+  "ar_aging.col.notinrange": "aging_not_in_range",
+  "ar_aging.col.debtdecrease": "aging_debt_decrease",
+  "ar_aging.col.earnestamount": "aging_earnest_amount",
   "ar_aging.col.totaldue": "rpt_total_due",
+  "ar_aging.col.doccount": "document_count",
   "ar_payment_daily.title": "payment_daily",
   "ar_payment_daily.description": "rpt_daily_debtor_settlement_receipts_and",
   "ar_payment_daily.col.docdate": "rpt_date_2",
@@ -1475,15 +1561,16 @@ const catalogKeys: Record<string, string> = {
   "ar_payment_daily.col.paymethod": "rpt_method",
   "ar_payment_daily.col.totalamount": "rpt_amount_2",
   "ap_aging.title": "ap_aging",
-  "ap_aging.description": "rpt_creditor_aging_schedule_to_manage",
+  "ap_aging.description": "rpt_ap_aging_ranges_description",
+  "aging.range_label": "aging_range_label",
+  "aging.over_label": "aging_over_label",
   "ap_aging.col.vendorcode": "creditor_code",
   "ap_aging.col.vendorname": "creditor_name",
-  "ap_aging.col.currentdue": "rpt_current",
-  "ap_aging.col.days1_30": "rpt_1_30_days",
-  "ap_aging.col.days31_60": "rpt_31_60_days",
-  "ap_aging.col.days61_90": "rpt_61_90_days",
-  "ap_aging.col.over90": "rpt_90_days",
+  "ap_aging.col.notinrange": "aging_not_in_range",
+  "ap_aging.col.debtdecrease": "aging_debt_decrease",
+  "ap_aging.col.earnestamount": "aging_earnest_amount",
   "ap_aging.col.totaldue": "rpt_total_due",
+  "ap_aging.col.doccount": "document_count",
   "dbd_xbrl_export.title": "xbrl_export",
   "dbd_xbrl_export.description": "rpt_export_statutory_financial_statements_compliant",
   "dbd_xbrl_export.col.accountcode": "chart_of_acc",
@@ -1586,4 +1673,25 @@ export function reportColumnLabel(
     language,
     dictionary,
   );
+}
+
+// Range and over column headings follow the ranges the report was run with (e.g. "1 - 7 วัน", "เกิน 28 วัน").
+export function agingColumnLabel(
+  columnKey: string,
+  condition: Pick<AgingCondition, "ranges" | "overdays">,
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): string | undefined {
+  const index = (AGING_RANGE_COLUMN_KEYS as readonly string[]).indexOf(columnKey);
+  const range = index >= 0 ? condition.ranges[index] : undefined;
+  if (range) {
+    return catalogText(catalogKeys, "aging.range_label", { th: "{from} - {to} วัน", en: "{from} - {to} days" }, language, dictionary)
+      .replace("{from}", String(range.from))
+      .replace("{to}", String(range.to));
+  }
+  if (columnKey === "overrange") {
+    return catalogText(catalogKeys, "aging.over_label", { th: "เกิน {days} วัน", en: "Over {days} days" }, language, dictionary)
+      .replace("{days}", String(condition.overdays));
+  }
+  return undefined;
 }

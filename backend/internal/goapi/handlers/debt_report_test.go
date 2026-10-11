@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestBuildDebtReportQuery(t *testing.T) {
@@ -101,5 +103,191 @@ func TestBuildDebtReportQuery(t *testing.T) {
 	_, _, err := BuildDebtReportQuery("invalid_report", "biz01", time.Time{}, time.Time{}, "", 100, 0)
 	if err == nil {
 		t.Fatal("expected error for invalid report code, got nil")
+	}
+}
+
+func TestAgingAgeFollowsChampProDiffYear(t *testing.T) {
+	asOf := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
+	tests := []struct {
+		ref  time.Time
+		want int
+	}{
+		{asOf, 1},                     // ถึงกำหนดวันนี้ = วันที่ 1
+		{asOf.AddDate(0, 0, -6), 7},   // ครบ 7 วัน
+		{asOf.AddDate(0, 0, -7), 8},   // วันที่ 8
+		{asOf.AddDate(0, 0, 1), -1},   // ยังไม่ถึงกำหนด
+		{asOf.AddDate(0, 0, 30), -30}, // ยังไม่ถึงกำหนดอีก 30 วัน
+		{time.Date(2024, 2, 28, 0, 0, 0, 0, time.UTC), 957},
+	}
+	for _, tt := range tests {
+		if got := agingAge(asOf, tt.ref); got != tt.want {
+			t.Errorf("agingAge(%s, %s) = %d, want %d", asOf.Format("2006-01-02"), tt.ref.Format("2006-01-02"), got, tt.want)
+		}
+	}
+}
+
+func TestAgingBucketChampBoundaries(t *testing.T) {
+	gaps := []AgingRange{{1, 7}, {10, 14}, {15, 21}, {22, 28}}
+	tests := []struct {
+		name   string
+		age    int
+		ranges []AgingRange
+		over   int
+		want   string
+	}{
+		{"negative = not yet due", -3, defaultAgingRanges, 28, "notinrange"},
+		{"zero = not in range", 0, defaultAgingRanges, 28, "notinrange"},
+		{"first day of range 1", 1, defaultAgingRanges, 28, "range1"},
+		{"last day of range 1", 7, defaultAgingRanges, 28, "range1"},
+		{"first day of range 2", 8, defaultAgingRanges, 28, "range2"},
+		{"range 3", 15, defaultAgingRanges, 28, "range3"},
+		{"last day of range 4", 28, defaultAgingRanges, 28, "range4"},
+		{"over 28", 29, defaultAgingRanges, 28, "overrange"},
+		{"gap between ranges", 8, gaps, 28, "notinrange"},
+		{"gap between range 4 and over", 30, defaultAgingRanges, 30, "notinrange"},
+		{"above wider over", 31, defaultAgingRanges, 30, "overrange"},
+		{"range starting at 0 still excludes not-yet-due", -1, []AgingRange{{0, 7}, {8, 14}, {15, 21}, {22, 28}}, 28, "notinrange"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := agingBucket(tt.age, tt.ranges, tt.over); got != tt.want {
+				t.Errorf("agingBucket(%d) = %s, want %s", tt.age, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeAgingCondition(t *testing.T) {
+	now := time.Date(2026, 10, 10, 18, 30, 0, 0, time.UTC) // 01:30 วันที่ 11 เวลาไทย
+	intPtr := func(v int) *int { return &v }
+
+	cond, key := normalizeAgingCondition(DebtReportRequest{}, now)
+	if key != "" {
+		t.Fatalf("defaults rejected: %s", key)
+	}
+	if got := cond.AsOf.Format("2006-01-02"); got != "2026-10-11" {
+		t.Errorf("default as-of = %s, want Bangkok today 2026-10-11", got)
+	}
+	if cond.Basis != "duedate" || cond.OverDays != 28 || len(cond.Ranges) != 4 || cond.Ranges[0] != (AgingRange{1, 7}) || cond.Ranges[3] != (AgingRange{22, 28}) {
+		t.Errorf("Champ defaults not applied: %+v", cond)
+	}
+
+	cond, key = normalizeAgingCondition(DebtReportRequest{AsOfDate: "2026-09-30", AgeBasis: "docdate", Ranges: []AgingRange{{1, 30}, {31, 60}, {61, 90}, {91, 120}}}, now)
+	if key != "" || cond.OverDays != 120 || cond.Basis != "docdate" {
+		t.Errorf("custom ranges: key=%q cond=%+v", key, cond)
+	}
+
+	invalid := []struct {
+		name string
+		req  DebtReportRequest
+		want string
+	}{
+		{"bad date", DebtReportRequest{AsOfDate: "30/09/2026"}, "aging_condition_invalid"},
+		{"bad basis", DebtReportRequest{AgeBasis: "paydate"}, "aging_condition_invalid"},
+		{"three ranges", DebtReportRequest{Ranges: []AgingRange{{1, 7}, {8, 14}, {15, 21}}}, "aging_ranges_invalid"},
+		{"from after to", DebtReportRequest{Ranges: []AgingRange{{7, 1}, {8, 14}, {15, 21}, {22, 28}}}, "aging_ranges_invalid"},
+		{"overlap", DebtReportRequest{Ranges: []AgingRange{{1, 7}, {7, 14}, {15, 21}, {22, 28}}}, "aging_ranges_invalid"},
+		{"negative from", DebtReportRequest{Ranges: []AgingRange{{-1, 7}, {8, 14}, {15, 21}, {22, 28}}}, "aging_ranges_invalid"},
+		{"over inside range 4", DebtReportRequest{OverDays: intPtr(27)}, "aging_ranges_invalid"},
+		{"too many days", DebtReportRequest{OverDays: intPtr(agingMaxDays + 1)}, "aging_ranges_invalid"},
+	}
+	for _, tt := range invalid {
+		if _, got := normalizeAgingCondition(tt.req, now); got != tt.want {
+			t.Errorf("%s: key = %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAgingTotalsSplitsDebtAndReductionsExactly(t *testing.T) {
+	cond := agingCondition{AsOf: time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC), Basis: "duedate", Ranges: defaultAgingRanges, OverDays: 28}
+	var totals agingTotals
+	add := func(ref string, isDebt bool, amount string, count int64) {
+		t.Helper()
+		if err := totals.add(cond, ref, isDebt, amount, count); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("2026-10-20", true, "100.10", 1)        // ยังไม่ถึงกำหนด
+	add("2026-10-11", true, "0.10", 1)          // วันที่ 1 -> ช่วง 1
+	add("2026-10-04", true, "0.20", 2)          // วันที่ 8 -> ช่วง 2
+	add("2026-09-13", true, "1000.00000000", 1) // วันที่ 29 -> เกิน 28
+	add("2026-10-01", false, "50.05", 1)        // ใบลดหนี้/รับเงินที่ยังไม่ตัด
+	if err := totals.add(cond, "bad", true, "1", 1); err == nil {
+		t.Fatal("expected error for bad reference date")
+	}
+	row := totals.row()
+	want := map[string]string{"notinrange": "100.10", "range1": "0.10", "range2": "0.20", "range3": "0.00", "range4": "0.00", "overrange": "1000.00", "debtdecrease": "-50.05", "earnestamount": "0.00", "totaldue": "1050.35"}
+	for key, value := range want {
+		if row[key] != value {
+			t.Errorf("%s = %v, want %s", key, row[key], value)
+		}
+	}
+	if row["doccount"] != int64(6) {
+		t.Errorf("doccount = %v, want 6", row["doccount"])
+	}
+	if got := agingMoneyText(decimal.RequireFromString("1.23456")); got != "1.23456" {
+		t.Errorf("precision lost: %s", got)
+	}
+}
+
+func TestBuildAgingQuery(t *testing.T) {
+	cond := agingCondition{AsOf: time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC), Basis: "docdate", Ranges: defaultAgingRanges, OverDays: 28}
+	ar, err := buildAgingQuery("ar_aging", "01", cond, "C101", 50, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ar.args) != 4 || ar.args[0] != "01" || ar.args[1] != "2026-09-30" || ar.args[2] != "docdate" || ar.args[3] != "C101" {
+		t.Errorf("args = %v", ar.args)
+	}
+	if len(ar.rowArgs) != 6 || ar.rowArgs[4] != 50 || ar.rowArgs[5] != 100 {
+		t.Errorf("row args = %v", ar.rowArgs)
+	}
+	for _, sub := range []string{
+		"d.ledger = 'ar'",
+		"d.company = $1",
+		"s.settlement_date <= $2::date",
+		"s.reversed_at >= (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok')",
+		"NULLIF(d.payload->>'document_date','')",
+		"CASE WHEN $3 = 'docdate' THEN docdate ELSE duedate END",
+		"ORDER BY partner_code ASC LIMIT $5 OFFSET $6",
+		"d.side = 1 AS isdebt",
+		// only journals posted as of the date count (draft and reversed-by-then journals drop out)
+		"r.kind = 'journals' AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)",
+		"r.payload->>'date' <= to_char($2::date, 'YYYY-MM-DD')",
+		"(r.payload->>'postedat')::timestamptz < (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok')",
+		"r.payload->>'status' = 'posted' OR (r.payload->>'status' = 'reversed' AND NOT EXISTS",
+		"v.payload->>'reversalof' = r.id",
+		"FROM gl_subledger_allocations a JOIN posted_journals j ON j.id = a.journal_id",
+		"a.reversed_effective_date > $2::date",
+		"FROM gl_subledger_settlements s JOIN posted_journals j ON j.id = s.journal_id",
+		"s.created_at < (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok') AND s.settlement_date <= $2::date",
+		"CASE WHEN d.payload->>'balance_side' IS NOT NULL THEN COALESCE(pa.amount, 0)",
+		"WHEN cj.id IS NOT NULL THEN d.amount ELSE 0 END - COALESCE(ps.amount, 0) AS remaining",
+		"LEFT JOIN posted_journals cj ON cj.id = d.created_journal_id",
+	} {
+		if !strings.Contains(ar.rows, sub) {
+			t.Errorf("rows query missing %q", sub)
+		}
+	}
+	for name, query := range map[string]string{"totals": ar.totals, "count": ar.count} {
+		if !strings.Contains(query, "JOIN posted_journals j ON j.id = s.journal_id") || !strings.Contains(query, "LEFT JOIN posted_journals cj") {
+			t.Errorf("%s query must use posted journals only", name)
+		}
+	}
+	if strings.Contains(ar.rows, "d.amount - COALESCE") {
+		t.Error("document amount must not count before its journal is posted")
+	}
+	if strings.Contains(ar.rows, "'01' OR") || strings.Contains(ar.totals, "LIMIT") || strings.Contains(ar.count, "LIMIT") {
+		t.Error("aging must stay inside the company and totals must cover every partner")
+	}
+	ap, err := buildAgingQuery("ap_aging", "01", cond, "", 50, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(ap.rows, "d.ledger = 'ap'") || !strings.Contains(ap.rows, "WHEN d.payload->>'balance_side' IS NOT NULL THEN d.side = 1 ELSE d.side = 2") {
+		t.Errorf("ap query lost ledger or debt side rule:\n%s", ap.rows)
+	}
+	if _, err := buildAgingQuery("ar_status", "01", cond, "", 50, 0); err == nil {
+		t.Error("expected error for non-aging report code")
 	}
 }

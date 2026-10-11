@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-10 @ commit 3837b20f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit f109e956 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 33
 
@@ -647,6 +647,43 @@ Files indexed: 33
 | 1737 | function | `datePart` |
 | 1750 | function | `localeOf` |
 
+## frontend/src/lib/erp-reports.ts (1697 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 69 | function | `isAgingReport` |
+| 822 | function | `isErpReportRoute` |
+| 827 | function | `getErpReportConfig` |
+| 855 | function | `isErpReportApiReady` |
+| 859 | function | `isRecord` |
+| 863 | function | `toNumber` |
+| 874 | function | `toText` |
+| 882 | function | `mapSalesByDocument` |
+| 897 | function | `mapGrossProfitDocument` |
+| 922 | function | `mapStockBalanceItem` |
+| 939 | function | `mapStockBalanceWarehouse` |
+| 956 | function | `mapStockMovementCost` |
+| 977 | function | `mapStockMovementSimple` |
+| 994 | function | `mapProductStatusReport` |
+| 1011 | function | `mapProductPriceSettingReport` |
+| 1032 | function | `mapApMovement` |
+| 1053 | function | `mapApStatus` |
+| 1072 | function | `mapApOutstanding` |
+| 1091 | function | `mapApDailyPayment` |
+| 1108 | function | `mapArMovement` |
+| 1129 | function | `mapArStatus` |
+| 1148 | function | `mapArOutstanding` |
+| 1167 | function | `mapArCreditLimit` |
+| 1183 | function | `mapAgingAmounts` |
+| 1193 | function | `mapArAging` |
+| 1202 | function | `mapApAging` |
+| 1232 | function | `extractRows` |
+| 1252 | function | `debtReportError` |
+| 1262 | function | `fetchErpReportData` |
+| 1654 | function | `reportText` |
+| 1663 | function | `reportColumnLabel` |
+| 1679 | function | `agingColumnLabel` |
+
 ## frontend/src/app/system-settings/product-group-tree-view.tsx (1689 lines)
 
 | Line | Kind | Name |
@@ -712,37 +749,6 @@ Files indexed: 33
 | 1665 | function | `isRecord` |
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
-
-## frontend/src/lib/erp-reports.ts (1589 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 788 | function | `isErpReportRoute` |
-| 793 | function | `getErpReportConfig` |
-| 819 | function | `isErpReportApiReady` |
-| 823 | function | `isRecord` |
-| 827 | function | `toNumber` |
-| 838 | function | `toText` |
-| 846 | function | `mapSalesByDocument` |
-| 861 | function | `mapGrossProfitDocument` |
-| 886 | function | `mapStockBalanceItem` |
-| 903 | function | `mapStockBalanceWarehouse` |
-| 920 | function | `mapStockMovementCost` |
-| 941 | function | `mapStockMovementSimple` |
-| 958 | function | `mapProductStatusReport` |
-| 975 | function | `mapProductPriceSettingReport` |
-| 996 | function | `mapApMovement` |
-| 1017 | function | `mapApStatus` |
-| 1036 | function | `mapApOutstanding` |
-| 1055 | function | `mapApDailyPayment` |
-| 1072 | function | `mapArMovement` |
-| 1093 | function | `mapArStatus` |
-| 1112 | function | `mapArOutstanding` |
-| 1131 | function | `mapArCreditLimit` |
-| 1163 | function | `extractRows` |
-| 1177 | function | `fetchErpReportData` |
-| 1567 | function | `reportText` |
-| 1576 | function | `reportColumnLabel` |
 
 ## frontend/src/app/gl/gl-masters.tsx (1569 lines)
 
@@ -1065,6 +1071,22 @@ Files indexed: 33
 | 491 | function | `handleKeyDown` |
 | 1263 | function | `DuplicateInvoiceBadge` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1220 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 56 | function | `glNoticeFor` |
+| 70 | function | `ErpCrudWorkbench` |
+| 167 | const-arrow | `handleSelectRow` |
+| 189 | const-arrow | `handleStartEdit` |
+| 198 | const-arrow | `handleStartCreate` |
+| 246 | const-arrow | `handleCancelEdit` |
+| 294 | const-arrow | `handleDeleteDoc` |
+| 328 | const-arrow | `updateLineItem` |
+| 407 | const-arrow | `handleSaveDoc` |
+| 816 | section | `EDIT MODE FORM` |
+| 1054 | section | `READ-ONLY VIEW MODE` |
+
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 
 | Line | Kind | Name |
@@ -1106,22 +1128,6 @@ Files indexed: 33
 | 1136 | function | `UnlinkLine` |
 | 1161 | function | `DisableUser` |
 | 1205 | function | `authRequestLanguage` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1187 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 55 | function | `glNoticeFor` |
-| 69 | function | `ErpCrudWorkbench` |
-| 166 | const-arrow | `handleSelectRow` |
-| 188 | const-arrow | `handleStartEdit` |
-| 197 | const-arrow | `handleStartCreate` |
-| 245 | const-arrow | `handleCancelEdit` |
-| 263 | const-arrow | `handleDeleteDoc` |
-| 297 | const-arrow | `updateLineItem` |
-| 376 | const-arrow | `handleSaveDoc` |
-| 780 | section | `EDIT MODE FORM` |
-| 1018 | section | `READ-ONLY VIEW MODE` |
 
 ## frontend/src/app/asset/fixed-assets-screen.tsx (1183 lines)
 
@@ -1275,27 +1281,6 @@ Files indexed: 33
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
 
-## frontend/src/lib/erp-transaction.ts (1138 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 752 | function | `isErpTransactionRoute` |
-| 757 | function | `getErpModuleConfig` |
-| 768 | function | `statusErrorKey` |
-| 775 | function | `userDetail` |
-| 779 | function | `fetchErpTransactions` |
-| 810 | function | `saveErpTransaction` |
-| 840 | function | `deleteErpTransaction` |
-| 881 | function | `approveErpDoc` |
-| 903 | function | `unapproveErpDoc` |
-| 926 | function | `cancelErpDoc` |
-| 949 | function | `approveBatchErpDocs` |
-| 984 | function | `unapproveBatchErpDocs` |
-| 1021 | function | `cancelBatchErpDocs` |
-| 1058 | function | `fetchErpDocEvents` |
-| 1091 | function | `fetchDeliveryDateInvoices` |
-| 1113 | function | `saveDeliveryDates` |
-
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 
 | Line | Kind | Name |
@@ -1379,6 +1364,29 @@ Files indexed: 33
 | 1042 | function | `UnlinkLine` |
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
+
+## frontend/src/lib/erp-transaction.ts (1111 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 58 | function | `erpDocLifecycle` |
+| 763 | function | `isErpTransactionRoute` |
+| 768 | function | `getErpModuleConfig` |
+| 779 | function | `statusErrorKey` |
+| 786 | function | `userDetail` |
+| 790 | function | `fetchErpTransactions` |
+| 821 | function | `saveErpTransaction` |
+| 851 | function | `deleteErpTransaction` |
+| 894 | function | `approveErpDoc` |
+| 916 | function | `unapproveErpDoc` |
+| 939 | function | `cancelErpDoc` |
+| 972 | function | `postBatchErpDocs` |
+| 1002 | function | `approveBatchErpDocs` |
+| 1011 | function | `unapproveBatchErpDocs` |
+| 1021 | function | `cancelBatchErpDocs` |
+| 1031 | function | `fetchErpDocEvents` |
+| 1064 | function | `fetchDeliveryDateInvoices` |
+| 1086 | function | `saveDeliveryDates` |
 
 ## frontend/src/components/system-settings/utils.ts (1069 lines)
 
