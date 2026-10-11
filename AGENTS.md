@@ -46,6 +46,9 @@ ADR `2026-10-09-champ-parity-purpose-additive-extras.md`, `2026-10-11-champ-proc
 - In scope: ภ.ง.ด.2 (menu `vat-pnd2`→`/report/vatpnd2` in `frontend/src/lib/menu-data.ts`, never delete), ภ.ง.ด.3/53, 50 ทวิ, employee cash advances, employee register `/employee`
 - Ref `docs/kms/19-menu-coverage-market-standard.md`, ADR `2026-09-08-menu-parity-market-standard.md`; never write "ครบ 100%"
 
+## Stock cost: average only — ADR `2026-10-11-stock-cost-average-only.md`
+- Product/stock cost uses the average method only (one weighted average, computed as Champ does); no FIFO, LIFO, FEFO, lot/specific, standard or any other method: no engine, setting, option, menu, tool, report column or text for them, even where Champ has them (owner order 2026-10-11)
+
 ## GL scope — ADR `2026-09-23-tax-inside-general-ledger.md`
 - All tax menus under "บัญชีแยกประเภท"; GL-only user must work right away, other systems later; accounting-office system (receive, check, reconcile, close), not front-office/other-system workflow; main spec `mydocs/specs/gl/spec.md`
 - One journal↔AR/AP/bank Statement many-to-many (allocations in link table); AR/AP/Statement=audit detail, not payment orders
