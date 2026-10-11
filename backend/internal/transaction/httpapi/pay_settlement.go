@@ -120,8 +120,9 @@ func normalizePayLines(dt doctype.DocType, details []ErpDetailItem) {
 // checkPayPrepareLines ตรวจบรรทัดใบจ่ายที่ดึงจากใบเตรียมจ่าย ในธุรกรรมเดียวกับการบันทึก (design §4.5 ข้อ 3) ไม่ว่าใบจ่ายจะลงบัญชีได้หรือไม่:
 // ล็อกหัวใบเตรียมจ่าย, ใบต้องยังไม่ยกเลิกและเป็นของเจ้าหนี้เดียวกับใบจ่าย, ยอดรวมต่อ (ใบเตรียมจ่าย, หนี้) ≤ ยอดที่เหลือในใบเตรียมจ่าย
 // (ไม่นับบรรทัดของใบจ่ายนี้เอง — ตอนแก้ไขการตัดหนี้เดิมถูกถอนแล้วใน releasePosting)
-func checkPayPrepareLines(ctx context.Context, tx *sql.Tx, company string, doc *ErpTransactionDoc, docNo string) error {
-	type useKey struct{ prepareNo, debtID string }
+// kept = คู่ (ใบเตรียมจ่าย, หนี้) ที่ใบจ่ายนี้ดึงไว้ก่อนแก้ไข: ใบเตรียมจ่ายที่ถูกยกเลิกภายหลังไม่ล็อกบรรทัดเหล่านี้ (ดู payPrepareLinesOf)
+func checkPayPrepareLines(ctx context.Context, tx *sql.Tx, company string, doc *ErpTransactionDoc, docNo string, kept map[prepareLineKey]bool) error {
+	type useKey = prepareLineKey
 	sums, firstLine := map[useKey]decimal.Decimal{}, map[useKey]int{}
 	var prepareNos []string
 	for i, line := range doc.Details {
@@ -171,7 +172,7 @@ func checkPayPrepareLines(ctx context.Context, tx *sql.Tx, company string, doc *
 		switch {
 		case !found:
 			return erpBadRequest("ap_prepare_not_found", "paybillno")
-		case header.cancelled:
+		case header.cancelled && !keptAll(sums, kept, no):
 			return erpError("ap_prepare_cancelled_locked", "paybillno")
 		case header.partner != strings.TrimSpace(doc.CustCode):
 			return erpBadRequest("ap_pay_prepare_creditor_mismatch", "paybillno", no)
@@ -186,12 +187,47 @@ func checkPayPrepareLines(ctx context.Context, tx *sql.Tx, company string, doc *
 		open[useKey{u.docNo, u.debtID}] = u.payAmount.Sub(u.paid())
 	}
 	for key, sum := range sums {
+		if headers[key.prepareNo].cancelled {
+			continue // บรรทัดเดิมของใบเตรียมจ่ายที่ยกเลิกแล้ว: ยอดจ่ายคุมด้วยยอดคงเหลือของหนี้ใน settleLines เหมือน Champ
+		}
 		if sum.GreaterThan(open[key]) {
 			i := firstLine[key]
 			return erpError("ap_pay_prepare_over_open", fmt.Sprintf("details[%d].sumamount", i), payLineLabel(doc.Details[i]), key.prepareNo)
 		}
 	}
 	return nil
+}
+
+type prepareLineKey struct{ prepareNo, debtID string }
+
+// keptAll บอกว่าทุกบรรทัดของใบเตรียมจ่าย prepareNo ในใบจ่ายนี้เป็นบรรทัดที่ดึงไว้ก่อนแก้ไข
+func keptAll(sums map[prepareLineKey]decimal.Decimal, kept map[prepareLineKey]bool, prepareNo string) bool {
+	for key := range sums {
+		if key.prepareNo == prepareNo && !kept[key] {
+			return false
+		}
+	}
+	return true
+}
+
+// payPrepareLinesOf อ่านคู่ (ใบเตรียมจ่าย, หนี้) ที่ใบจ่ายดึงไว้ก่อนแก้ไข — Champ PaymentProcessStatement (bcprocess.cpp:490-515) แค่ปรับยอดค้าง
+// ของใบเตรียมจ่ายโดยไม่ตรวจว่ายกเลิกแล้ว ใบจ่ายที่ดึงไว้ก่อนใบเตรียมจ่ายถูกยกเลิกจึงยังแก้ได้ ส่วนบรรทัดใหม่จากใบที่ยกเลิกยังถูกปฏิเสธ
+func payPrepareLinesOf(ctx context.Context, tx *sql.Tx, company string, transflag int, docNo string) (map[prepareLineKey]bool, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT paybillno, COALESCE(debt_document_id, '') FROM docdetail
+		WHERE businesscode=$1 AND transflag=$2 AND docno=$3 AND COALESCE(paybillno, '') <> ''`, company, transflag, docNo)
+	if err != nil {
+		return nil, fmt.Errorf("read prepared pay lines: %w", err)
+	}
+	defer rows.Close()
+	kept := map[prepareLineKey]bool{}
+	for rows.Next() {
+		var key prepareLineKey
+		if err = rows.Scan(&key.prepareNo, &key.debtID); err != nil {
+			return nil, fmt.Errorf("scan prepared pay line: %w", err)
+		}
+		kept[key] = true
+	}
+	return kept, rows.Err()
 }
 
 func compactStrings(sorted []string) []string {

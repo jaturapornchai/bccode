@@ -165,6 +165,19 @@ func TestIntegrationPaymentPrepareLifecycle(t *testing.T) {
 	wantCode("edit of cancelled preparation", err, "ap_prepare_cancelled_locked")
 	_, err = f.payOn(payDay, partly.DocNo, otherDebt, otherNo, "10.00")
 	wantCode("payment from a cancelled preparation", err, "ap_prepare_cancelled_locked")
+	// Champ PaymentProcessStatement (bcprocess.cpp:490-515) only updates the statement rows, so a payment that already pulled
+	// from the preparation stays editable after the preparation is cancelled; a new pull from it is still refused.
+	paid := scalarString(t, f.db, `SELECT docno FROM doc WHERE businesscode=$1 AND transflag=$2 AND docno IN (SELECT docno FROM docdetail WHERE businesscode=$1 AND paybillno=$3) ORDER BY docno LIMIT 1`, testCompany, f.pay.Flag, partly.DocNo)
+	edited := &ErpTransactionDoc{DocNo: paid, DocDateTime: payDay.Format(time.RFC3339), CustCode: "S101", TotalAmount: amt("90.00"), DocRef: otherNo,
+		Details: []ErpDetailItem{{LineNumber: 1, DebtDocumentID: otherDebt, DocRef: otherNo, PayBillNo: partly.DocNo, SumAmount: amt("90.00")}}}
+	if _, err = f.store.SaveDoc(f.ctx, f.db, scope, f.pay, edited, true); err != nil {
+		t.Fatalf("edit of a payment whose preparation was cancelled: %v", err)
+	}
+	requireDecimal(t, "second debt after editing the payment", subledgerOutstanding(t, f.db, otherDebt), "124")
+	edited.Details = append(edited.Details, ErpDetailItem{LineNumber: 2, DebtDocumentID: debt, DocRef: f.purchaseNo, PayBillNo: partly.DocNo, SumAmount: amt("1.00")})
+	edited.TotalAmount = amt("91.00")
+	_, err = f.store.SaveDoc(f.ctx, f.db, scope, f.pay, edited, true)
+	wantCode("new line from a cancelled preparation on edit", err, "ap_prepare_cancelled_locked")
 	if n := scalarString(t, f.db, `SELECT count(*)::text FROM ap_payment_prepare_events WHERE company=$1`, testCompany); n != "5" {
 		t.Fatalf("preparation events = %s, want 5 (create, update, create, cancel, create)", n)
 	}

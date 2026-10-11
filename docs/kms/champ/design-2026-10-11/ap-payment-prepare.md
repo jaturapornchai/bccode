@@ -383,6 +383,7 @@ LIMIT $7 OFFSET $8;
 3. ใน tx เดียวกับการบันทึก PV:
    - lock หัวใบเตรียมจ่ายที่ถูกอ้าง (`SELECT ... FOR UPDATE`)
    - ตรวจว่า `Σ sumamount` ต่อ `(paybillno, debt_document_id)` ไม่เกิน `payamount − used` และเจ้าหนี้ตรงกัน
+   - ใบเตรียมจ่ายที่ยกเลิกแล้ว: บรรทัดใหม่ → `ap_prepare_cancelled_locked`; บรรทัดที่ PV นี้ดึงไว้ก่อนแก้ไข (คู่ `(paybillno, debt_document_id)` เดิม) แก้ต่อได้โดยไม่ตรวจ `payamount − used` เหลือแค่ยอดคงเหลือของหนี้ (§4.5.1) — Champ `PaymentProcessStatement` (`bcprocess.cpp:490-515`) แค่ UPDATE ยอดค้างโดยไม่ตรวจการยกเลิก (`pay_settlement.go` `payPrepareLinesOf`)
 4. ยกเลิก/ลบ/แก้ PV ผ่าน `releasePosting` → `cleanSubledger` (`posting.go:505-530`, ปัจจุบันใช้ `DELETE` ไม่ใช่การกลับรายการ) ลบ settlement ทุกบรรทัด แล้ว `used` จะลดลงเอง ทำให้ใบเตรียมจ่ายกลับมาเป็น "ยังไม่จ่าย" — เทียบ Champ PV `OnDeleteData :593-634` ที่เรียก `PaymentProcessBill(1)` คืนยอดก่อนลบ
    - `cleanSubledger` ต้องเพิ่มการตรวจยอดจองของใบเตรียมจ่าย (§4.1) ก่อน DELETE หนี้ของเอกสารฝั่งหนี้
 5. ห้ามปิดเอกสารหนี้ทั้งใบเมื่อถูกอ้าง (`save.go:233-237`) ในกรณีจ่ายบางส่วน

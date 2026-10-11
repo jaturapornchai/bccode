@@ -250,6 +250,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 		creditDay = *doc.CreditDay
 	}
 
+	var keptPrepareLines map[prepareLineKey]bool
 	var docID int
 	if isEdit {
 		var currentCancel bool
@@ -300,6 +301,11 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 		}
 		if err != nil {
 			return nil, fmt.Errorf("update doc: %w", err)
+		}
+		if subledgerSpecs[dt.Key].lineSettle {
+			if keptPrepareLines, err = payPrepareLinesOf(ctx, tx, company, transflag, docNo); err != nil {
+				return nil, err
+			}
 		}
 		if _, err = tx.ExecContext(ctx, "DELETE FROM docdetail WHERE businesscode = $1 AND transflag = $2 AND docno = $3", company, transflag, docNo); err != nil {
 			return nil, fmt.Errorf("delete doc details: %w", err)
@@ -375,7 +381,7 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 		}
 	}
 	if subledgerSpecs[dt.Key].lineSettle {
-		if err = checkPayPrepareLines(ctx, tx, company, doc, docNo); err != nil {
+		if err = checkPayPrepareLines(ctx, tx, company, doc, docNo, keptPrepareLines); err != nil {
 			return nil, err
 		}
 	}
