@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"sort"
 	"time"
 
 	"github.com/lib/pq"
@@ -154,6 +155,8 @@ func restoreStates(ctx context.Context, tx *sql.Tx, scope Scope, ids []string) e
 	if err != nil {
 		return err
 	}
+	// เขียนเรียงตาม id เหมือน lockDocCheques/ApplyRecalculate (RETURNING ของ voidDocEvents ไม่เรียง) กันสองคำขอล็อกแถวสลับลำดับจน deadlock
+	sort.Strings(ids)
 	for _, id := range ids {
 		st := states[id]
 		if _, err = tx.ExecContext(ctx, `UPDATE cheque_registers SET status = $3::smallint,
