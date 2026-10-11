@@ -73,6 +73,14 @@ trigger: **ไม่มี** — ไม่มีอะไรรันให้�
 
 ## 7. UAT หน้าจอด้วยปุ่ม Demo
 - AI ทดสอบเองผ่านปุ่ม "ทดลองใช้ระบบ (Demo)" (Browser pane หรือ Playwright) → holding `rungrueng` → บริษัท `01` → สาขา `00000` แล้วตรวจ payload/console/screenshot (กฎใน `AGENTS.md`)
+- **UAT คำสั่งเดียว `npm run uat`** (`tools/uat/run.mjs`, 2026-10-11) — ใช้ตรวจรอบสุดท้ายแทนการให้ agent กดจอทีละขั้น:
+  - preflight: frontend, `postgres`, `mainapi` `/healthz`, `backend-fresh` (container เก่ากว่าโค้ด backend → fail พร้อมบอกให้ใช้ `--rebuild`), Demo login + select-holding `rungrueng/01/00000`
+  - `flows/gl.mjs`: สมุดรายวัน JV สร้าง→อ่าน→แก้ (version, idempotent replay, stale version)→ผ่านรายการ (gl_lines Dr=Cr)→ห้ามแก้/ลบหลังผ่าน→กลับรายการ (ยอดสุทธิ 0)→ไม่สมดุล/เงินเป็น JSON number ต้องถูกปฏิเสธ; ผังบัญชีและสมุดรายวัน C/U/D + ห้ามลบที่ถูกใช้แล้ว
+  - `flows/erp-docs.mjs`: ทุก doctype ใน `backend/internal/doctype/doctype.go` สร้าง→อ่าน→แก้→ลบ (soft) + ยกเลิกทั้งใบ ตรวจ `doc`/`docdetail`/`gl_lines`/`stock_ledger` หลังทุกขั้น
+  - `ui.mjs`: ทุกจอที่ไม่ใช่ "รอพัฒนา" (อ่านจาก `menu-bars.ts` จริง) เปิดผ่านช่องค้นหาเมนู (`data-menu-route`) หรือหัวเมนู (`data-menu-head`) → ไม่มี console/page error, ไม่มี `/api` ≥ 400, ไม่มีชิป รอพัฒนา, ไม่ว่าง → screenshot `tmp/uat/shots/`
+  - cleanup: ลบเฉพาะ id ที่รอบนี้สร้าง และเฉพาะที่ไม่มี gl_lines/stock_ledger (ประวัติที่ผ่านรายการ/ยกเลิกแล้วเก็บไว้); ผลเต็ม `tmp/uat/summary.json`, exit 1 เมื่อมีข้อไม่ผ่าน
+  - ตัวเลือก: `--flows=gl,erp|none`, `--erp=<key,...>`, `--screens=all|gl,ap,...|none`, `--routes=/branch,/gl/dimensions` (เฉพาะจอเหล่านี้ตามลำดับ — Git Bash ต้องนำหน้า `MSYS_NO_PATHCONV=1`), `--dark`, `--keep`, `--rebuild`, `--target=prod` (อ่านอย่างเดียว: UI smoke บน RUNGRUENG/01 ไม่มี CRUD/psql)
+  - เงินในคำขอเป็นทศนิยมตรงตัวจากสตางค์จำนวนเต็ม (`lib.mjs` `dec()`), เทียบผลด้วย `sameDecimal` ไม่ใช้ float
 - harness `scratch/stagehand-uat` (ขับด้วย DeepSeek) **ปลดระวาง 2026-09-23** — ห้ามใช้ AI ภายนอก ใช้ Playwright/Browser pane แทน
 
 ## 8. กฎ UAT (AGENTS.md) เทียบกับสิ่งที่ suite ทำได้จริง

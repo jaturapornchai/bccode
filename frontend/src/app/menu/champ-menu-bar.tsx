@@ -144,6 +144,8 @@ export function ChampMenuBar({
           className={ROW_CLASS}
           disabled={locked}
           key={item.id}
+          // data-menu-route / data-menu-head: tools/uat/ui.mjs opens bar-only screens through these (npm run uat)
+          data-menu-route={item.route}
           onClick={(event) => {
             newTabRequested.current = event.ctrlKey || event.metaKey || event.shiftKey;
           }}
@@ -195,6 +197,7 @@ export function ChampMenuBar({
                 type="button"
                 variant={activeSection === bar.id ? "secondary" : "ghost"}
                 className={HEAD_CLASS}
+                data-menu-head={bar.id}
                 ref={(node) => {
                   if (node) triggers.current.set(bar.id, node);
                   else triggers.current.delete(bar.id);

@@ -1386,6 +1386,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <p className="min-w-0 truncate text-sm font-bold">
                   {backendText(backendLanguage, "menu_search_results", "ผลการค้นหา")}: <span className="text-primary">{globalSearch.trim()}</span>
                 </p>
+                      // tools/uat/ui.mjs opens every screen through this attribute (npm run uat)
+                      data-menu-route={item.route}
                 <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground">{topSearchResults.length}</span>
                 <Button
                   type="button"
