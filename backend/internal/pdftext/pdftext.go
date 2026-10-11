@@ -177,6 +177,11 @@ func (o *Overlay) Check(p *Page, x, y float64) {
 		num(x-3.6), num(y+0.2), num(x-1.1), num(y-3.0), num(x+4.0), num(y+4.2)))
 }
 
+// Line - เส้นตรงจาก (x1, y1) ถึง (x2, y2) หน่วย pt หนา width (ใช้ขีดคร่อมเช็คและขีดฆ่า "หรือผู้ถือ")
+func (o *Overlay) Line(p *Page, x1, y1, x2, y2, width float64) {
+	p.content.WriteString(fmt.Sprintf("q %s w 0 J %s %s m %s %s l S Q\n", num(width), num(x1), num(y1), num(x2), num(y2)))
+}
+
 func num(v float64) string {
 	s := strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.3f", v), "0"), ".")
 	if s == "-0" || s == "" {
