@@ -234,3 +234,37 @@ func TestCurrentSessionAccessScopes(t *testing.T) {
 		})
 	}
 }
+
+// Champ resets print / export to TRUE before it loads a user's options (champ-lib/BC5FRMWRK/BCSWinApp.cpp:1636-1653): a
+// permission group that never recorded a decision (older groups, groups created through the API / MCP) grants them; a
+// group whose admin unticked one ("!"+right) takes it away from the member whatever the other groups say
+func TestScopeSpecialRightsFollowChampDefault(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		grants        map[string]string
+		print, export bool
+	}{
+		{"groups without a decision", map[string]string{"USER": `[]`, "ACCOUNTING": `["gl-journals"]`}, true, true},
+		{"export unticked", map[string]string{"USER": `[]`, "ACCOUNTING": `["gl-journals","report:print","!report:export"]`}, true, false},
+		{"untick wins over a tick in another group", map[string]string{"USER": `["report:print","report:export"]`, "ACCOUNTING": `["gl-journals","!report:print"]`}, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := scopeDB(t, &scopeDriver{role: "USER", sets: `["ACCOUNTING"]`, scopes: `[{"scopetype":"company","companyuid":"C","allbranches":true}]`, grants: tc.grants})
+			request := scopeContext{user: models.UserInfo{HoldingCode: "H", BusinessCode: "C", UID: "U"}}
+			got, err := resolveScope(context.Background(), request, func(string) (*sql.DB, error) { return db, nil })
+			if err != nil {
+				t.Fatal(err)
+			}
+			canPrint, canExport := allowed(got.Permissions, "report:print", ""), allowed(got.Permissions, "report:export", "")
+			if canPrint != tc.print || canExport != tc.export {
+				t.Fatalf("print=%v export=%v, want %v %v: %+v", canPrint, canExport, tc.print, tc.export, got.Permissions)
+			}
+			if got.Permissions["*"] || !allowed(got.Permissions, "gl-journals", "") || allowed(got.Permissions, "gl-post", "") {
+				t.Fatalf("screen grants changed: %+v", got.Permissions)
+			}
+			if got.Permissions["!report:print"] || got.Permissions["!report:export"] {
+				t.Fatalf("untick marker kept as a grant: %+v", got.Permissions)
+			}
+		})
+	}
+}

@@ -49,6 +49,24 @@ export const specialPermissionTextKeys: Record<SpecialPermission, string> = {
 
 export const SPECIAL_PERMISSIONS = Object.keys(SPECIAL_PERMISSION_LABELS) as SpecialPermission[];
 
+// A group stores "!"+right when its admin unticks a special right; no entry keeps Champ's default, granted (Champ sets
+// both TRUE before it loads a user's options, champ-lib/BC5FRMWRK/BCSWinApp.cpp:1636-1653). The backend reads groups
+// the same way (report.DeniedPermission / GrantChampDefaults), so groups made through the API / MCP behave alike.
+export function deniedPermission(code: SpecialPermission): string {
+  return `!${code}`;
+}
+
+export function specialPermissionGranted(entries: ReadonlySet<string>, code: SpecialPermission): boolean {
+  return !entries.has(deniedPermission(code));
+}
+
+/** tick = drop the untick (back to the default); untick = store it. A literal grant left by older groups goes either way. */
+export function setSpecialPermission(entries: Set<string>, code: SpecialPermission, granted: boolean): void {
+  entries.delete(code);
+  if (granted) entries.delete(deniedPermission(code));
+  else entries.add(deniedPermission(code));
+}
+
 export function hasScreenAccess(permissions: readonly string[], screen: string): boolean {
   return permissions.includes("*") || permissions.includes(screen);
 }

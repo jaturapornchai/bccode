@@ -14,6 +14,8 @@ import {
   SPECIAL_PERMISSION_LABELS,
   actionEntry,
   isActionEntry,
+  setSpecialPermission,
+  specialPermissionGranted,
   specialPermissionTextKeys,
   type PermissionAction,
 } from "@/lib/permission-actions";
@@ -319,10 +321,10 @@ export function RoleScreenMatrix({
             {specials.map((code) => (
               <label className={cn("inline-flex min-h-10 items-center gap-2 text-sm font-semibold", !readOnly && "cursor-pointer")} key={code}>
                 <input
-                  checked={selectedSet.has(code)}
+                  checked={specialPermissionGranted(selectedSet, code)}
                   className={box}
                   disabled={readOnly}
-                  onChange={(event) => setRow(code, event.target.checked)}
+                  onChange={(event) => apply((next) => setSpecialPermission(next, code, event.target.checked))}
                   type="checkbox"
                 />
                 {tr(specialPermissionTextKeys[code], SPECIAL_PERMISSION_LABELS[code].th)}

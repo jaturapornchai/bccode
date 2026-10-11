@@ -81,12 +81,21 @@ var permissionActions = map[string]struct{}{
 	"cancel":  {},
 }
 
+// Champ "สิทธิ์เฉพาะ" (report.PermissionPrint / PermissionExport, not a screen): the group stores the right when ticked
+// and "!"+right (report.DeniedPermission) when its admin unticks it — no entry keeps Champ's default, granted
+var specialPermissionEntries = map[string]struct{}{
+	"report:print":   {},
+	"report:export":  {},
+	"!report:print":  {},
+	"!report:export": {},
+}
+
 func isValidPermissionEntry(entry string) bool {
-	if entry == "*" {
+	if _, special := specialPermissionEntries[entry]; entry == "*" || special {
 		return true
 	}
 	screen, action, hasAction := strings.Cut(entry, ":")
-	if screen == "" || strings.ContainsAny(screen, " \t") {
+	if screen == "" || strings.ContainsAny(screen, " \t!") {
 		return false
 	}
 	if !hasAction {

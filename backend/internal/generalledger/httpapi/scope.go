@@ -12,6 +12,7 @@ import (
 	gl "smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/mcptoken"
+	"smlcloudplatform/internal/report"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -93,6 +94,7 @@ func resolveScope(ctx context.Context, request microservice.IContext, connect fu
 			permissions[permission] = true
 		}
 	}
+	report.GrantChampDefaults(permissions)
 	result.CompanyWide = companyWide
 	result.Permissions = permissions
 	return result, nil

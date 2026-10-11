@@ -137,7 +137,7 @@ import { LANGUAGES, SYSTEM_LANGUAGES, ACTIVE_LANGUAGE_CODES, normalizeLanguage, 
 import { MENU_SECTIONS, flattenMenuItems, menuText } from "@/lib/menu-data";
 import { isMenuBackendRetired } from "@/lib/menu-screen-status";
 import { MenuPlannedCard } from "../menu/menu-planned-card";
-import { ALL_SCREEN_ACTIONS, isActionEntry, SPECIAL_PERMISSIONS, type ScreenActions } from "@/lib/permission-actions";
+import { ALL_SCREEN_ACTIONS, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
 import { RoleScreenMatrix } from "@/components/system-settings/field-editors/role-screen-matrix";
 import { useScreenActions } from "@/lib/use-screen-actions";
 import type { MasterEntry, MasterName } from "@/lib/product-barcode/api";
@@ -14509,9 +14509,6 @@ function defaultForm(
   if (config.slug === "permissiondefinition") {
     form.accessrules = {};
   }
-  // Champ grants print / export until a role unticks them (champ-lib/BC5FRMWRK/BCSWinApp.cpp:1636-1653): a new
-  // permission group starts with both ticked; a saved group keeps what formFromRecord reads back from the record
-  if (config.slug === "permissiongroup") form.permissions = JSON.stringify(SPECIAL_PERMISSIONS);
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
   return form;

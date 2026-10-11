@@ -40,6 +40,21 @@ const (
 	PermissionExport = "report:export"
 )
 
+// DeniedPermission = the entry a permission group stores when its admin unticks right (Champ แท็บ "เฉพาะ")
+func DeniedPermission(right string) string { return "!" + right }
+
+// GrantChampDefaults turns the union of a member's permission groups into the print / export rights Champ gives: Champ
+// sets both TRUE before it loads a user's options (champ-lib/BC5FRMWRK/BCSWinApp.cpp:1636-1653), so a group that never
+// recorded a decision (older groups, groups created through the API / MCP) grants them; a group whose admin unticked one
+// takes it away whatever the member's other groups say. The untick markers leave the map.
+func GrantChampDefaults(granted map[string]bool) {
+	for _, right := range []string{PermissionPrint, PermissionExport} {
+		denied := DeniedPermission(right)
+		granted[right] = !granted[denied]
+		delete(granted, denied)
+	}
+}
+
 // SourceRequest = one validated run of one definition
 type SourceRequest struct {
 	Scope   gl.Scope
