@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -139,8 +141,10 @@ func (c *Cacher) HMSet(key string, fieldValues map[string]interface{}) error {
 	if expiry.Valid {
 		expiryArg = expiry.Time
 	}
-	for field, value := range fieldValues {
-		text, err := cacheValueText(value)
+	// Fixed field order: concurrent writers of one hash (e.g. two select-holding calls on one session)
+	// must lock rows in the same order, otherwise PostgreSQL aborts one of them as a deadlock.
+	for _, field := range slices.Sorted(maps.Keys(fieldValues)) {
+		text, err := cacheValueText(fieldValues[field])
 		if err != nil {
 			return err
 		}
@@ -338,7 +342,12 @@ func (c *Cacher) Expires(keys []string, expire time.Duration) error {
 	}
 	ctx, cancel := cacheCtx()
 	defer cancel()
-	_, err := c.db.ExecContext(ctx, `UPDATE cache_entries SET expires_at = $2 WHERE cache_key = ANY($1) AND `+cacheLiveSQL, pq.Array(keys), time.Now().Add(expire))
+	// Lock rows in (cache_key, field) order — the order HMSet writes them. A plain UPDATE locks in heap
+	// order and deadlocked with select-holding's HMSet on the same session; PostgreSQL cancelled this
+	// Expire after 1s and the request answered 401.
+	_, err := c.db.ExecContext(ctx, `UPDATE cache_entries AS c SET expires_at = $2
+FROM (SELECT cache_key, field FROM cache_entries WHERE cache_key = ANY($1) AND `+cacheLiveSQL+` ORDER BY cache_key, field FOR UPDATE) AS locked
+WHERE c.cache_key = locked.cache_key AND c.field = locked.field`, pq.Array(keys), time.Now().Add(expire))
 	return err
 }
 
