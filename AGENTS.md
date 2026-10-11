@@ -86,7 +86,7 @@
 **พรีเมี่ยม**—เท่าหน้า login/holding
 - accent จาก `--primary` ผ่าน `color-mix` ห้าม hard-code สี;light/dark สวยเท่ากัน;card มุม 16–28px ขอบ hairline เงาย้อมสี primary นุ่ม;hover ยก ≤1px;focus ring 3–4px
 - Motion:ambient glow ≥15s+stagger ≤0.5s เท่านั้น ห้าม `filter: blur()` เคลื่อนไหว;hero=รูปถ่ายธุรกิจไทยจริง webp ≥1600px ห้าม SVG/clipart;ห้าม `overflow: hidden` บน panel ที่มี popover
-- ตรวจรับ screenshot light+dark×1600/1280/1024/768-portrait+hover/focus/disabled/error,ไม่มี console error;dark กดปุ่มสลับธีมจริง
+- ตรวจรับครั้งเดียวตอนจบชุดงาน:screenshot light+dark×1600/1280/1024/768-portrait+hover/focus/disabled/error,ไม่มี console error;dark กดปุ่มสลับธีมจริง
 - CSS skin pass=block เดียวท้าย `frontend/src/app/globals.css` (มี comment วันที่+เหตุผล);แก้ด้วย Node byte-preserving(EOL ผสม)ไม่ใช้ Edit tool
 
 **Upgrade skill**—ก่อนแตะ UI อ่าน `ui-scale-polish`;มาตรฐานกลาง(icon ปุ่ม,`!pl-10`,ความสูงปุ่ม,palette,density)→อัปเดต `.agents/skills/ui-scale-polish/SKILL.md` ทันที(แบบแผนใหม่,anti-pattern,root cause,ไฟล์:บรรทัด)commit พร้อมโค้ด;AGENTS.md ขัด skill→AGENTS.md ชนะ;ห้ามลอกโค้ดเก่าที่ยังไม่อัปเกรด
@@ -124,9 +124,10 @@
 - commit≠push(push เมื่อลุงจืดสั่ง);ห้าม `--no-verify`;hook ไม่ผ่าน→แก้แล้ว commit ใหม่ ห้าม `--amend` commit เดิม
 - ใน worktree(`.claude/worktrees/*`)commit บน branch ของ worktree ไม่แตะ `dev`;ท้ายรายงานบอก hash+branch+สิ่งที่ยังไม่ commit
 
-## Opus คุม+agent ลูก (2026-10-04)
-- Opus 5.5 คุม;ตารางเลือกรุ่น(haiku/sonnet/opus/fable)ใน Orchestration Rule ของ `~/.agents/AGENTS.md`
-- บัญชี/ภาษี/เงิน(Rule 20),security/auth/สิทธิ์,verify ผลลูก→`opus`;สำรวจโค้ด/แก้ UI/unit+test→`sonnet`;`haiku` เฉพาะงานกลไก ห้ามเขียนคอลัมน์ th ของ `languages.tsv`/ข้อความบนจอ/KMS ไทย ห้าม audit ที่ต้องครบ(Champ parity,secret scan,ลบ flag);`fable` เฉพาะปัญหายากที่ Opus ติด
+## Opus คุม+agent ลูกตระกูล 5.5 (2026-10-04,10-11)
+- Opus 5.5 คุม;ตารางเลือกรุ่น(haiku/sonnet/opus ตระกูล 5.5;fable เฉพาะลุงจืดสั่ง)ใน Orchestration Rule ของ `~/.agents/AGENTS.md`
+- บัญชี/ภาษี/เงิน(Rule 20),security/auth/สิทธิ์,verify ผลลูก→`opus`;สำรวจโค้ด/แก้ UI/unit+test→`sonnet`;`haiku` เฉพาะงานกลไก ห้ามเขียนคอลัมน์ th ของ `languages.tsv`/ข้อความบนจอ/KMS ไทย ห้าม audit ที่ต้องครบ(Champ parity,secret scan,ลบ flag);งานค้นอ่านอย่างเดียว→`subagent_type:"Explore"`(ไม่โหลดกฎ ประหยัด ~41k token/ตัว)
+- พัฒนาก่อน ตรวจทีเดียว(2026-10-11):ระหว่างทาง=`go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>` เท่านั้น ไม่วน agent review รายขั้น;จบชุดงาน=`npm run verify:all`+review `git diff` รวมครั้งเดียว(เงิน/ภาษี/สิทธิ์→opus,อื่น→sonnet)+UAT Demo ครั้งเดียว(ในรอบ UAT ยังตรวจ psql ทุก operation ตามกฎ UAT)+screenshot ครั้งเดียว→commit→deploy;ห้ามบอกเสร็จก่อนรอบสุดท้ายผ่าน
 - ผลลูกต้องผ่าน Opus:รัน `npm run verify`/test/query PostgreSQL เอง;ลูกห้าม commit/push/deploy/แตะ `mydocs/`;ห้ามใช้ AI ค่ายอื่นเว้นลุงจืดสั่ง
 
 ## Dev: เดินหน้าอย่างเดียว ไม่สนใจข้อมูลเก่า (2026-06-28,09-15,09-23)
