@@ -80,7 +80,8 @@ describe("menu language labels", () => {
     // +16 รายการที่หัวเมนูธุรกรรมของ Champ 5.5 มีแต่ BC ขาด (S1, 2026-10-09): 5 จอยกเลิก/อนุมัติ + 10 รอพัฒนา + gl-unpost
     // +10 รายการหัว "จัดการระบบ" ของ Champ ที่ BC ยังไม่มีจอ (S2, 2026-10-09)
     // +8 รายการหัว "หน้าต่าง" และ "ช่วยเหลือ" ของ Champ ที่ BC ยังไม่มีจอ (2026-10-10)
-    expect(items).toHaveLength(238);
+    // +5 จอกำหนดรหัสธนาคาร/สาขา/บริการ/ประเภทบัญชี/สถานะเช็คเพิ่มเติม ใต้ "กำหนดรหัสต่างๆ" (CB-1, 2026-10-11)
+    expect(items).toHaveLength(243);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) {

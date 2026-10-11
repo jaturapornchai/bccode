@@ -269,11 +269,12 @@ describe("Champ-style menu bar layout", () => {
     const codes = MENU_BARS.find((bar) => bar.id === "system")?.nodes.find((node) => node.kind === "submenu" && node.id === "system-codes");
     expect(codes?.kind === "submenu" ? menuBarItems(codes.nodes).map((entry) => entry.id) : []).toEqual([
       "gl-dimensions", "product-group", "brand", "warehouse", "product-unit", "barcode",
+      "bank-code-kind-bank", "bank-code-kind-bank-branch", "bank-code-kind-bank-service", "bank-code-kind-bank-account-type", "bank-code-kind-cheque-ext-status",
     ]);
-    // the catalog items of the head are the pending screens plus the six code screens — nothing else
+    // the catalog items of the head are the pending screens plus the eleven code screens — nothing else
     const catalogIds = menuBarItems(MENU_BARS.find((bar) => bar.id === "system")?.nodes ?? []).map((entry) => entry.id);
     expect(catalogIds.filter((id) => !CHAMP_ONLY_PENDING_IDS.includes(id)).sort()).toEqual(
-      ["barcode", "brand", "gl-dimensions", "product-group", "product-unit", "system-credit-debit-reasons", "system-currency", "system-customer-inquiry", "system-default-warehouse", "system-journal-format", "system-main-map", "system-payment-terms", "system-product-by-warehouse", "system-product-inquiry", "system-work-date", "warehouse"],
+      ["bank-code-kind-bank", "bank-code-kind-bank-account-type", "bank-code-kind-bank-branch", "bank-code-kind-bank-service", "bank-code-kind-cheque-ext-status", "barcode", "brand", "gl-dimensions", "product-group", "product-unit", "system-credit-debit-reasons", "system-currency", "system-customer-inquiry", "system-default-warehouse", "system-journal-format", "system-main-map", "system-payment-terms", "system-product-by-warehouse", "system-product-inquiry", "system-work-date", "warehouse"],
     );
   });
 

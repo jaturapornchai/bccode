@@ -126,31 +126,7 @@ describe("system setting screen configs", () => {
     ).toBe(true);
   });
 
-  it("provides configuration for book bank master screen with main-crud API and redirects bank alias", () => {
-    const config = getSystemSettingConfig("bookbankscreen");
-    expect(config).toBeDefined();
-    expect(config?.route).toBe("/bookbankscreen");
-    expect(config?.kind).toBe("main-crud");
-    expect(config?.icon).toBe("bank");
-    expect(config?.basePath).toBe("/payment/bookbank");
-    expect(config?.listPath).toBe("/payment/bookbank/list");
-    expect(config?.idField).toBe("guidfixed");
-    expect(config?.title.th).toBe("บันทึกสมุดเงินฝากธนาคาร");
-    expect(config?.fields.map((f) => f.key)).toEqual([
-      "bookcode",
-      "names",
-      "passbook",
-      "bankbranch",
-      "accountname",
-      "bankcode",
-      "banknames",
-      "accountcode",
-      "logo",
-    ]);
-    expect(config?.fields[0]?.businessCode).toBe(true);
-    expect(config?.fields[8]?.type).toBe("image-upload");
-
-    const aliasConfig = getSystemSettingConfig("bank");
-    expect(aliasConfig?.slug).toBe("bookbankscreen");
+  it("no longer serves the retired book bank master config — /bookbankscreen is the custom bank book screen", () => {
+    for (const key of ["bookbankscreen", "/bookbankscreen", "bank", "/bank"]) expect(getSystemSettingConfig(key), key).toBeUndefined();
   });
 });

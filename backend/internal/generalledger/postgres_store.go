@@ -87,6 +87,9 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
+	if cmd.Resource == BankAccountKind {
+		return s.executeBankAccount(ctx, scope, cmd)
+	}
 	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" && cmd.Resource != VatAdjustKind {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}

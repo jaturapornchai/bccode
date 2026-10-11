@@ -7,6 +7,7 @@ import { isErpToolsRoute, getErpToolConfig, isErpToolApiReady } from "./erp-tool
 import { isOperationsRoute, getOperationsConfig, isApprovalApiReady } from "./erp-operations";
 import { getThaiTaxConfig } from "./thai-tax";
 import { taxFormRouteCode } from "./tax-forms";
+import { BANK_CODE_KINDS, BANK_CODE_ROUTE_PREFIX } from "./bank-code-kinds";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
@@ -16,6 +17,10 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/report/vatsummary", "/customer/label-print",
   "/ar/billing-note-auto-print",
   "/settings/font",
+  "/banking/contacts",
+  "/bookbankscreen",
+  // จอกำหนดรหัสธนาคาร 5 ชนิด: WorkTabPanel ใช้ bankCodeKindFromRoute() ตัวเดียวแทนการเทียบ route ทีละตัว
+  ...BANK_CODE_KINDS.map((kind) => BANK_CODE_ROUTE_PREFIX + kind),
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

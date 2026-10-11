@@ -195,6 +195,8 @@ func (m *subledgerMutation) bankAccount(b *SubledgerBankAccount) error {
 	if err == nil {
 		given := b.Version
 		b.Version = old.Version
+		// รหัสธนาคาร/สาขา/ประเภทบัญชีตั้งจากจอสมุดเงินฝาก (bank_accounts.go) ไม่ได้มาจากรายละเอียดประกอบในใบ — ใบเดิมห้ามเขียนทับเป็นค่าว่าง
+		b.BankCode, b.BankBranchCode, b.AccountTypeCode = old.BankCode, old.BankBranchCode, old.AccountTypeCode
 		if jsonEqual(old, *b) {
 			return nil
 		}

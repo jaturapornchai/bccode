@@ -306,7 +306,8 @@ export const MENU_BARS: MenuBar[] = [
     DIVIDER,
     submenu(
       "system-codes", "menu_sub_system_codes", "กำหนดรหัสต่างๆ", "Master Codes",
-      ...items("gl-dimensions", "product-group", "brand", "warehouse", "product-unit", "barcode"),
+      ...items("gl-dimensions", "product-group", "brand", "warehouse", "product-unit", "barcode",
+        "bank-code-kind-bank", "bank-code-kind-bank-branch", "bank-code-kind-bank-service", "bank-code-kind-bank-account-type", "bank-code-kind-cheque-ext-status"),
     ),
     routeNode("bar-warehouse-locations", "/productwarehousescreen", "menu_route_warehouse_locations", "กำหนดที่เก็บสินค้าตามคลัง", "Storage Locations by Warehouse"),
     items("system-product-by-warehouse", "system-default-warehouse", "system-currency", "system-main-map"),

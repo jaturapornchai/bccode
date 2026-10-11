@@ -6,6 +6,9 @@ type Context = { params: Promise<{ glPath: string[] }> };
 const bad = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
 // ชุดงบการเงินในคำขอเดียว (backend/internal/generalledger/statement_set.go) — รายงานของจอพิมพ์ชุดงบ ไม่ใช่รายงานทีละจอใน GL_REPORTS
 const GL_SET_REPORTS: readonly string[] = ["statement-set"];
+const GL_BANK_BOOK_RESOURCE = "bank-accounts";
+// "เปลี่ยนเลขที่บัญชี" เปลี่ยนเฉพาะเลขที่บัญชีธนาคารของสมุดเดิม (ปุ่มของจอ Champ 5169) — ใช้ได้กับสมุดเงินฝากเท่านั้น
+const GL_BANK_BOOK_ACTIONS: readonly string[] = ["create", "update", "delete", "change-account-number"];
 export async function GET(request: Request, context: Context) {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
@@ -20,6 +23,8 @@ export async function GET(request: Request, context: Context) {
     // กำไร(ขาดทุน)สุทธิ/สะสมของงวดบัญชี (จอ 5511) — backend generalledger/period_profit.go คำนวณจากรายการที่ผ่านแล้ว อ่านอย่างเดียว
     : glPath[0] === "period-profit" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
+    // สมุดเงินฝากธนาคาร (จอ Champ 5169) — resource ของ backend generalledger/bank_accounts.go ที่ไม่อยู่ใน GL_RESOURCES เพราะไม่ใช่จอตั้งค่า GL ทั่วไป
+    : glPath[0] === GL_BANK_BOOK_RESOURCE ? glPath.length <= 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
@@ -36,8 +41,11 @@ export async function POST(request: Request, context: Context) {
   let body: unknown;
   try { body = await request.json(); } catch { return bad("รูปแบบข้อมูลไม่ถูกต้อง"); }
   if (!isRecord(body) || Array.isArray(body) || typeof body.requestid !== "string" || !/^[0-9a-f-]{36}$/i.test(body.requestid)) return bad("กรุณาระบุหมายเลขคำขอที่ถูกต้อง");
-  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references", "load-standard"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (![...GL_RESOURCES, "processes", GL_BANK_BOOK_RESOURCE].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references", "load-standard", "change-account-number"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "spread" && body.resource !== "budgets") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  // สมุดเงินฝากรับเฉพาะ สร้าง/แก้ไข/ลบ/เปลี่ยนเลขที่บัญชี และ "เปลี่ยนเลขที่บัญชี" ใช้ได้กับสมุดเงินฝากเท่านั้น
+  if (body.resource === GL_BANK_BOOK_RESOURCE && !GL_BANK_BOOK_ACTIONS.includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (body.action === "change-account-number" && body.resource !== GL_BANK_BOOK_RESOURCE) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // สร้างงวดอัตโนมัติ (backend periods_generate.go) / ตรวจใบก่อนผ่านรายการแบบชุด (post_batches.go, คำนวณอย่างเดียว ไม่บันทึก)
   if (body.action === "generate" && body.resource !== "periods") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // Closing-entries preview (backend close_preview.go): calculation only, nothing is saved.
@@ -53,7 +61,7 @@ export async function POST(request: Request, context: Context) {
   if (hasNumericAmount(body)) return bad("จำนวนเงินต้องส่งเป็นข้อความทศนิยม");
   // Scope is resolved from the authenticated backend session. Never forward a caller's company/holding override.
   const payload: Record<string, unknown> = {};
-  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch", "vatadjust"]) {
+  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch", "vatadjust", "bankaccount", "newaccountnumber"]) {
     if (!(key in body)) continue;
     if (isRecord(body[key])) {
       const record = { ...body[key] };

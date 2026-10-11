@@ -319,20 +319,6 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
     };
   }
 
-  if (config.slug === "bookbankscreen" || config.slug === "bookbank") {
-    if (payload.logo && (!payload.images || !Array.isArray(payload.images) || payload.images.length === 0)) {
-      payload.images = [{ xorder: 0, uri: String(payload.logo) }];
-    }
-    if (!payload.bookcode && payload.code) {
-      payload.bookcode = payload.code;
-    }
-    if (!payload.banknames || (Array.isArray(payload.banknames) && payload.banknames.length === 0)) {
-      if (payload.names && Array.isArray(payload.names) && payload.names.length > 0) {
-        payload.banknames = payload.names;
-      }
-    }
-  }
-
   return payload;
 }
 
@@ -344,13 +330,6 @@ function validateSystemSettingWrite(config: SystemSettingConfig, body: unknown):
       { success: false, errorcode: "VALIDATION_FAILED", message: "ss_err_access_scope_invalid" },
       { status: 400 },
     );
-  }
-  if (config.slug === "bookbankscreen" || config.slug === "bookbank") {
-    const hasBanknames = Array.isArray(body.banknames) && body.banknames.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
-    const hasNames = Array.isArray(body.names) && body.names.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
-    if (!hasBanknames && !hasNames) {
-      return NextResponse.json({ success: false, message: "กรุณาระบุชื่อธนาคาร" }, { status: 400 });
-    }
   }
   return null;
 }

@@ -41,6 +41,11 @@ type SubledgerBankAccount struct {
 	Currency      string `json:"currency_code"`
 	IsActive      bool   `json:"is_active"`
 	Version       int64  `json:"version,omitempty"`
+	// รหัสธนาคาร/สาขา/ประเภทบัญชีจากทะเบียน bank_codes (internal/cheque) — ตั้งจากจอสมุดเงินฝาก (bank_accounts.go);
+	// สมุดที่เกิดจากรายละเอียดประกอบในใบสำคัญเดิมยังไม่มีค่าเหล่านี้
+	BankCode        string `json:"bank_code,omitempty"`
+	BankBranchCode  string `json:"bank_branch_code,omitempty"`
+	AccountTypeCode string `json:"account_type_code,omitempty"`
 }
 type SubledgerDocument struct {
 	ID                 string `json:"id"`

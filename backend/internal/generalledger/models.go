@@ -284,6 +284,9 @@ type Command struct {
 	PostBatch *PostBatchInput `json:"postbatch,omitempty"`
 	// VatAdjust: the purchase VAT rows to change at once (resource "vat-adjustments", vat_adjust.go).
 	VatAdjust *VatAdjustInput `json:"vatadjust,omitempty"`
+	// BankAccount: the bank book of resource "bank-accounts" (create/update); NewAccountNumber: action "change-account-number" (bank_accounts.go).
+	BankAccount      *SubledgerBankAccount `json:"bankaccount,omitempty"`
+	NewAccountNumber string                `json:"newaccountnumber,omitempty"`
 }
 
 // Code lengths are counted in runes (PostgreSQL VARCHAR(n) counts characters) and follow
@@ -591,6 +594,13 @@ func normalizeCommandCodes(cmd *Command) {
 		v.Filter = normalizeVatAdjustFilter(v.Filter)
 		v.Items = append([]VatAdjustItem(nil), v.Items...)
 		cmd.VatAdjust = &v
+	}
+	if cmd.BankAccount != nil {
+		b := *cmd.BankAccount
+		for _, code := range []*string{&b.Code, &b.GLAccountCode, &b.BankCode, &b.BankBranchCode, &b.AccountTypeCode} {
+			*code = NormalizeCode(*code)
+		}
+		cmd.BankAccount = &b
 	}
 	if cmd.Journal != nil {
 		j := *cmd.Journal

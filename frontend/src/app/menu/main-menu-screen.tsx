@@ -134,6 +134,10 @@ import { DataModelGraphScreen } from "./datamodel-graph-screen";
 import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
 import { ScreenFontSettings } from "@/components/screen-font-settings";
+import { BankCodeScreen } from "@/components/bank-code-screen";
+import { BankContactScreen } from "@/components/bank-contact-screen";
+import { BookBankScreen } from "@/components/book-bank-screen";
+import { bankCodeKindFromRoute } from "@/lib/bank-code-kinds";
 
 type WorkTab = {
   id: string;
@@ -2317,6 +2321,19 @@ function WorkTabPanel({
 
   if (activeTab.route === "/settings/font") {
     return <ScreenFontSettings language={language} />;
+  }
+
+  const bankCodeKind = bankCodeKindFromRoute(activeTab.route);
+  if (bankCodeKind) {
+    return <BankCodeScreen kind={bankCodeKind} language={language} />;
+  }
+
+  if (activeTab.route === "/banking/contacts") {
+    return <BankContactScreen language={language} />;
+  }
+
+  if (activeTab.route === "/bookbankscreen") {
+    return <BookBankScreen language={language} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

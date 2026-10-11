@@ -3,7 +3,7 @@ import { MENU_SECTIONS } from "./menu-data";
 import { isMenuBackendRetired, isMenuScreenPending } from "./menu-screen-status";
 
 describe("ERP Menu Completeness Audit", () => {
-  // 2026-10-11: จอ UI-only 30 จอเป็น "รอพัฒนา" จนกว่าจะสร้างจริง — ประวัติรายการ/เหตุผลที่ docs/kms/champ/design-2026-10-11/facade-screens.md
+  // 2026-10-11: จอ UI-only 29 จอเป็น "รอพัฒนา" จนกว่าจะสร้างจริง — ประวัติรายการ/เหตุผลที่ docs/kms/champ/design-2026-10-11/facade-screens.md
   // เมื่อสร้างจอใดจริง ให้ลบ route นั้นออกจากรายการนี้ (และ CHAMP_PENDING_ROUTES ใน menu-screen-status.test.ts) ใน commit เดียวกัน
   const FACADE_PENDING_ROUTES = [
     "/ap/payment-prepare",
@@ -11,7 +11,6 @@ describe("ERP Menu Completeness Audit", () => {
     "/banking/bank-service",
     "/banking/cheque-issued-prepare",
     "/banking/cheque-movement",
-    "/banking/contacts",
     "/banking/petty-cash-limit",
     "/inventory/product-supplier-update",
     "/inventory/stock-count-handheld",
@@ -38,7 +37,7 @@ describe("ERP Menu Completeness Audit", () => {
     "/transaction/etax",
   ];
 
-  it("keeps pending routes limited to the 30 UI-only (facade) screens set to รอพัฒนา, besides screens whose MongoDB API was removed", () => {
+  it("keeps pending routes limited to the 29 UI-only (facade) screens set to รอพัฒนา, besides screens whose MongoDB API was removed", () => {
     const pendingList: string[] = [];
     for (const section of MENU_SECTIONS) {
       for (const group of section.groups) {

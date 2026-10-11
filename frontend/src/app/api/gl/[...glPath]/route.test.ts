@@ -250,4 +250,20 @@ describe("GL authenticated proxy", () => {
     expect((await post({ resource: "vat-adjustments", action: "generate", requestid })).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("relays the bank book (Champ 5169) list and commands, scope stripped, and refuses unrelated actions on it", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { id: "KBANK-01", version: 2 } })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/bank-accounts?q=kbank&page=2&limit=50&holdingcode=other", { headers }), context("bank-accounts"))).status).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toContain("/gl/v2/bank-accounts?q=kbank&page=2&limit=50");
+    expect(fetchMock.mock.calls[0][0]).not.toContain("holdingcode");
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: Record<string, unknown>) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    const book = { bank_account_code: "KBANK-01", account_number: "123-4-56789-0", holdingcode: "other", createdby: "other" };
+    expect((await post({ resource: "bank-accounts", action: "update", requestid, id: "KBANK-01", version: 1, bankaccount: book })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ resource: "bank-accounts", action: "update", requestid, id: "KBANK-01", version: 1, bankaccount: { bank_account_code: "KBANK-01", account_number: "123-4-56789-0" } });
+    expect((await post({ resource: "bank-accounts", action: "change-account-number", requestid, id: "KBANK-01", version: 2, newaccountnumber: "999-9-99999-9", holdingcode: "other" })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ resource: "bank-accounts", action: "change-account-number", requestid, id: "KBANK-01", version: 2, newaccountnumber: "999-9-99999-9" });
+    expect((await post({ resource: "bank-accounts", action: "post", requestid, id: "KBANK-01" })).status).toBe(400);
+    expect((await post({ resource: "accounts", action: "change-account-number", requestid, id: "11110" })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
 });

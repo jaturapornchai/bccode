@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { BANK_CODE_KINDS, BANK_CODE_ROUTE_PREFIX } from "./bank-code-kinds";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
 import { getErpModuleConfig } from "./erp-transaction";
@@ -10,6 +11,8 @@ describe("menu screen availability", () => {
   it("tracks the actual custom screen dispatcher, including newly connected screens", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/menu/main-menu-screen.tsx"), "utf8");
     const routes = [...source.matchAll(/activeTab.route === "([^"]+)"/g)].map((match) => match[1]);
+    // จอกำหนดรหัสธนาคารเลือกชนิดจาก route ด้วย bankCodeKindFromRoute() ตัวเดียว → ขยายเป็น route ของทุกชนิด
+    if (source.includes("bankCodeKindFromRoute(activeTab.route)")) routes.push(...BANK_CODE_KINDS.map((kind) => BANK_CODE_ROUTE_PREFIX + kind));
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 
@@ -27,7 +30,6 @@ describe("menu screen availability", () => {
     "/banking/bank-service",
     "/banking/cheque-issued-prepare",
     "/banking/cheque-movement",
-    "/banking/contacts",
     "/banking/petty-cash-limit",
     "/inventory/product-supplier-update",
     "/inventory/stock-count-handheld",
@@ -69,7 +71,7 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(238);
+    expect(items).toHaveLength(243);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();
@@ -108,8 +110,9 @@ describe("menu screen availability", () => {
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
     expect(isMenuBackendRetired("/organization/branch")).toBe(false);
     expect(isMenuBackendRetired("/gl/fiscal-years")).toBe(false);
-    expect(isMenuBackendRetired("/bookbankscreen")).toBe(true);
-    expect(isMenuBackendRetired("/bank")).toBe(true);
+    // จอสมุดเงินฝากเป็นจอใหม่ (CB-2) ไม่ใช่จอตั้งค่าที่ถอด backend แล้ว
+    expect(isMenuBackendRetired("/bookbankscreen")).toBe(false);
+    expect(isMenuScreenPending("/bookbankscreen")).toBe(false);
     // Fallback guard for unmapped routes
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });

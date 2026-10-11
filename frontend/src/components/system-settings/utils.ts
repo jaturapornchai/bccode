@@ -332,15 +332,6 @@ export const fieldBackendKeys: Record<string, string> = {
   // 2026-09-16: the remaining field labels, so every language reads the table
   // instead of falling back to the English label in system-setting-screens.ts.
   "activelanguages.settings.languageconfigs": "active_languages",
-  "bookbankscreen.accountcode": "chart_of_acc",
-  "bookbankscreen.accountname": "account_name",
-  "bookbankscreen.bankbranch": "pass_book_branch",
-  "bookbankscreen.bankcode": "bank_code",
-  "bookbankscreen.banknames": "bank_name",
-  "bookbankscreen.bookcode": "bank_book_code",
-  "bookbankscreen.logo": "ss_f_bank_logo_passbook_image",
-  "bookbankscreen.names": "book_bank_name",
-  "bookbankscreen.passbook": "account_number",
   "branch.companynames": "ss_f_company_names_on_documents",
   "branch.contact": "ss_f_branch_address_province_district_subdistrict",
   "branch.contact.address": "company_branch_address",
@@ -494,7 +485,6 @@ export const fieldBackendKeys: Record<string, string> = {
 // Helper text under a field (`field.helper`) — same idea as fieldBackendKeys,
 // keyed by `<slug>.<field>`.
 export const fieldHelperBackendKeys: Record<string, string> = {
-  "bookbankscreen.logo": "ss_h_png_jpg_webp_supported_stored",
   "branch.code": "ss_h_use_the_thai_5_digit",
   "creditor.branchnumber": "ss_h_required_when_the_partner_is",
   "debtor.branchnumber": "ss_h_required_when_the_partner_is",
@@ -516,7 +506,6 @@ export const fieldHelperBackendKeys: Record<string, string> = {
 // The one-line description under each settings screen title.
 export const systemSettingSubtitleKeys: Record<string, string> = {
   "activelanguages": "ss_sub_set_this_before_other_data",
-  "bookbankscreen": "ss_sub_manage_bank_accounts_branch_account",
   "branch": "ss_sub_manage_branches_language_timezone_and",
   "businesstypescreen": "ss_sub_manage_business_type_codes_and",
   "company": "ss_sub_edit_the_selected_company_profile",
@@ -569,8 +558,6 @@ export const fieldValueAliases: Record<string, string[]> = {
   "productcategorygroupselectscreen.parentguid": ["parentguid"],
   "productcategorylist.groupnumber": ["groupnumber"],
   "productcategorylist.parentguid": ["parentguid"],
-  "bookbankscreen.logo": ["images.0.uri", "logo"],
-  "bookbankscreen.bookcode": ["bookcode", "code"],
 };
 
 // ─── Record Identity Functions ───────────────────────────────────────────────
@@ -921,12 +908,6 @@ export function recordValueForField(
   ) {
     const satang = Number(getByPath(record, "creditlimitsatang") ?? 0);
     return Number.isFinite(satang) && satang !== 0 ? satang / 100 : undefined;
-  }
-  if (config.slug === "bookbankscreen" && field.key === "logo") {
-    if (record.logo) return record.logo;
-    if (Array.isArray(record.images) && record.images.length > 0 && record.images[0]?.uri) {
-      return record.images[0].uri;
-    }
   }
   const value = getByPath(record, field.key);
   if (value !== undefined) return value;

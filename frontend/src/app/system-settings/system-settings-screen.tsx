@@ -133,10 +133,6 @@ import {
   type ThailandProvince,
   type ThailandSubdistrict,
 } from "@/lib/thailand-addresses";
-import {
-  findThaiBankPreset,
-  thaiBankPresets,
-} from "@/lib/thai-banks";
 import { LANGUAGES, SYSTEM_LANGUAGES, ACTIVE_LANGUAGE_CODES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, flattenMenuItems, menuText } from "@/lib/menu-data";
 import { isMenuBackendRetired } from "@/lib/menu-screen-status";
@@ -4136,93 +4132,6 @@ function settingListColumns(
     ];
   }
 
-  if (config.slug === "bookbankscreen") {
-    return [
-      {
-        key: "names",
-        label: backendText(dictionary, "ss_book_bank", "สมุดเงินฝากธนาคาร"),
-        className: "basis-48 grow-[2] min-w-[130px]",
-        render: (record, meta) => {
-          const bookCode = stringValue(record.bookcode ?? record.code ?? meta.id);
-          const name = recordTitle(record, config, language) || bookCode;
-          const logoUri =
-            stringValue(record.logo) ||
-            (Array.isArray(record.images) && record.images[0]?.uri
-              ? String(record.images[0].uri)
-              : "");
-          const bankName =
-            localizedValue(record.banknames, language) ||
-            stringValue(record.bankcode);
-          return (
-            <span className="flex min-w-0 items-center gap-2.5 w-full">
-              <LogoAvatar
-                uri={logoUri}
-                auth={auth}
-                alt={name}
-                sizeClass="size-8 rounded-lg shrink-0 border border-border/50 bg-background/50 p-0.5"
-                iconSize={16}
-                width={64}
-                fallbackIcon={Landmark}
-              />
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <b className="min-w-0 break-words" title={name}>
-                  {name || "-"}
-                </b>
-                <span className="flex flex-wrap items-center gap-1.5">
-                  {bookCode ? (
-                    <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold w-fit max-w-full break-all">
-                      {bookCode}
-                    </span>
-                  ) : null}
-                  {bankName ? (
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={bankName}>
-                      {bankName}
-                    </span>
-                  ) : null}
-                </span>
-              </span>
-            </span>
-          );
-        },
-      },
-      {
-        key: "passbook",
-        label: backendText(dictionary, "account_number", "เลขที่บัญชี"),
-        className: "basis-36 grow min-w-[100px]",
-        render: (record) => {
-          const passbook = stringValue(record.passbook);
-          return passbook ? (
-            <code className="rounded bg-secondary/30 px-1.5 py-0.5 font-mono text-xs font-semibold text-primary">
-              {passbook}
-            </code>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          );
-        },
-      },
-      {
-        key: "bankbranch",
-        label: backendText(dictionary, "branch", "สาขา"),
-        className: "basis-28 grow min-w-[70px] hidden md:inline-flex",
-        render: (record) => (
-          <span className="block truncate text-xs" title={stringValue(record.bankbranch)}>
-            {stringValue(record.bankbranch) || "-"}
-          </span>
-        ),
-      },
-      {
-        key: "accountname",
-        label: backendText(dictionary, "account_name", "ชื่อบัญชี"),
-        className: "basis-32 grow min-w-[80px] hidden lg:inline-flex",
-        render: (record) => (
-          <span className="block truncate text-xs" title={stringValue(record.accountname)}>
-            {stringValue(record.accountname) || "-"}
-          </span>
-        ),
-      },
-    ];
-  }
-
   const fields = config.fields
     .filter(
       (field) =>
@@ -4366,21 +4275,6 @@ function SettingDetailPanel({
                 iconSize={20}
                 width={96}
                 fallbackIcon={UsersRound}
-              />
-            ) : config.slug === "bank" || config.slug === "bookbankscreen" ? (
-              <LogoAvatar
-                uri={
-                  stringValue(record.logo) ||
-                  (Array.isArray(record.images) && record.images[0]?.uri
-                    ? String(record.images[0].uri)
-                    : "")
-                }
-                auth={auth}
-                alt={title || displayCode || "bank"}
-                sizeClass="size-10 rounded-xl shrink-0 mt-0.5 shadow-sm border border-border/50 bg-background/50 p-0.5"
-                iconSize={20}
-                width={96}
-                fallbackIcon={Landmark}
               />
             ) : (
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary mt-0.5 shadow-sm">
@@ -4720,234 +4614,6 @@ function SettingDetailPanel({
   );
 }
 
-function BookBankFormSection({
-  auth,
-  config,
-  dateTimeScope,
-  dictionary,
-  form,
-  language,
-  setForm,
-  workspace,
-}: {
-  auth: AuthSession | null;
-  config: SystemSettingConfig;
-  dateTimeScope: DateTimeScope;
-  dictionary: BackendLanguageDictionary;
-  form: FormState;
-  language: LanguageCode;
-  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
-  workspace: WorkspaceSession | null;
-}) {
-  const currentBankCode = stringValue(form.bankcode);
-  const matchedPreset = findThaiBankPreset(currentBankCode);
-  const [isCustomMode, setIsCustomMode] = useState(() =>
-    Boolean(currentBankCode && !matchedPreset),
-  );
-
-  const bankCodeField = config.fields.find((f) => f.key === "bankcode");
-  const bankNamesField = config.fields.find((f) => f.key === "banknames");
-  const logoField = config.fields.find((f) => f.key === "logo");
-
-  function handleSelectTemplate(code: string) {
-    if (!code) return;
-    const preset = findThaiBankPreset(code);
-    if (!preset) return;
-    setForm((prev) => {
-      const next = { ...prev };
-      next.bankcode = preset.code;
-      next.banknames = [
-        { code: "th", name: preset.nameTh },
-        { code: "en", name: preset.nameEn },
-      ];
-      next.logo = preset.logo;
-      const currentNames = Array.isArray(prev.names) ? prev.names : [];
-      const hasCustomName = currentNames.some(
-        (n: { name?: string }) => n?.name && n.name.trim(),
-      );
-      if (!hasCustomName) {
-        next.names = [
-          { code: "th", name: preset.nameTh },
-          { code: "en", name: preset.nameEn },
-        ];
-      }
-      return next;
-    });
-  }
-
-  return (
-    <div className="grid gap-2.5 rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent p-3.5 shadow-2xs">
-      {/* Header & Mode Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 pb-2.5">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-            <Landmark className="size-4.5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-foreground">
-              {backendText(dictionary, "ss_bank_logo", "สังกัดธนาคารและโลโก้")}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate">
-              {backendText(dictionary, "ss_select_from_thai_bank_template", "เลือกจากแม่แบบธนาคารไทย หรือกำหนดรหัสและชื่อธนาคารเอง")}
-            </div>
-          </div>
-        </div>
-
-        {/* Mode Toggle Buttons */}
-        <div className="inline-flex rounded-xl border border-border/80 bg-background/80 p-0.5 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setIsCustomMode(false)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
-              !isCustomMode
-                ? "bg-primary text-primary-foreground shadow-2xs"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Landmark className="size-3.5" />
-            {backendText(dictionary, "ss_template", "เลือกจากแม่แบบ")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsCustomMode(true)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
-              isCustomMode
-                ? "bg-primary text-primary-foreground shadow-2xs"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Building2 className="size-3.5" />
-            {backendText(dictionary, "ss_custom_bank", "กำหนดธนาคารเอง")}
-          </button>
-        </div>
-      </div>
-
-      {/* Template Mode View */}
-      {!isCustomMode ? (
-        <div className="grid gap-3 pt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-semibold text-foreground shrink-0">
-              {backendText(dictionary, "ss_thai_bank_template", "แม่แบบธนาคารไทย:")}
-            </label>
-            <select
-              className="h-9 min-w-[240px] grow rounded-xl border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-2xs focus:border-primary focus:ring-2 focus:ring-primary/20"
-              value={matchedPreset?.code ?? ""}
-              onChange={(e) => handleSelectTemplate(e.target.value)}
-            >
-              <option value="">
-                {backendText(dictionary, "ss_select_thai_bank", "-- เลือกธนาคารไทย --")}
-              </option>
-              {thaiBankPresets.map((b) => (
-                <option key={b.code} value={b.code}>
-                  {b.code} - {b.nameTh} ({b.nameEn})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {matchedPreset ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-background/90 p-3 shadow-2xs">
-              <div className="flex items-center gap-3 min-w-0">
-                <LogoAvatar
-                  uri={matchedPreset.logo}
-                  auth={auth}
-                  alt={matchedPreset.nameTh}
-                  sizeClass="size-11 rounded-xl shadow-xs border border-border/60 bg-white dark:bg-card p-1 shrink-0"
-                  iconSize={22}
-                  width={64}
-                  fallbackIcon={Landmark}
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-foreground">
-                      {matchedPreset.nameTh}
-                    </span>
-                    <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 font-bold border-primary/30 text-primary">
-                      {matchedPreset.code}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      BOT: {matchedPreset.botCode}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {matchedPreset.nameEn}
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setIsCustomMode(true)}
-              >
-                <Edit3 className="size-3.5 mr-1" />
-                {backendText(dictionary, "ss_customize", "ปรับแต่งข้อมูลธนาคาร...")}
-              </Button>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-              {backendText(dictionary, "ss_please_select_a_bank_from", "กรุณาเลือกธนาคารจากรายการด้านบน หรือคลิก \"กำหนดธนาคารเอง\" เพื่อใส่ข้อมูลธนาคารใหม่")}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Custom Bank Mode View */
-        <div className="grid content-start gap-2 pt-1 md:grid-cols-2">
-          {bankCodeField ? (
-            <div className={fieldGridItemClass(bankCodeField, config)}>
-              <FieldEditor
-                auth={auth}
-                config={config}
-                dateTimeScope={dateTimeScope}
-                dictionary={dictionary}
-                field={bankCodeField}
-                form={form}
-                language={language}
-                setForm={setForm}
-                workspace={workspace}
-              />
-            </div>
-          ) : null}
-          {logoField ? (
-            <div className={fieldGridItemClass(logoField, config)}>
-              <FieldEditor
-                auth={auth}
-                config={config}
-                dateTimeScope={dateTimeScope}
-                dictionary={dictionary}
-                field={logoField}
-                form={form}
-                language={language}
-                setForm={setForm}
-                workspace={workspace}
-              />
-            </div>
-          ) : null}
-          {bankNamesField ? (
-            <div className={cn(fieldGridItemClass(bankNamesField, config), "md:col-span-2")}>
-              <FieldEditor
-                auth={auth}
-                config={config}
-                dateTimeScope={dateTimeScope}
-                dictionary={dictionary}
-                field={bankNamesField}
-                form={form}
-                language={language}
-                setForm={setForm}
-                workspace={workspace}
-              />
-            </div>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function SettingFormDialog({
   auth,
   config,
@@ -4985,17 +4651,12 @@ function SettingFormDialog({
   categoryItemCount?: number;
 }) {
   const isProductCategoryForm = config.slug === "productcategorygroupselectscreen";
-  const isBookBankForm = config.slug === "bookbankscreen";
   const categoryUsesColor = form.useimageorcolor === true || String(form.useimageorcolor).toLowerCase() === "true";
   const shouldRenderField = (field: SystemSettingField) => {
     if (isProductCategoryForm) {
       if (field.key === "groupnumber" || field.key === "parentguid") return false;
       if (field.key === "colorselecthex") return categoryUsesColor;
       if (field.key === "imageuri" || field.key === "coveruri") return !categoryUsesColor;
-      return true;
-    }
-    if (isBookBankForm) {
-      if (field.key === "bankcode" || field.key === "banknames" || field.key === "logo") return false;
       return true;
     }
     return true;
@@ -5105,18 +4766,6 @@ function SettingFormDialog({
               {backendText(dictionary, "barcode_create_title", "เพิ่มบาร์โค้ด")}
             </Button>
           </div>
-        ) : null}
-        {config.slug === "bookbankscreen" ? (
-          <BookBankFormSection
-            auth={auth}
-            config={config}
-            dateTimeScope={dateTimeScope}
-            dictionary={dictionary}
-            form={form}
-            language={language}
-            setForm={setForm}
-            workspace={workspace}
-          />
         ) : null}
         {config.slug === "user" ? (
           <UserFormSections

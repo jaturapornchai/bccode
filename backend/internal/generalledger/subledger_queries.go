@@ -34,12 +34,14 @@ const subledgerReadCTE = `WITH scoped_journals AS (
 
 func subledgerSelect(kind string) (string, error) {
 	switch kind {
-	case "partners", "bank-accounts":
-		table := "gl_subledger_partners"
-		if kind == "bank-accounts" {
-			table = "gl_subledger_bank_accounts"
-		}
-		return `SELECT d.code AS sortkey,d.payload FROM ` + table + ` d WHERE d.company=$1 AND ($3='' OR d.code ILIKE $3 OR d.payload->>'name_th' ILIKE $3 OR d.payload->>'bank_name' ILIKE $3 OR d.payload->>'account_name' ILIKE $3)`, nil
+	case "partners":
+		return `SELECT d.code AS sortkey,d.payload FROM gl_subledger_partners d WHERE d.company=$1 AND ($3='' OR d.code ILIKE $3 OR d.payload->>'name_th' ILIKE $3 OR d.payload->>'bank_name' ILIKE $3 OR d.payload->>'account_name' ILIKE $3)`, nil
+	case "bank-accounts":
+		// gl_balance = ยอดคงเหลือของบัญชี GL ที่สมุดผูกอยู่ (เดบิต−เครดิตของรายการที่ผ่านแล้วถึงวันที่ $4, ตามสาขาของผู้ใช้) คำนวณด้วย NUMERIC ส่งเป็นข้อความ
+		return `SELECT d.code AS sortkey,d.payload||jsonb_build_object('gl_balance',COALESCE(b.balance,0)::text) AS payload FROM gl_subledger_bank_accounts d
+ LEFT JOIN (SELECT account_code,SUM(debit-credit) AS balance FROM gl_lines WHERE company=$1 AND ($2='' OR branch_code=$2) AND entry_date<=$4::date
+ AND account_code IN(SELECT payload->>'gl_account_code' FROM gl_subledger_bank_accounts WHERE company=$1) GROUP BY account_code) b ON b.account_code=d.payload->>'gl_account_code'
+ WHERE d.company=$1 AND ($3='' OR d.code ILIKE $3 OR d.payload->>'bank_name' ILIKE $3 OR d.payload->>'account_name' ILIKE $3 OR d.payload->>'account_number' ILIKE $3)`, nil
 	case "documents":
 		return `SELECT d.id AS sortkey,d.payload||jsonb_build_object('allocated_amount',COALESCE(a.allocated,0)::text,'posted_amount',COALESCE(a.posted,0)::text,'settled_amount',COALESCE(s.settled,0)::text,'remaining_amount',(COALESCE(a.posted,0)-COALESCE(s.settled,0))::text) AS payload
  FROM gl_subledger_documents d

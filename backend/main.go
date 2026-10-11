@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"smlcloudplatform/internal/authentication"
+	chequehttp "smlcloudplatform/internal/cheque/httpapi"
 	"smlcloudplatform/internal/config"
 	fahttp "smlcloudplatform/internal/fixedasset/httpapi"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
@@ -164,6 +165,7 @@ func main() {
 		businesstype.NewBusinessTypeHttp(ms, cfg),
 		rolepermission.NewRolePermissionHttp(ms, cfg),
 		txhttp.NewHttp(ms, cfg),
+		chequehttp.NewHttp(ms, cfg),
 	)
 	ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
 

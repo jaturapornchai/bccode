@@ -890,38 +890,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     ],
   },
   {
-    slug: "bookbankscreen",
-    route: "/bookbankscreen",
-    manual: "bookbank",
-    kind: "main-crud",
-    icon: "bank",
-    basePath: "/payment/bookbank",
-    listPath: "/payment/bookbank/list",
-    idField: "guidfixed",
-    title: { th: "บันทึกสมุดเงินฝากธนาคาร", en: "Bank Accounts" },
-    subtitle: {
-      th: "จัดการสมุดบัญชีธนาคาร สาขา เลขที่บัญชี ชื่อบัญชี และผังบัญชีที่เชื่อมโยง",
-      en: "Manage bank accounts, branch, account number, and linked ledger accounts.",
-    },
-    fields: [
-      businessCodeField("bookcode", "รหัสสมุดบัญชี", "Book bank code", true),
-      namesField("names", "ชื่อสมุดบัญชี", "Book bank names"),
-      textField("passbook", "เลขที่บัญชี", "Account number", true),
-      textField("bankbranch", "สาขาธนาคาร", "Bank branch"),
-      textField("accountname", "ชื่อบัญชี", "Account name"),
-      textField("bankcode", "รหัสธนาคาร", "Bank code"),
-      namesField("banknames", "ชื่อธนาคาร", "Bank names"),
-      textField("accountcode", "รหัสผังบัญชี", "GL Account code"),
-      {
-        ...imageUploadField("logo", "โลโก้ธนาคาร / รูปสมุดบัญชี", "Bank logo / Passbook image"),
-        helper: {
-          th: "รองรับ PNG/JPG/WebP — เก็บไฟล์ในระบบจัดเก็บภาพ (S3)",
-          en: "PNG/JPG/WebP supported — stored in S3 object storage.",
-        },
-      },
-    ],
-  },
-  {
     slug: "creditor",
     route: "/creditor",
     manual: "creditor",
@@ -1362,9 +1330,6 @@ export const SYSTEM_SETTING_SLUGS = SYSTEM_SETTING_CONFIGS.map(
 export function getSystemSettingConfig(
   routeOrSlug: string,
 ): SystemSettingConfig | undefined {
-  if (routeOrSlug === "bank" || routeOrSlug === "/bank") {
-    return SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bookbankscreen");
-  }
   const normalized = routeOrSlug.startsWith("/")
     ? routeOrSlug
     : `/${routeOrSlug}`;
