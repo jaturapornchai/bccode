@@ -143,7 +143,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     code: "stock_movement_cost",
     category: "inventory",
     title: { th: "รายงานบัญชีคุมพิเศษสินค้า", en: "Stock Card with Cost Movement" },
-    description: { th: "บัตรคุมสต็อกแสดงการรับ-จ่าย-คงเหลือ พร้อมต้นทุน FIFO และถัวเฉลี่ยถ่วงน้ำหนัก", en: "Stock card ledger with in-out-balance quantities and moving costs" },
+    description: { th: "บัตรคุมสต็อกแสดงการรับ-จ่าย-คงเหลือ พร้อมต้นทุนถัวเฉลี่ยถ่วงน้ำหนัก", en: "Stock card ledger with in-out-balance quantities and moving average costs" },
     defaultSortKey: "docdate",
     columns: [
       { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },

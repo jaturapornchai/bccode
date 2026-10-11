@@ -1,3 +1,6 @@
+// Package costing คำนวณต้นทุนสินค้าด้วยวิธีถัวเฉลี่ยเคลื่อนที่ (moving weighted average) วิธีเดียว
+// ตามคำสั่งเจ้าของ 2026-10-11 (ADR docs/kms/decisions/2026-10-11-stock-cost-average-only.md)
+// ห้ามเพิ่มวิธีอื่น (FIFO, LIFO, FEFO, lot/specific, standard) กลับเข้ามา
 package costing
 
 import (
@@ -8,50 +11,7 @@ import (
 	inv "smlcloudplatform/internal/goapi/inventory/models"
 )
 
-// CostingEngine — interface หลักสำหรับทุกวิธีคำนวณต้นทุน
-// แต่ละ method implement interface นี้ (Moving Average, FIFO, LIFO, ฯลฯ)
-type CostingEngine interface {
-	// ProcessReceipt — รับสินค้าเข้า (ซื้อ, รับโอน, ปรับเพิ่ม)
-	ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.ReceiptParams) (*inv.CostTransactionResult, error)
-
-	// ProcessIssue — ตัดสินค้าออก (ขาย, เบิก, โอนออก)
-	ProcessIssue(ctx context.Context, tx *sql.Tx, params inv.IssueParams) (*inv.CostTransactionResult, error)
-
-	// ProcessSalesReturn — รับคืนจากลูกค้า
-	ProcessSalesReturn(ctx context.Context, tx *sql.Tx, params inv.SalesReturnParams) (*inv.CostTransactionResult, error)
-
-	// ProcessPurchaseReturn — ส่งคืนสินค้าให้ supplier
-	ProcessPurchaseReturn(ctx context.Context, tx *sql.Tx, params inv.PurchaseReturnParams) (*inv.CostTransactionResult, error)
-
-	// ProcessAdjustment — ปรับปรุง stock (เพิ่ม/ลด)
-	ProcessAdjustment(ctx context.Context, tx *sql.Tx, params inv.AdjustmentParams) (*inv.CostTransactionResult, error)
-
-	// GetCurrentValuation — ดูมูลค่าสินค้าปัจจุบัน
-	GetCurrentValuation(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, whCode string) (*inv.StockValuation, error)
-
-	// Method — ชื่อวิธีคำนวณ
-	Method() string
-}
-
-// NewCostingEngine — สร้าง engine ตาม costing method
-func NewCostingEngine(method string) (CostingEngine, error) {
-	switch method {
-	case inv.CostingMethodMovingAverage:
-		return &MovingAverageEngine{}, nil
-	case inv.CostingMethodFIFO:
-		return &FIFOEngine{}, nil
-	case inv.CostingMethodLIFO:
-		return &LIFOEngine{}, nil
-	case inv.CostingMethodFEFO:
-		return &FEFOEngine{}, nil
-	case inv.CostingMethodStandard:
-		return &StandardEngine{}, nil
-	default:
-		return nil, fmt.Errorf("ไม่รู้จัก costing method: %s", method)
-	}
-}
-
-// === Helper Functions สำหรับทุก Engine ===
+// === Helper Functions ของ engine ===
 
 // getOrCreateBalance — ดึง stock balance ตามบัญชี หรือสร้างใหม่ถ้ายังไม่มี
 func getOrCreateBalance(ctx context.Context, tx *sql.Tx, holdingCode, itemCode, barcode, whCode, locationCode string) (*inv.InventoryStockBalance, error) {
@@ -119,35 +79,17 @@ func insertCostTransaction(ctx context.Context, tx *sql.Tx, ct *inv.InventoryCos
 		`INSERT INTO inventorycosttransactions
 		 (holdingcode, itemcode, barcode, whcode, locationcode, transactiontype, transflag,
 		  refdoctype, refdocno, qty, unitcost, totalcost, landedcost, lotnumber, expirydate,
-		  costlayerid, balanceqty, balanceavgcost, balancetotalvalue, costingmethodused,
+		  balanceqty, balanceavgcost, balancetotalvalue,
 		  transactiondate, accountingperiod, createdby, createdat, isreversed)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NOW(),false)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW(),false)
 		 RETURNING id`,
 		ct.HoldingCode, ct.ItemCode, ct.Barcode, ct.WhCode, ct.LocationCode,
 		ct.TransactionType, ct.TransFlag, ct.RefDocType, ct.RefDocNo,
 		ct.Qty, ct.UnitCost, ct.TotalCost, ct.LandedCost,
-		ct.LotNumber, ct.ExpiryDate, ct.CostLayerID,
+		ct.LotNumber, ct.ExpiryDate,
 		ct.BalanceQty, ct.BalanceAvgCost, ct.BalanceTotalValue,
-		ct.CostingMethodUsed, ct.TransactionDate, ct.AccountingPeriod, ct.CreatedBy,
+		ct.TransactionDate, ct.AccountingPeriod, ct.CreatedBy,
 	).Scan(&ct.ID)
-}
-
-// insertCostLayer — บันทึก cost layer ใหม่
-func insertCostLayer(ctx context.Context, tx *sql.Tx, layer *inv.InventoryCostLayer) error {
-	return tx.QueryRowContext(ctx,
-		`INSERT INTO inventorycostlayers
-		 (holdingcode, itemcode, barcode, whcode, locationcode, layertype, refdoctype, refdocno,
-		  originalqty, remainingqty, unitcost, landedcostperunit, totalunitcost,
-		  lotnumber, supplierlotnumber, manufacturingdate, expirydate, qualitystatus,
-		  receiveddate, createdat, updatedat)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW(),NOW())
-		 RETURNING id`,
-		layer.HoldingCode, layer.ItemCode, layer.Barcode, layer.WhCode, layer.LocationCode,
-		layer.LayerType, layer.RefDocType, layer.RefDocNo,
-		layer.OriginalQty, layer.RemainingQty, layer.UnitCost, layer.LandedCostPerUnit, layer.TotalUnitCost,
-		layer.LotNumber, layer.SupplierLotNumber, layer.ManufacturingDate, layer.ExpiryDate, layer.QualityStatus,
-		layer.ReceivedDate,
-	).Scan(&layer.ID)
 }
 
 // averageCostCalc — คำนวณต้นทุนเฉลี่ย (ป้องกัน divide by zero)

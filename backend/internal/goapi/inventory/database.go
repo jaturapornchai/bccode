@@ -7,7 +7,7 @@ import (
 	"smlcloudplatform/internal/goapi/logger"
 )
 
-// CreateInventoryCostingTables — สร้างตารางทั้งหมดสำหรับระบบ Inventory Costing
+// CreateInventoryCostingTables — สร้างตารางทั้งหมดสำหรับระบบ Inventory Costing (ต้นทุนถัวเฉลี่ยวิธีเดียว ไม่มีตารางชั้นต้นทุน)
 // เรียกตอน migration หรือสร้าง database ใหม่
 func CreateInventoryCostingTables(db *sql.DB) error {
 	tables := []struct {
@@ -15,12 +15,10 @@ func CreateInventoryCostingTables(db *sql.DB) error {
 		ddl  string
 	}{
 		{"productcostingconfig", ddlProductCostingConfig},
-		{"inventorycostlayers", ddlInventoryCostLayers},
 		{"inventorystockbalances", ddlInventoryStockBalances},
 		{"marketplacestockbalances", ddlMarketplaceStockBalances},
 		{"marketplacedimensionprices", ddlMarketplaceDimensionPrices},
 		{"inventorycosttransactions", ddlInventoryCostTransactions},
-		{"inventoryvariances", ddlInventoryVariances},
 		{"inventorylandedcosts", ddlInventoryLandedCosts},
 		{"inventorylandedcostallocations", ddlInventoryLandedCostAllocations},
 		{"inventoryaccountingperiods", ddlInventoryAccountingPeriods},
@@ -53,7 +51,6 @@ CREATE TABLE IF NOT EXISTS productcostingconfig (
     id SERIAL PRIMARY KEY,
     holdingcode TEXT NOT NULL,
     itemcode TEXT NOT NULL,
-    costingmethod VARCHAR(20) NOT NULL DEFAULT 'movingaverage',
     lottrackingenabled BOOLEAN NOT NULL DEFAULT false,
     serialtrackingenabled BOOLEAN NOT NULL DEFAULT false,
     expirytrackingenabled BOOLEAN NOT NULL DEFAULT false,
@@ -63,38 +60,9 @@ CREATE TABLE IF NOT EXISTS productcostingconfig (
     minimumshelflifedays INTEGER DEFAULT 0,
     allownegativestock BOOLEAN NOT NULL DEFAULT false,
     costbywarehouse BOOLEAN NOT NULL DEFAULT false,
-    standardcost NUMERIC(18,4) DEFAULT 0,
-    standardcosteffectivedate DATE,
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (holdingcode, itemcode)
-)`
-
-const ddlInventoryCostLayers = `
-CREATE TABLE IF NOT EXISTS inventorycostlayers (
-    id BIGSERIAL PRIMARY KEY,
-    holdingcode TEXT NOT NULL,
-    itemcode TEXT NOT NULL,
-    barcode TEXT,
-    whcode TEXT NOT NULL,
-    locationcode TEXT NOT NULL DEFAULT '',
-    layertype VARCHAR(20) NOT NULL,
-    refdoctype VARCHAR(50),
-    refdocno VARCHAR(50),
-    originalqty NUMERIC(18,4) NOT NULL,
-    remainingqty NUMERIC(18,4) NOT NULL,
-    unitcost NUMERIC(18,4) NOT NULL,
-    landedcostperunit NUMERIC(18,4) NOT NULL DEFAULT 0,
-    totalunitcost NUMERIC(18,4) NOT NULL DEFAULT 0,
-    lotnumber VARCHAR(100),
-    supplierlotnumber VARCHAR(100),
-    manufacturingdate DATE,
-    expirydate DATE,
-    qualitystatus VARCHAR(20) DEFAULT 'approved',
-    receiveddate DATE NOT NULL,
-    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT chkremainingqty CHECK (remainingqty >= 0)
 )`
 
 const ddlInventoryStockBalances = `
@@ -169,35 +137,15 @@ CREATE TABLE IF NOT EXISTS inventorycosttransactions (
     landedcost NUMERIC(18,4) DEFAULT 0,
     lotnumber VARCHAR(100),
     expirydate DATE,
-    costlayerid BIGINT,
     balanceqty NUMERIC(18,4) NOT NULL,
     balanceavgcost NUMERIC(18,4),
     balancetotalvalue NUMERIC(18,4),
-    costingmethodused VARCHAR(20) NOT NULL,
     transactiondate DATE NOT NULL,
     accountingperiod VARCHAR(7),
     createdby VARCHAR(50),
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     isreversed BOOLEAN DEFAULT false,
     reversedbyid BIGINT
-)`
-
-const ddlInventoryVariances = `
-CREATE TABLE IF NOT EXISTS inventoryvariances (
-    id BIGSERIAL PRIMARY KEY,
-    holdingcode TEXT NOT NULL,
-    itemcode TEXT NOT NULL,
-    whcode TEXT NOT NULL,
-    variancetype VARCHAR(30) NOT NULL,
-    refdoctype VARCHAR(50),
-    refdocno VARCHAR(50),
-    standardcost NUMERIC(18,4) NOT NULL,
-    actualcost NUMERIC(18,4) NOT NULL,
-    qty NUMERIC(18,4) NOT NULL,
-    varianceamount NUMERIC(18,4) NOT NULL,
-    transactiondate DATE NOT NULL,
-    accountingperiod VARCHAR(7),
-    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )`
 
 const ddlInventoryLandedCosts = `
@@ -225,7 +173,6 @@ CREATE TABLE IF NOT EXISTS inventorylandedcostallocations (
     landedcostid BIGINT NOT NULL,
     itemcode TEXT NOT NULL,
     whcode TEXT NOT NULL,
-    costlayerid BIGINT,
     allocatedamount NUMERIC(18,4) NOT NULL,
     allocatedperunit NUMERIC(18,4) NOT NULL,
     qty NUMERIC(18,4) NOT NULL,
@@ -240,7 +187,6 @@ CREATE TABLE IF NOT EXISTS inventoryaccountingperiods (
     startdate DATE NOT NULL,
     enddate DATE NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'open',
-    periodicavgcalculated BOOLEAN DEFAULT false,
     closedby VARCHAR(50),
     closedat TIMESTAMPTZ,
     createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -249,22 +195,12 @@ CREATE TABLE IF NOT EXISTS inventoryaccountingperiods (
 
 // inventoryIndexes — indexes สำหรับ performance
 var inventoryIndexes = []string{
-	// Cost Layers — FIFO sort
-	`CREATE INDEX IF NOT EXISTS idxclfifo ON inventorycostlayers (holdingcode, itemcode, whcode, locationcode, receiveddate ASC, id ASC) WHERE remainingqty > 0`,
-	// Cost Layers — LIFO sort
-	`CREATE INDEX IF NOT EXISTS idxcllifo ON inventorycostlayers (holdingcode, itemcode, whcode, locationcode, receiveddate DESC, id DESC) WHERE remainingqty > 0`,
-	// Cost Layers — FEFO sort
-	`CREATE INDEX IF NOT EXISTS idxclfefo ON inventorycostlayers (holdingcode, itemcode, whcode, locationcode, expirydate ASC, receiveddate ASC) WHERE remainingqty > 0`,
-	// Cost Layers — Lot lookup
-	`CREATE INDEX IF NOT EXISTS idxcllot ON inventorycostlayers (holdingcode, itemcode, whcode, lotnumber) WHERE remainingqty > 0`,
 	// Cost Transactions — product + date
 	`CREATE INDEX IF NOT EXISTS idxctproduct ON inventorycosttransactions (holdingcode, itemcode, whcode, transactiondate)`,
 	// Cost Transactions — period
 	`CREATE INDEX IF NOT EXISTS idxctperiod ON inventorycosttransactions (holdingcode, accountingperiod, itemcode)`,
 	// Cost Transactions — doc reference
 	`CREATE INDEX IF NOT EXISTS idxctref ON inventorycosttransactions (holdingcode, refdoctype, refdocno)`,
-	// Variances — product
-	`CREATE INDEX IF NOT EXISTS idxvarproduct ON inventoryvariances (holdingcode, itemcode, transactiondate)`,
 	// Stock Balances — shop
 	`CREATE INDEX IF NOT EXISTS idxsbshop ON inventorystockbalances (holdingcode, itemcode)`,
 	`CREATE INDEX IF NOT EXISTS idxmarketplacestockdimension ON marketplacestockbalances (holdingcode, itemcode, dimensionkey)`,

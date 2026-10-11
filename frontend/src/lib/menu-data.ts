@@ -145,7 +145,7 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "stock-count-sheet": ["เอกสารเพื่อตรวจนับสินค้า"],
   "stock-daily-sequence": ["กำหนดลำดับรายวันสินค้า"],
   "stock-issue-request": ["ใบขอเบิกสินค้าและวัตถุดิบ"],
-  "stock-movement-cost": ["เคลื่อนไหวสินค้าพร้อมต้นทุน", "รายงานเคลื่อนไหวสินค้าต้นทุนมาตรฐาน"],
+  "stock-movement-cost": ["เคลื่อนไหวสินค้าพร้อมต้นทุน", "รายงานเคลื่อนไหวสินค้าต้นทุนถัวเฉลี่ย"],
   "stock-pickup": ["เบิกสินค้า"],
   "stock-receive": ["รับสินค้า"],
   "stock-return": ["คืนสินค้าเข้าคลัง"],

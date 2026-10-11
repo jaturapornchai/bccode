@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit 2503b528 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit 1339b31c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -567,28 +567,28 @@ Files indexed: 32
 | 884 | const-arrow | `handlePickerSelect` |
 | 897 | const-arrow | `handleSimulatorToggle` |
 
-## frontend/src/app/system-settings/product-bom-editor.tsx (2135 lines)
+## frontend/src/app/system-settings/product-bom-editor.tsx (2041 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 112 | function | `effectiveUnitCost` |
-| 152 | function | `bomItemKey` |
-| 156 | function | `ProductBomEditor` |
-| 211 | const-arrow | `updateCurrentVersionBOM` |
-| 226 | const-arrow | `updateVersionDate` |
-| 243 | const-arrow | `handleAddVersion` |
-| 263 | const-arrow | `handleDeleteVersion` |
-| 334 | const-arrow | `loadFromRecord` |
-| 418 | const-arrow | `handleDragStart` |
-| 422 | const-arrow | `handleDragOver` |
-| 427 | const-arrow | `handleDrop` |
-| 538 | const-arrow | `toggleExpand` |
-| 547 | const-arrow | `updateItemProperty` |
-| 685 | const-arrow | `handleAddIngredient` |
-| 734 | const-arrow | `handleSave` |
-| 883 | const-arrow | `handleDeleteRecipe` |
-| 943 | const-arrow | `renderSubRecipeTree` |
-| 1010 | const-arrow | `renderExplodedTreeNode` |
+| 108 | function | `effectiveUnitCost` |
+| 143 | function | `bomItemKey` |
+| 147 | function | `ProductBomEditor` |
+| 200 | const-arrow | `updateCurrentVersionBOM` |
+| 215 | const-arrow | `updateVersionDate` |
+| 232 | const-arrow | `handleAddVersion` |
+| 252 | const-arrow | `handleDeleteVersion` |
+| 320 | const-arrow | `loadFromRecord` |
+| 402 | const-arrow | `handleDragStart` |
+| 406 | const-arrow | `handleDragOver` |
+| 411 | const-arrow | `handleDrop` |
+| 512 | const-arrow | `toggleExpand` |
+| 521 | const-arrow | `updateItemProperty` |
+| 659 | const-arrow | `handleAddIngredient` |
+| 708 | const-arrow | `handleSave` |
+| 855 | const-arrow | `handleDeleteRecipe` |
+| 915 | const-arrow | `renderSubRecipeTree` |
+| 982 | const-arrow | `renderExplodedTreeNode` |
 
 ## frontend/src/app/system-settings/product-category-tree-view.tsx (1860 lines)
 

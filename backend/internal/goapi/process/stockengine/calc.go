@@ -28,8 +28,6 @@ const (
 	PolicyClampValue NegativePolicy = 1
 	// PolicyResetOnNegative จำนวนติดลบเมื่อไร ปรับทั้งมูลค่าและต้นทุนเป็นศูนย์
 	PolicyResetOnNegative NegativePolicy = 3
-	// PolicyStandardCost จำนวนติดลบให้ตีมูลค่าด้วยต้นทุนมาตรฐาน/ต้นทุนล่าสุด
-	PolicyStandardCost NegativePolicy = 4
 )
 
 // DirectionOfMovement คืนทิศทางของรายการหนึ่งบรรทัด และบอกว่าบรรทัดนี้นำมาคิดต้นทุนหรือไม่
@@ -120,11 +118,10 @@ type Balance struct {
 
 // Options ตัวเลือกการคำนวณ
 type Options struct {
-	PointQty     int // ทศนิยมจำนวน
-	PointAmount  int // ทศนิยมมูลค่า
-	PointCost    int // ทศนิยมต้นทุน
-	Policy       NegativePolicy
-	StandardCost map[string]float64 // ต้นทุนมาตรฐานต่อคลัง ใช้เมื่อ PolicyStandardCost
+	PointQty    int // ทศนิยมจำนวน
+	PointAmount int // ทศนิยมมูลค่า
+	PointCost   int // ทศนิยมต้นทุน
+	Policy      NegativePolicy
 }
 
 // DefaultOptions ค่าเริ่มต้นที่ตรงกับตัวคิดต้นทุนเดิม
@@ -310,11 +307,6 @@ func documentValue(mv Movement, docQty float64, opt Options) float64 {
 func valueOf(mv Movement, qty, docQty float64, direction int, bal Balance, opt Options) (unitCost, amount float64) {
 	if direction == DirectionOut {
 		unitCost = bal.AvgCost
-		if bal.Qty <= 0 && opt.Policy == PolicyStandardCost {
-			if std, ok := opt.StandardCost[mv.WhCode]; ok && std > 0 {
-				unitCost = std
-			}
-		}
 		return unitCost, myRound(qty*unitCost, opt.PointAmount)
 	}
 
@@ -375,8 +367,8 @@ func applyPolicy(bal *Balance, opt Options) {
 	case PolicyResetOnNegative:
 		bal.Amount = 0
 		bal.AvgCost = 0
-	case PolicyStandardCost, PolicyAllowNegative:
-		// ปล่อยตามจริง ต้นทุนที่ใช้ถูกเลือกไว้แล้วตอนตีมูลค่าขาออก
+	case PolicyAllowNegative:
+		// ปล่อยตามจริง ต้นทุนที่ใช้คือถัวเฉลี่ยขณะนั้น
 	}
 }
 

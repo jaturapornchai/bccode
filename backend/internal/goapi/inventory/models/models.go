@@ -4,29 +4,6 @@ import (
 	"time"
 )
 
-// === Costing Method Constants ===
-
-const (
-	CostingMethodMovingAverage   = "movingaverage"
-	CostingMethodPeriodicAverage = "periodicaverage"
-	CostingMethodFIFO            = "fifo"
-	CostingMethodLIFO            = "lifo"
-	CostingMethodFEFO            = "fefo"
-	CostingMethodLot             = "lot"
-	CostingMethodStandard        = "standard"
-)
-
-// === Layer Type Constants ===
-
-const (
-	LayerTypePurchase    = "purchase"
-	LayerTypeTransferIn  = "transferin"
-	LayerTypeAdjustment  = "adjustment"
-	LayerTypeSalesReturn = "salesreturn"
-	LayerTypeProduction  = "production"
-	LayerTypeOpening     = "opening"
-)
-
 // === Transaction Type Constants ===
 
 const (
@@ -42,24 +19,6 @@ const (
 	TxTypeAssemblyIssue   = "assemblyissue"
 	TxTypeAssemblyReceipt = "assemblyreceipt"
 	TxTypeCostAdjustment  = "costadjustment"
-)
-
-// === Variance Type Constants ===
-
-const (
-	VariancePurchasePrice = "purchaseprice"
-	VarianceRevaluation   = "revaluation"
-	VarianceProduction    = "production"
-	VarianceTransfer      = "transfer"
-)
-
-// === Quality Status Constants ===
-
-const (
-	QualityStatusApproved   = "approved"
-	QualityStatusPending    = "pending"
-	QualityStatusRejected   = "rejected"
-	QualityStatusQuarantine = "quarantine"
 )
 
 // === Period Status Constants ===
@@ -81,35 +40,6 @@ const (
 )
 
 // === Core Models ===
-
-// InventoryCostLayer — ชั้นต้นทุน (ใช้กับ FIFO/LIFO/FEFO/Lot)
-// แต่ละครั้งที่รับสินค้าเข้าจะสร้าง layer ใหม่
-type InventoryCostLayer struct {
-	ID                int64      `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
-	HoldingCode       string     `json:"holdingcode" gorm:"column:holdingcode"`
-	ItemCode          string     `json:"itemcode" gorm:"column:itemcode"`
-	Barcode           string     `json:"barcode" gorm:"column:barcode"`
-	WhCode            string     `json:"whcode" gorm:"column:whcode"`
-	LocationCode      string     `json:"locationcode" gorm:"column:locationcode"`
-	LayerType         string     `json:"layertype" gorm:"column:layertype"`
-	RefDocType        string     `json:"refdoctype" gorm:"column:refdoctype"`
-	RefDocNo          string     `json:"refdocno" gorm:"column:refdocno"`
-	OriginalQty       float64    `json:"originalqty" gorm:"column:originalqty"`
-	RemainingQty      float64    `json:"remainingqty" gorm:"column:remainingqty"`
-	UnitCost          float64    `json:"unitcost" gorm:"column:unitcost"`
-	LandedCostPerUnit float64    `json:"landedcostperunit" gorm:"column:landedcostperunit"`
-	TotalUnitCost     float64    `json:"totalunitcost" gorm:"column:totalunitcost"`
-	LotNumber         string     `json:"lotnumber" gorm:"column:lotnumber"`
-	SupplierLotNumber string     `json:"supplierlotnumber" gorm:"column:supplierlotnumber"`
-	ManufacturingDate *time.Time `json:"manufacturingdate" gorm:"column:manufacturingdate"`
-	ExpiryDate        *time.Time `json:"expirydate" gorm:"column:expirydate"`
-	QualityStatus     string     `json:"qualitystatus" gorm:"column:qualitystatus"`
-	ReceivedDate      time.Time  `json:"receiveddate" gorm:"column:receiveddate"`
-	CreatedAt         time.Time  `json:"createdat" gorm:"column:createdat"`
-	UpdatedAt         time.Time  `json:"updatedat" gorm:"column:updatedat"`
-}
-
-func (InventoryCostLayer) TableName() string { return "inventorycostlayers" }
 
 // InventoryStockBalance — ยอดคงเหลือต่อสินค้า × คลัง (สรุป snapshot)
 type InventoryStockBalance struct {
@@ -187,11 +117,9 @@ type InventoryCostTransaction struct {
 	LandedCost        float64    `json:"landedcost" gorm:"column:landedcost"`
 	LotNumber         string     `json:"lotnumber" gorm:"column:lotnumber"`
 	ExpiryDate        *time.Time `json:"expirydate" gorm:"column:expirydate"`
-	CostLayerID       *int64     `json:"costlayerid" gorm:"column:costlayerid"`
 	BalanceQty        float64    `json:"balanceqty" gorm:"column:balanceqty"`
 	BalanceAvgCost    float64    `json:"balanceavgcost" gorm:"column:balanceavgcost"`
 	BalanceTotalValue float64    `json:"balancetotalvalue" gorm:"column:balancetotalvalue"`
-	CostingMethodUsed string     `json:"costingmethodused" gorm:"column:costingmethodused"`
 	TransactionDate   time.Time  `json:"transactiondate" gorm:"column:transactiondate"`
 	AccountingPeriod  string     `json:"accountingperiod" gorm:"column:accountingperiod"`
 	CreatedBy         string     `json:"createdby" gorm:"column:createdby"`
@@ -201,26 +129,6 @@ type InventoryCostTransaction struct {
 }
 
 func (InventoryCostTransaction) TableName() string { return "inventorycosttransactions" }
-
-// InventoryVariance — ผลต่างต้นทุน (Standard Cost)
-type InventoryVariance struct {
-	ID               int64     `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
-	HoldingCode      string    `json:"holdingcode" gorm:"column:holdingcode"`
-	ItemCode         string    `json:"itemcode" gorm:"column:itemcode"`
-	WhCode           string    `json:"whcode" gorm:"column:whcode"`
-	VarianceType     string    `json:"variancetype" gorm:"column:variancetype"`
-	RefDocType       string    `json:"refdoctype" gorm:"column:refdoctype"`
-	RefDocNo         string    `json:"refdocno" gorm:"column:refdocno"`
-	StandardCost     float64   `json:"standardcost" gorm:"column:standardcost"`
-	ActualCost       float64   `json:"actualcost" gorm:"column:actualcost"`
-	Qty              float64   `json:"qty" gorm:"column:qty"`
-	VarianceAmount   float64   `json:"varianceamount" gorm:"column:varianceamount"`
-	TransactionDate  time.Time `json:"transactiondate" gorm:"column:transactiondate"`
-	AccountingPeriod string    `json:"accountingperiod" gorm:"column:accountingperiod"`
-	CreatedAt        time.Time `json:"createdat" gorm:"column:createdat"`
-}
-
-func (InventoryVariance) TableName() string { return "inventoryvariances" }
 
 // InventoryLandedCost — ค่าใช้จ่ายประกอบ (ค่าขนส่ง, ภาษี, ประกัน)
 type InventoryLandedCost struct {
@@ -249,7 +157,6 @@ type InventoryLandedCostAllocation struct {
 	LandedCostID     int64     `json:"landedcostid" gorm:"column:landedcostid"`
 	ItemCode         string    `json:"itemcode" gorm:"column:itemcode"`
 	WhCode           string    `json:"whcode" gorm:"column:whcode"`
-	CostLayerID      *int64    `json:"costlayerid" gorm:"column:costlayerid"`
 	AllocatedAmount  float64   `json:"allocatedamount" gorm:"column:allocatedamount"`
 	AllocatedPerUnit float64   `json:"allocatedperunit" gorm:"column:allocatedperunit"`
 	Qty              float64   `json:"qty" gorm:"column:qty"`
@@ -266,7 +173,6 @@ type InventoryAccountingPeriod struct {
 	StartDate             time.Time  `json:"startdate" gorm:"column:startdate"`
 	EndDate               time.Time  `json:"enddate" gorm:"column:enddate"`
 	Status                string     `json:"status" gorm:"column:status"`
-	PeriodicAvgCalculated bool       `json:"periodicavgcalculated" gorm:"column:periodicavgcalculated"`
 	ClosedBy              string     `json:"closedby" gorm:"column:closedby"`
 	ClosedAt              *time.Time `json:"closedat" gorm:"column:closedat"`
 	CreatedAt             time.Time  `json:"createdat" gorm:"column:createdat"`
@@ -375,7 +281,6 @@ type PurchaseReturnParams struct {
 	RefDocType      string    `json:"refdoctype"`
 	RefDocNo        string    `json:"refdocno"`
 	TransFlag       int       `json:"transflag"`
-	CostLayerID     *int64    `json:"costlayerid,omitempty"`
 	LotNumber       string    `json:"lotnumber,omitempty"`
 	TransactionDate time.Time `json:"transactiondate"`
 	CreatedBy       string    `json:"createdby"`
@@ -388,30 +293,25 @@ type StockValuation struct {
 	CurrentQty    float64 `json:"currentqty"`
 	AverageCost   float64 `json:"averagecost"`
 	TotalValue    float64 `json:"totalvalue"`
-	CostingMethod string  `json:"costingmethod"`
 }
 
 // CostTransactionResult — ผลลัพธ์หลังประมวลผล transaction
 type CostTransactionResult struct {
 	Transaction    *InventoryCostTransaction `json:"transaction"`
-	CostLayer      *InventoryCostLayer       `json:"costlayer,omitempty"`
-	Variance       *InventoryVariance        `json:"variance,omitempty"`
 	BalanceQty     float64                   `json:"balanceqty"`
 	BalanceAvgCost float64                   `json:"balanceavgcost"`
 	TotalValue     float64                   `json:"totalvalue"`
 }
 
-// ProductCostingConfig — ข้อมูล costing method ต่อสินค้า (ดึงจาก product table)
+// ProductCostingConfig — ตั้งค่าต้นทุนต่อสินค้า (ต้นทุนถัวเฉลี่ยวิธีเดียว: เลือกได้แค่ว่าคิดแยกคลังหรือไม่ และตัวเลือก lot/วันหมดอายุ)
 type ProductCostingConfig struct {
 	ItemCode              string  `json:"itemcode"`
-	CostingMethod         string  `json:"costingmethod"`
 	LotTrackingEnabled    bool    `json:"lottrackingenabled"`
 	ExpiryTrackingEnabled bool    `json:"expirytrackingenabled"`
 	ExpiryAlertDays       int     `json:"expiryalertdays"`
 	AutoBlockExpired      bool    `json:"autoblockexpired"`
 	AllowNegativeStock    bool    `json:"allownegativestock"`
 	CostByWarehouse       bool    `json:"costbywarehouse"`
-	StandardCost          float64 `json:"standardcost"`
 }
 
 // InventoryValuationReport — รายงานมูลค่าสินค้าคงเหลือ
@@ -430,7 +330,6 @@ type InventoryValuationItem struct {
 	Qty           float64 `json:"qty"`
 	AverageCost   float64 `json:"averagecost"`
 	TotalValue    float64 `json:"totalvalue"`
-	CostingMethod string  `json:"costingmethod"`
 }
 
 // StockCardReport — รายงาน Stock Card (รายการเคลื่อนไหวต่อสินค้า)

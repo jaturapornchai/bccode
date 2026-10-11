@@ -226,7 +226,6 @@ describe("fetchErpReportData", () => {
             qty: 1500,
             averagecost: 12.5,
             totalvalue: 18750,
-            costingmethod: "average",
           },
         ],
       }),

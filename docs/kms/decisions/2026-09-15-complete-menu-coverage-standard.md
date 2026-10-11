@@ -29,7 +29,7 @@
    - พิมพ์หนังสือรับรองการหักภาษี ณ ที่จ่ายตามมาตรา 50 ทวิ พร้อมส่งออก CSV
 
 3. **Unified Business Reporting Engine (`frontend/src/lib/erp-reports.ts`, `frontend/src/app/report/erp-report-viewer.tsx`)**:
-   - รวม 26 รายงานมาตรฐานสำหรับธุรกิจ: สต็อกการ์ด (FIFO/Avg Cost), สินค้าใกล้หมดขั้นต่ำ, สินค้าใกล้หมดอายุ, รายงานขายรายวัน, ยอดขายตามพนักงาน/ลูกค้า/ช่องทาง, วิเคราะห์กำไรขั้นต้น (GP Matrix), รายงานอายุลูกหนี้/เจ้าหนี้ (AR/AP Aging)
+   - รวม 26 รายงานมาตรฐานสำหรับธุรกิจ: สต็อกการ์ด (Avg Cost), สินค้าใกล้หมดขั้นต่ำ, สินค้าใกล้หมดอายุ, รายงานขายรายวัน, ยอดขายตามพนักงาน/ลูกค้า/ช่องทาง, วิเคราะห์กำไรขั้นต้น (GP Matrix), รายงานอายุลูกหนี้/เจ้าหนี้ (AR/AP Aging)
    - เครื่องมือส่งออกงบการเงินรูปแบบ XBRL ตามมาตรฐาน DBD Taxonomy เพื่อยื่น DBD e-Filing กรมพัฒนาธุรกิจการค้า
 
 4. **Tools & Recalculate Engine (`frontend/src/lib/erp-tools.ts`, `frontend/src/app/tools/erp-tools-screen.tsx`)**:

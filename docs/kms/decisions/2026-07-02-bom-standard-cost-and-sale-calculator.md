@@ -6,6 +6,8 @@ tags: [bc-account, architecture, bom, recipe, costing]
 
 # สูตรผลิต (BOM) เพิ่ม Finished Good / Labor-OH-Scrap / Standard-vs-Current Cost + calculator ขายตามจำนวน
 
+> อัปเดต 2026-10-11: โหมด Standard Cost ถูกถอดตาม [2026-10-11-stock-cost-average-only.md](2026-10-11-stock-cost-average-only.md) เหลือสูตร current (rollup + labor + OH) อย่างเดียว; field `costmode`/`standardcost` ไม่ใช้แล้ว
+
 ## Context
 ลุงจืดยกตัวอย่าง: "ขายส้มตำ 10 จาน ต้องการรู้ว่าประกอบด้วยต้นทุนอะไรบ้าง วัตถุดิบอะไรบ้าง ราคาต้นทุนอัตโนมัติ หรือ STANDARD COST ต้องมีให้เลือก" — ปรึกษา GLM+DeepSeek+GPT 5.5 อิสระ (ไม่เห็นคำตอบกัน) ได้ดีไซน์ตรงกันเกือบเป๊ะ.
 

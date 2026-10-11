@@ -295,13 +295,6 @@ func TestNegativeStockPolicies(t *testing.T) {
 	reset := Calculate(nil, movements, Options{PointQty: 8, PointAmount: 2, PointCost: 2, Policy: PolicyResetOnNegative})
 	approx(t, reset.Rows[1].BalanceAmount, 0, "reset: amount")
 	approx(t, reset.Rows[1].AvgCost, 0, "reset: average cost")
-
-	standard := Calculate(nil, []Movement{
-		mv("SA001", 1, doctype.SaleInvoice, 2, 0, day(1)), // ขายทั้งที่ยังไม่มีของ
-	}, Options{PointQty: 8, PointAmount: 2, PointCost: 2, Policy: PolicyStandardCost,
-		StandardCost: map[string]float64{"WH01": 70}})
-	approx(t, standard.Rows[0].UnitCost, 70, "standard cost used when empty")
-	approx(t, standard.Rows[0].BalanceAmount, -140, "standard cost amount")
 }
 
 // หน่วยนับที่ต้องแปลงเป็นหน่วยฐาน เช่น ซื้อเป็นลัง 1 ลัง = 12 ชิ้น

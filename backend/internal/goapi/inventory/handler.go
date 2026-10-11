@@ -14,12 +14,9 @@ import (
 // RegisterRoutes — ลงทะเบียน routes กับ Echo group
 // ใช้ per-request DB connection ตาม holdingCode (pattern เดียวกับ handlers อื่นๆ)
 func RegisterRoutes(g *echo.Group) {
-	// Costing Config
+	// Costing Config (ต้นทุนถัวเฉลี่ยวิธีเดียว)
 	g.GET("/products/:itemcode/costing-config", GetCostingConfig)
 	g.PUT("/products/:itemcode/costing-config", UpdateCostingConfig)
-
-	// Cost Layers & Lots
-	g.GET("/products/:itemcode/cost-layers", GetCostLayers)
 
 	// Transactions
 	g.POST("/inventory/receipt", ProcessReceipt)
@@ -84,7 +81,7 @@ func UpdateCostingConfig(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	logger.Info("อัพเดท costing config: " + itemCode + " → " + config.CostingMethod)
+	logger.Info("อัพเดท costing config: " + itemCode)
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
@@ -297,27 +294,6 @@ func GetStockMovement(c echo.Context) error {
 		"holdingcode": holdingCode,
 		"items":       items,
 	})
-}
-
-func GetCostLayers(c echo.Context) error {
-	holdingCode := c.QueryParam("holdingcode")
-	itemCode := c.Param("itemcode")
-	whCode := c.QueryParam("whcode")
-
-	if holdingCode == "" || itemCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode และ itemcode"})
-	}
-
-	svc, err := connectAndService(holdingCode)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-
-	layers, err := svc.GetCostLayers(c.Request().Context(), holdingCode, itemCode, whCode)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-	return c.JSON(http.StatusOK, layers)
 }
 
 // === Database Handler ===

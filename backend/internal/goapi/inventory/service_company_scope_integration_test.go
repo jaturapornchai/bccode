@@ -55,7 +55,6 @@ CREATE TABLE inv_scope_it.inventorycosttransactions (
 	qty numeric, unitcost numeric, totalcost numeric, balanceqty numeric, balancetotalvalue numeric, balanceavgcost numeric);
 CREATE TABLE inv_scope_it.inventorystockbalances (
 	holdingcode text, itemcode text, whcode text, currentqty numeric, currentavgcost numeric, currenttotalvalue numeric);
-CREATE TABLE inv_scope_it.productcostingconfig (holdingcode text, itemcode text, costingmethod text);
 INSERT INTO inv_scope_it.inventorycosttransactions(holdingcode, itemcode, transactiondate, refdocno, transactiontype, transflag,
 	qty, unitcost, totalcost, balanceqty, balancetotalvalue, balanceavgcost)
 	VALUES ('rungrueng', 'WTR-600', '2026-09-15 03:00:00+00', 'RR6909-0001', 'purchase', 12, 500, 6.5, 3250, 500, 3250, 6.5);

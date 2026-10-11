@@ -180,7 +180,7 @@ const barcodeTextTh = {
   priceKey: "ระดับราคา",
   price: "ราคา",
   addPrice: "เพิ่มระดับราคา",
-  fixedCost: "ต้นทุนมาตรฐาน",
+  fixedCost: "ต้นทุนคงที่",
   fixedCostDate: "วันที่มีผล",
   fixedCostAmount: "ต้นทุน",
   addFixedCost: "เพิ่มต้นทุน",

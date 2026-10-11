@@ -62,12 +62,10 @@ interface BOMItemInput {
   bom?: BOMItemInput[];
   // Only meaningful when reftype=="recipe" (a sub-recipe used as an ingredient): its OWN costing
   // fields, propagated live from the backend's resolveRecipeTree so a sub-recipe's labor/overhead/
-  // scrap/standard-cost composes correctly into whatever parent recipe references it, instead of
+  // scrap composes correctly into whatever parent recipe references it, instead of
   // silently vanishing (the parent must cost the sub-recipe the same way the sub-recipe's own
   // screen would).
   subrecipeoutputqty?: number;
-  costmode?: "current" | "standard";
-  standardcost?: number;
   laborcost?: number;
   overheadcost?: number;
   scrappercent?: number;
@@ -96,22 +94,18 @@ interface ProductBOMRecord {
   boms?: BOMVersion[];
   unitOptions?: ProductUnitOption[];
   // Root-level costing fields (only meaningful on the recipe root, not ingredient lines).
-  costmode?: "current" | "standard";
-  standardcost?: number;
   laborcost?: number;
   overheadcost?: number;
   scrappercent?: number;
   finishedgoodbarcode?: string;
 }
 
-// Shared CostMode-aware unit-cost formula: a frozen standard cost when configured, otherwise the
-// live rollup + labor + overhead, divided by output qty, divided by (1 - scrap%). Used for BOTH the
-// recipe root (costPerOutputUnitEffective) and any nested sub-recipe ingredient (componentUnitCost)
-// so a sub-recipe's own labor/overhead/scrap/standard-cost composes correctly into whatever parent
-// recipe references it, instead of only the raw ingredient rollup being visible one level up.
+// Shared unit-cost formula: the live rollup + labor + overhead, divided by output qty, divided by
+// (1 - scrap%). Used for BOTH the recipe root (costPerOutputUnitEffective) and any nested sub-recipe
+// ingredient (componentUnitCost) so a sub-recipe's own labor/overhead/scrap composes correctly into
+// whatever parent recipe references it, instead of only the raw ingredient rollup being visible one
+// level up. The ingredient costs themselves are the average cost (no other cost method exists).
 function effectiveUnitCost(params: {
-  costMode?: string;
-  standardCost?: number;
   rollupCost: number;
   laborCost?: number;
   overheadCost?: number;
@@ -119,15 +113,12 @@ function effectiveUnitCost(params: {
   scrapPercent?: number;
 }): number {
   const {
-    costMode,
-    standardCost = 0,
     rollupCost,
     laborCost = 0,
     overheadCost = 0,
     outputQty,
     scrapPercent = 0,
   } = params;
-  if (costMode === "standard" && standardCost > 0) return standardCost;
   const batchQty = outputQty && outputQty > 0 ? outputQty : 1;
   const scrapDivisor =
     scrapPercent > 0 && scrapPercent < 100 ? 1 - scrapPercent / 100 : 1;
@@ -193,8 +184,6 @@ export function ProductBomEditor({
   const [deleting, setDeleting] = useState(false);
 
   // Costing fields — see BOMProductBarcode (backend) for semantics.
-  const [costMode, setCostMode] = useState<"current" | "standard">("current");
-  const [standardCost, setStandardCost] = useState(0);
   const [laborCost, setLaborCost] = useState(0);
   const [overheadCost, setOverheadCost] = useState(0);
   const [scrapPercent, setScrapPercent] = useState(0);
@@ -312,9 +301,6 @@ export function ProductBomEditor({
           typeof item.subrecipeoutputqty === "number"
             ? item.subrecipeoutputqty
             : undefined,
-        costmode: item.costmode === "standard" ? "standard" : "current",
-        standardcost:
-          typeof item.standardcost === "number" ? item.standardcost : undefined,
         laborcost:
           typeof item.laborcost === "number" ? item.laborcost : undefined,
         overheadcost:
@@ -362,8 +348,6 @@ export function ProductBomEditor({
       // Recipe root's qty carries the batch output quantity (how many units one batch produces).
       const recordOutputQty = record.qty && record.qty > 0 ? record.qty : 1;
       setOutputQty(recordOutputQty);
-      setCostMode(record.costmode === "standard" ? "standard" : "current");
-      setStandardCost(record.standardcost ?? 0);
       setLaborCost(record.laborcost ?? 0);
       setOverheadCost(record.overheadcost ?? 0);
       setScrapPercent(record.scrappercent ?? 0);
@@ -439,15 +423,13 @@ export function ProductBomEditor({
   const isRecipeComponent = (item: BOMItemInput) =>
     item.reftype === "recipe" || hasNestedBOM(item);
 
-  // A nested sub-recipe's per-unit cost uses the SAME costmode-aware formula as the recipe root
-  // (effectiveUnitCost) — its own labor/overhead/scrap/standard-cost, propagated live from the
+  // A nested sub-recipe's per-unit cost uses the SAME formula as the recipe root
+  // (effectiveUnitCost) — its own labor/overhead/scrap, propagated live from the
   // backend, must compose into the parent's rollup the same way they'd show on the sub-recipe's
   // own screen, not just the raw ingredient sum spread over output qty.
   const componentUnitCost = (item: BOMItemInput): number => {
     if (!hasNestedBOM(item)) return item.averagecost || 0;
     return effectiveUnitCost({
-      costMode: item.costmode,
-      standardCost: item.standardcost,
       rollupCost: calculateTotalCost(item.bom || []),
       laborCost: item.laborcost,
       overheadCost: item.overheadcost,
@@ -479,16 +461,12 @@ export function ProductBomEditor({
   const scrapDivisor =
     scrapPercent > 0 && scrapPercent < 100 ? 1 - scrapPercent / 100 : 1;
 
-  // CostMode-aware total cost per output unit (section 2 of the spec) — same formula as
-  // componentUnitCost uses for a nested sub-recipe, via the shared effectiveUnitCost helper:
-  // - "standard" with a configured StandardCost -> use it directly, no ingredient rollup.
-  // - otherwise ("current", or "standard" with StandardCost not yet set) -> live rollup +
-  //   labor + overhead, divided by outputqty, divided by (1 - scrap%).
+  // Total cost per output unit (section 2 of the spec) — same formula as componentUnitCost uses for
+  // a nested sub-recipe, via the shared effectiveUnitCost helper: live rollup + labor + overhead,
+  // divided by outputqty, divided by (1 - scrap%).
   const costPerOutputUnitEffective = useMemo(
     () =>
       effectiveUnitCost({
-        costMode,
-        standardCost,
         rollupCost,
         laborCost,
         overheadCost,
@@ -496,8 +474,6 @@ export function ProductBomEditor({
         scrapPercent,
       }),
     [
-      costMode,
-      standardCost,
       rollupCost,
       laborCost,
       overheadCost,
@@ -505,8 +481,6 @@ export function ProductBomEditor({
       scrapPercent,
     ],
   );
-
-  const isStandardCostActive = costMode === "standard" && standardCost > 0;
 
   // Scale factor for the sale-quantity calculator: scaleFactor = enteredQty / (outputqty / (1 -
   // scrap%)) — i.e. scale relative to how many GOOD units one GROSS batch actually yields after
@@ -824,8 +798,6 @@ export function ProductBomEditor({
         bom: activeBOM,
         boms: payloadBOMs,
         holdingcode: workspace.shop.holdingcode,
-        costmode: costMode,
-        standardcost: standardCost,
         laborcost: laborCost,
         overheadcost: overheadCost,
         scrappercent: scrapPercent,
@@ -1363,65 +1335,6 @@ export function ProductBomEditor({
                 <p className="text-[10px] text-muted-foreground leading-tight">
                   {tr("st_more_scrap_higher_unit_cost", "ยิ่งของเสียมาก ต้นทุนต่อหน่วยดียิ่งสูงขึ้น")}
                 </p>
-              </div>
-
-              <div className="md:col-span-2 xl:col-span-4 border-t border-dashed border-sky-200/50 pt-3 space-y-2">
-                <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase block">
-                  {tr("st_cost_mode", "โหมดต้นทุน")}
-                </label>
-                <div className="flex flex-wrap items-start gap-3">
-                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
-                    <input
-                      type="radio"
-                      name="costmode"
-                      checked={costMode === "current"}
-                      onChange={() => {
-                        setCostMode("current");
-                        setUnsavedChanges(true);
-                      }}
-                      className="size-3.5 mt-0.5 accent-primary"
-                    />
-                    <span className="text-xs font-semibold">
-                      {tr("st_current_cost_live_calc", "ต้นทุนปัจจุบัน (คำนวณสด)")}
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
-                    <input
-                      type="radio"
-                      name="costmode"
-                      checked={costMode === "standard"}
-                      onChange={() => {
-                        setCostMode("standard");
-                        setUnsavedChanges(true);
-                      }}
-                      className="size-3.5 mt-0.5 accent-primary"
-                    />
-                    <span className="text-xs font-semibold">
-                      {tr("st_standard_cost", "ต้นทุนมาตรฐาน (Standard Cost)")}
-                    </span>
-                  </label>
-                  {costMode === "standard" && (
-                    <div className="space-y-1">
-                      <Input
-                        type="number"
-                        className="h-8.5 text-xs font-mono rounded-lg w-40 focus-visible:ring-sky-500 bg-background"
-                        placeholder="0.00"
-                        min="0"
-                        step="any"
-                        value={standardCost || ""}
-                        onChange={(e) => {
-                          setStandardCost(
-                            Math.max(0, parseFloat(e.target.value) || 0),
-                          );
-                          setUnsavedChanges(true);
-                        }}
-                      />
-                      <p className="text-[10px] text-muted-foreground leading-tight max-w-[10rem]">
-                        {tr("st_fixed_unit_cost_price", "ราคาต้นทุนต่อหน่วยที่ตรึงไว้")}
-                      </p>
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="md:col-span-2 xl:col-span-4 border-t border-dashed border-sky-200/50 pt-3">
@@ -2015,11 +1928,6 @@ export function ProductBomEditor({
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
                     {tr("st_total_rollup_cost", "ต้นทุน Rollup รวม")}
-                    {isStandardCostActive && (
-                      <span className="block text-[9px] text-amber-600 font-semibold">
-                        {tr("st_current_price_reference", "ราคาปัจจุบัน (อ้างอิง)")}
-                      </span>
-                    )}
                   </span>
                   <span className="font-bold text-sky-600 font-mono">
                     ฿{rollupCost.toFixed(2)}
@@ -2027,9 +1935,7 @@ export function ProductBomEditor({
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
-                    {isStandardCostActive
-                      ? tr("st_standard_cost_per_unit", "ต้นทุนมาตรฐาน/หน่วย")
-                      : tr("st_cost_per_production_unit", "ต้นทุน/หน่วยผลิต (÷{0})").replace("{0}", String(outputQty || 1))}
+                    {tr("st_cost_per_production_unit", "ต้นทุน/หน่วยผลิต (÷{0})").replace("{0}", String(outputQty || 1))}
                   </span>
                   <span className="font-bold text-indigo-600 font-mono">
                     ฿{costPerOutputUnitEffective.toFixed(2)}

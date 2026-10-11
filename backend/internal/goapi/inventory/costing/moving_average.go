@@ -9,12 +9,11 @@ import (
 	inv "smlcloudplatform/internal/goapi/inventory/models"
 )
 
-// MovingAverageEngine — ต้นทุนเฉลี่ยเคลื่อนที่ (Moving Weighted Average)
-// คำนวณต้นทุนเฉลี่ยใหม่ทุกครั้งที่รับสินค้าเข้า
+// MovingAverageEngine — ต้นทุนถัวเฉลี่ยเคลื่อนที่ (Moving Weighted Average) วิธีคิดต้นทุนเดียวของระบบ
+// คำนวณต้นทุนเฉลี่ยใหม่ทุกครั้งที่รับสินค้าเข้า ตรงกับตัวคิดต้นทุนของ Champ
+// (BCProcess/BCSWINService/stockprocess_class.cs:2986-2998: ยอดคงเหลือมูลค่า ÷ ยอดคงเหลือจำนวน หลังทุกรายการ)
 // สูตร: new_avg = (old_qty × old_avg + receivedqty × received_cost) / (old_qty + receivedqty)
 type MovingAverageEngine struct{}
-
-func (e *MovingAverageEngine) Method() string { return inv.CostingMethodMovingAverage }
 
 // ProcessReceipt — รับสินค้าเข้า → คำนวณ avg ใหม่
 func (e *MovingAverageEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, params inv.ReceiptParams) (*inv.CostTransactionResult, error) {
@@ -61,7 +60,6 @@ func (e *MovingAverageEngine) ProcessReceipt(ctx context.Context, tx *sql.Tx, pa
 		BalanceQty:        newQty,
 		BalanceAvgCost:    newAvgCost,
 		BalanceTotalValue: newTotalValue,
-		CostingMethodUsed: inv.CostingMethodMovingAverage,
 		TransactionDate:   params.ReceivedDate,
 		CreatedBy:         params.CreatedBy,
 	}
@@ -126,7 +124,6 @@ func (e *MovingAverageEngine) ProcessIssue(ctx context.Context, tx *sql.Tx, para
 		BalanceQty:        newQty,
 		BalanceAvgCost:    newAvgCost,
 		BalanceTotalValue: newTotalValue,
-		CostingMethodUsed: inv.CostingMethodMovingAverage,
 		TransactionDate:   params.TransactionDate,
 		CreatedBy:         params.CreatedBy,
 	}
@@ -184,7 +181,6 @@ func (e *MovingAverageEngine) ProcessSalesReturn(ctx context.Context, tx *sql.Tx
 		BalanceQty:        newQty,
 		BalanceAvgCost:    newAvgCost,
 		BalanceTotalValue: newTotalValue,
-		CostingMethodUsed: inv.CostingMethodMovingAverage,
 		TransactionDate:   params.TransactionDate,
 		CreatedBy:         params.CreatedBy,
 	}
@@ -242,7 +238,6 @@ func (e *MovingAverageEngine) ProcessPurchaseReturn(ctx context.Context, tx *sql
 		BalanceQty:        newQty,
 		BalanceAvgCost:    newAvgCost,
 		BalanceTotalValue: newTotalValue,
-		CostingMethodUsed: inv.CostingMethodMovingAverage,
 		TransactionDate:   params.TransactionDate,
 		CreatedBy:         params.CreatedBy,
 	}
@@ -320,7 +315,6 @@ func (e *MovingAverageEngine) ProcessAdjustment(ctx context.Context, tx *sql.Tx,
 		BalanceQty:        newQty,
 		BalanceAvgCost:    newAvgCost,
 		BalanceTotalValue: newTotalValue,
-		CostingMethodUsed: inv.CostingMethodMovingAverage,
 		TransactionDate:   params.TransactionDate,
 		CreatedBy:         params.CreatedBy,
 	}
@@ -364,12 +358,11 @@ func (e *MovingAverageEngine) GetCurrentValuation(ctx context.Context, tx *sql.T
 		).Scan(&val.ItemCode, &val.WhCode, &val.CurrentQty, &val.AverageCost, &val.TotalValue)
 	}
 	if err == sql.ErrNoRows {
-		return &inv.StockValuation{ItemCode: itemCode, WhCode: whCode, CostingMethod: inv.CostingMethodMovingAverage}, nil
+		return &inv.StockValuation{ItemCode: itemCode, WhCode: whCode}, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	val.CostingMethod = inv.CostingMethodMovingAverage
 	return &val, nil
 }
 

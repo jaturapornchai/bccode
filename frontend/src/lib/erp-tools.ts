@@ -112,11 +112,11 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     code: "inventory_daily_sequence",
     domain: "inventory",
     title: { th: "กำหนดลำดับรายวัน", en: "Inventory Daily Sequence" },
-    description: { th: "จัดลำดับเวลาการเกิดเอกสารรับ-จ่ายในแต่ละวัน เพื่อคำนวณต้นทุน FIFO ให้ถูกต้อง", en: "Order daily receipts and issues chronologically for precise FIFO costing" },
+    description: { th: "จัดลำดับเวลาการเกิดเอกสารรับ-จ่ายในแต่ละวัน เพื่อคำนวณต้นทุนถัวเฉลี่ยให้ถูกต้อง", en: "Order daily receipts and issues chronologically for precise average costing" },
     actionLabel: { th: "จัดลำดับเอกสารรายวัน", en: "Sort Daily Transactions" },
     steps: [
       { th: "จัดคิวเอกสารรับเข้าก่อนเอกสารจ่ายออกในวันเดียวกัน", en: "Sequence receipts before issues within the same day" },
-      { th: "ปรับปรุงลำดับการตัดสต็อก FIFO", en: "Update FIFO allocation sequence" },
+      { th: "ปรับปรุงลำดับการตัดสต็อกตามวันที่และลำดับเอกสาร", en: "Update stock issue sequence" },
     ],
   },
 ];
@@ -237,7 +237,7 @@ const catalogKeys: Record<string, string> = {
   "inventory_daily_sequence.description": "tool_order_daily_receipts_and_issues",
   "inventory_daily_sequence.actionLabel": "tool_sort_daily_transactions",
   "inventory_daily_sequence.step.0": "tool_sequence_receipts_before_issues_within",
-  "inventory_daily_sequence.step.1": "tool_update_fifo_allocation_sequence",
+  "inventory_daily_sequence.step.1": "tool_update_stock_issue_sequence",
 };
 
 export function toolText(

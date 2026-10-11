@@ -70,17 +70,17 @@ subagent รายงานว่ารายงาน GL ของ BC (`/report
 
 **ฝั่ง Champ:**
 - `BCSService.cs` — 6 thread วนตรวจคิวทุก ~1 วินาที + watchdog ทุก 10 วินาที
-- `stockprocess_class.cs` — คำนวณต้นทุนถัวเฉลี่ยถ่วงน้ำหนัก **แยกตามคลัง** และรองรับ FIFO ตาม lot + ต้นทุนมาตรฐาน
+- `stockprocess_class.cs` — คำนวณต้นทุนถัวเฉลี่ยถ่วงน้ำหนัก **แยกตามคลัง** (`:2986-2998`) และรองรับ FIFO ตาม lot + ต้นทุนมาตรฐาน (BC ไม่ทำสองแบบหลัง: เจ้าของสั่งใช้ถัวเฉลี่ยอย่างเดียว, ADR `2026-10-11-stock-cost-average-only.md`)
 - เก็บ **snapshot ต่องวด** (`bcstkwarehouseperiod` ฯลฯ) → แก้เอกสารย้อนหลังแล้วคำนวณใหม่เฉพาะตั้งแต่งวดที่กระทบ ไม่ใช่ทั้งชีวิตสินค้า
-- นโยบายสต็อกติดลบ 4 แบบ พร้อมการ**ตัดแถวตรงจุดที่ยอดข้ามศูนย์**
+- นโยบายสต็อกติดลบ พร้อมการ**ตัดแถวตรงจุดที่ยอดข้ามศูนย์** (Champ มี 4 แบบ BC ทำ 3 แบบ: แบบ 4 ใช้ต้นทุนมาตรฐานถูกถอดตาม ADR `2026-10-11-stock-cost-average-only.md`)
 - เขียนธง `glstartposting=1` เป็นสะพานส่งต่อให้ GL
 - คิวแยกสำหรับงานรายงานและ `functionstock` แบบ async
 
 **ฝั่ง BC (ตรวจใหม่ 2026-09-25):**
 - `process_consumer.go` (consumer ที่ถูกคอมเมนต์ทิ้ง) และ `performBackgroundTask()` เดิมไม่มีแล้ว (ลบในรอบถอด MongoDB/Kafka 2026-09-23 ตาม [ADR](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)) — ปัจจุบันมี worker คำนวณต้นทุนต่อฐาน holding อ่านคิว `stock_dirty` ใน PostgreSQL งานที่ล้มเหลวลง `stock_dead_letter` (`backend/internal/goapi/process/stockengine/worker.go`, `manager.go:36`, เปิดที่ `backend/internal/goapi/bootstrap.go:122`)
 - มี snapshot ต่องวดใน `stock_period_balance` (`stockengine/store.go:51-53,244-245`)
-- คำนวณเฉพาะถัวเฉลี่ยถ่วงน้ำหนักแยกคลัง (`stockengine/calc.go:1,216`) ไม่มี FIFO/lot/ต้นทุนมาตรฐานเป็นวิธีคิดต้นทุน
-- มีนโยบายสต็อกติดลบ 4 แบบตาม `x_stock_amount_type` ของ Champ (`stockengine/calc.go:19-31`) — การตัดแถวตรงจุดที่ยอดข้ามศูนย์ยังไม่ verify
+- คำนวณเฉพาะถัวเฉลี่ยถ่วงน้ำหนักแยกคลัง (`stockengine/calc.go:1,216`) ไม่มี FIFO/lot/ต้นทุนมาตรฐานเป็นวิธีคิดต้นทุน **โดยเจตนา** (เจ้าของสั่ง 2026-10-11 ใช้ถัวเฉลี่ยอย่างเดียว ไม่นับเป็นช่องว่างจาก Champ)
+- มีนโยบายสต็อกติดลบ 3 แบบตาม `x_stock_amount_type` ของ Champ (`stockengine/calc.go:19-30`; แบบ 4 ใช้ต้นทุนมาตรฐานถูกถอด) — การตัดแถวตรงจุดที่ยอดข้ามศูนย์ยังไม่ verify
 - เอกสารขาย/ซื้อ (`/transaction/*`) backend ถูกถอดพร้อม MongoDB จึงยังไม่มีคิว doc-flow ฝั่งขาย
 
 > ผลที่ตามมา: `processstockcalccost` ยังต้องส่ง `itemcodelist` อย่างน้อย 1 รายการ (`backend/internal/goapi/handlers/process_stock_calc_cost.go:84,181`) — จึงยังทำปุ่ม "คำนวณใหม่ทั้งหมด" ผ่าน API นี้ไม่ได้

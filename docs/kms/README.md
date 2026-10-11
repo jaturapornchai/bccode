@@ -150,6 +150,7 @@
 - [decisions/2026-09-26-gl-equity-statement-amount-basis.md](decisions/2026-09-26-gl-equity-statement-amount-basis.md) — งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้นตามแบบ 2 (คอลัมน์องค์ประกอบที่ผู้ใช้เลือกบัญชีเอง, ต้นงวด + บรรทัด + รายการอื่น = ปลายงวด) + `amountbasis` ต่อแถว (ต้นงวด/ปลายงวด/ความเคลื่อนไหว) แก้แม่แบบงบต้นทุนขาย/กระแสเงินสด
 - [decisions/2026-09-28-copy-dom-button-dev-only.md](decisions/2026-09-28-copy-dom-button-dev-only.md) — ปุ่มลอย `Copy DOM` + โหมดคลิกเปิด/ปิด แสดงเฉพาะ `next dev` (บังปุ่มบันทึกมุมล่างซ้ายบนจอเตี้ย + กดโดนแล้วทุกคลิกกลายเป็น Copy DOM); Alt+คลิกคัดลอก DOM ยังทำงานบน production โดยตัดสินจาก `e.altKey` + รีเซ็ต Alt ตอน blur/ซ่อนแท็บ; `NODE_ENV` มีได้จุดเดียวในไฟล์ (ทับบางส่วนของ ADR 2026-09-12)
 - [decisions/2026-10-07-condense-agents-md.md](decisions/2026-10-07-condense-agents-md.md) — ย่อ AGENTS.md เหลือกฎสั้น ~15k ตัวอักษร ลด token ทุกการเรียก; ฉบับเต็มที่ [rules/agents-full.md](rules/agents-full.md)
+- [decisions/2026-10-11-stock-cost-average-only.md](decisions/2026-10-11-stock-cost-average-only.md) — ต้นทุนสินค้าใช้ถัวเฉลี่ยวิธีเดียว ถอด FIFO/LIFO/FEFO/lot/standard ออกทั้งระบบ (ตัวคิดต้นทุนอ้างอิง `stockprocess_class.cs:2986-2998`)
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 42 ไฟล์ใน `bugs/`
 
