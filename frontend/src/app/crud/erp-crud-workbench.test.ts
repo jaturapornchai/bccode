@@ -119,3 +119,20 @@ describe("ErpCrudWorkbench approved / cancelled document lock", () => {
     expect(workbenchSource).toContain('erpDocLifecycle(doc) !== "draft"');
   });
 });
+
+// Rule 20: ยอดเงินบนจอเป็นข้อความทศนิยม — แสดงด้วย formatAmount คำนวณตัวอย่างด้วย erpLineAmount/erpDocTotals ไม่ใช้ Number()/Math
+describe("ErpCrudWorkbench keeps amounts as decimal strings (Rule 20)", () => {
+  it("never does money arithmetic with Number(), parseFloat or Math.round", () => {
+    expect(workbenchSource).not.toMatch(/Number\(\s*(item|formDoc|selectedDoc|d|e\.target)\b/);
+    expect(workbenchSource).not.toContain("parseFloat");
+    expect(workbenchSource).not.toMatch(/Math\.round\([^)]*(vat|total|Vat|Total)/);
+    expect(workbenchSource).not.toContain("toLocaleString(\"th-TH\"");
+  });
+
+  it("previews line and document totals with the exact helpers and shows them via formatAmount", () => {
+    expect(workbenchSource).toContain("item.sumamount = erpLineAmount(item)");
+    expect(workbenchSource).toContain("...erpDocTotals(nextDetails, formDoc.vattype, formDoc.vatrate)");
+    expect(workbenchSource).toContain('formatAmount(selectedDoc.totalamount || "0")');
+    expect(workbenchSource).toContain("updateLineItem(idx, { qty: e.target.value })");
+  });
+});

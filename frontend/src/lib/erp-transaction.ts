@@ -1,5 +1,8 @@
 import { apiFetch } from "./client-auth-session";
+import { blankAmountAsZero } from "./general-ledger";
 
+// ยอดเงิน/จำนวน/ราคา/ภาษีเป็นข้อความทศนิยม (backend shopspring/decimal, Rule 20) เช่น "1070" หรือ "0.125";
+// แสดงผลด้วย formatAmount และคำนวณตัวอย่างด้วย erpLineAmount/erpDocTotals เท่านั้น — ห้าม Number()/parseFloat
 export interface ErpDetailItem {
   linenumber: number;
   itemcode: string;
@@ -8,11 +11,11 @@ export interface ErpDetailItem {
   barcode?: string;
   unitcode: string;
   unitname?: string;
-  qty: number;
-  price: number;
+  qty: string;
+  price: string;
   discount?: string;
-  discountamount?: number;
-  sumamount: number;
+  discountamount?: string;
+  sumamount: string;
   vatcal?: number;
 }
 
@@ -25,14 +28,14 @@ export interface ErpTransactionDoc {
   custname?: string;
   custnames?: { code: string; name: string }[];
   description?: string;
-  totalamount: number;
-  totalvalue?: number;
-  totaldiscount?: number;
-  totalvatvalue?: number;
-  totalbeforevat?: number;
-  totalaftervat?: number;
+  totalamount: string;
+  totalvalue?: string;
+  totaldiscount?: string;
+  totalvatvalue?: string;
+  totalbeforevat?: string;
+  totalaftervat?: string;
   vattype?: number;
-  vatrate?: number;
+  vatrate?: string;
   status?: number; // 0=Draft, 1=Approved/Completed, 2=Cancelled
   // คีย์ตรงกับ backend/internal/transaction/httpapi/models.go: approvalstatus เป็น 'approved' หรือ '' (ว่าง = รออนุมัติ)
   approvalstatus?: string;
@@ -50,6 +53,103 @@ export interface ErpTransactionDoc {
   glstatus?: string;
   gldocno?: string;
   details: ErpDetailItem[];
+}
+
+// ทศนิยมตรงตัวด้วย BigInt (ไม่มีไลบรารีทศนิยมใน package.json): units × 10^-scale
+type ExactDecimal = { units: bigint; scale: number };
+const ZERO: ExactDecimal = { units: 0n, scale: 0 };
+const decimalText = /^([+-]?)([0-9]*)(?:[.]([0-9]*))?(?:e([+-]?[0-9]+))?$/i;
+
+// ข้อความว่าง/ผิดรูป = ศูนย์ (ช่องที่ผู้ใช้กำลังพิมพ์) — รับรูป 1e5 แบบที่ backend รับ
+function exact(value: string | undefined): ExactDecimal {
+  const match = decimalText.exec((value ?? "").trim());
+  if (!match || (!match[2] && !match[3])) return ZERO;
+  const exponent = Number(match[4] ?? 0);
+  if (Math.abs(exponent) > 30) return ZERO;
+  const fraction = match[3] ?? "";
+  let units = BigInt((match[2] || "0") + fraction);
+  let scale = fraction.length - exponent;
+  if (scale < 0) {
+    units *= 10n ** BigInt(-scale);
+    scale = 0;
+  }
+  return { units: match[1] === "-" ? -units : units, scale };
+}
+function addExact(a: ExactDecimal, b: ExactDecimal): ExactDecimal {
+  const scale = Math.max(a.scale, b.scale);
+  return { units: a.units * 10n ** BigInt(scale - a.scale) + b.units * 10n ** BigInt(scale - b.scale), scale };
+}
+function negate(a: ExactDecimal): ExactDecimal {
+  return { units: -a.units, scale: a.scale };
+}
+function mulExact(a: ExactDecimal, b: ExactDecimal): ExactDecimal {
+  return { units: a.units * b.units, scale: a.scale + b.scale };
+}
+// ปัดครึ่งออกจากศูนย์เหมือน decimal.Round ของ backend: 1.005 → 1.01
+function roundExact(a: ExactDecimal, places: number): ExactDecimal {
+  if (a.scale <= places) return a;
+  const divisor = 10n ** BigInt(a.scale - places);
+  const abs = a.units < 0n ? -a.units : a.units;
+  const rounded = abs / divisor + ((abs % divisor) * 2n >= divisor ? 1n : 0n);
+  return { units: a.units < 0n ? -rounded : rounded, scale: places };
+}
+// ข้อความทศนิยมแบบที่ backend ตอบ (ตัดศูนย์ท้าย): 1070.00 → "1070"
+function exactString(a: ExactDecimal): string {
+  const abs = a.units < 0n ? -a.units : a.units;
+  const digits = abs.toString().padStart(a.scale + 1, "0");
+  const whole = digits.slice(0, digits.length - a.scale);
+  const fraction = digits.slice(digits.length - a.scale).replace(/0+$/, "");
+  return `${a.units < 0n ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
+}
+
+/** ยอดของบรรทัด = จำนวน × ราคา − ส่วนลด (ติดลบให้เป็นศูนย์) ไม่ปัดรายบรรทัด */
+export function erpLineAmount(item: Pick<ErpDetailItem, "qty" | "price" | "discountamount">): string {
+  const amount = addExact(mulExact(exact(item.qty), exact(item.price)), negate(exact(item.discountamount)));
+  return exactString(amount.units < 0n ? ZERO : amount);
+}
+
+/**
+ * ตัวอย่างยอดรวมระหว่างแก้เอกสาร (ยอดจริงหลังบันทึกคือที่ backend ตอบกลับ) — กติกาปัดเศษเดิมของหน้าจอ:
+ * ก่อนภาษี = ผลรวมยอดบรรทัดที่ไม่ปัด; ภาษี (vattype 1) = ก่อนภาษี × อัตรา ÷ 100 ปัดที่ระดับเอกสาร 2 ตำแหน่ง ครึ่งออกจากศูนย์;
+ * รวมทั้งสิ้น = ก่อนภาษี + ภาษี — ทศนิยมตรงตัว 0.1 + 0.2 = 0.3
+ */
+export function erpDocTotals(
+  details: Pick<ErpDetailItem, "sumamount">[],
+  vattype?: number,
+  vatrate = "7",
+): Pick<ErpTransactionDoc, "totalbeforevat" | "totalvatvalue" | "totalamount"> {
+  const before = details.reduce((sum, item) => addExact(sum, exact(item.sumamount)), ZERO);
+  const rate = exact(vatrate);
+  const vat = vattype === 1 ? roundExact(mulExact(before, { units: rate.units, scale: rate.scale + 2 }), 2) : ZERO;
+  return { totalbeforevat: exactString(before), totalvatvalue: exactString(vat), totalamount: exactString(addExact(before, vat)) };
+}
+
+/** มูลค่าก่อนภาษีของเอกสาร: ยอดที่บันทึกไว้ ถ้าไม่มี (backend ละช่องที่เป็นศูนย์) = ยอดรวม − ภาษี แบบตรงตัว */
+export function erpBeforeVatAmount(doc: Pick<ErpTransactionDoc, "totalamount" | "totalbeforevat" | "totalvatvalue">): string {
+  if (doc.totalbeforevat !== undefined) return doc.totalbeforevat;
+  return exactString(addExact(exact(doc.totalamount), negate(exact(doc.totalvatvalue))));
+}
+
+/**
+ * ยอดเงินสำหรับแสดงในตัวอย่างระหว่างแก้ (แสดงผลอย่างเดียว ไม่เปลี่ยนค่าที่ส่งบันทึก): ปัด 2 ตำแหน่งครึ่งออกจากศูนย์
+ * แบบเดียวกับที่ PostgreSQL ปัดยอดบรรทัดลง docdetail.sumamount numeric(18,2) — 152415.7763907942 → "152415.78"
+ */
+export function erpMoneyDisplay(value: string | undefined): string {
+  return exactString(roundExact(exact(value), 2));
+}
+
+/** ช่องตัวเลขที่ผู้ใช้ลบจนว่างส่งเป็น "0" — backend รับเฉพาะข้อความทศนิยมที่ถูกต้อง */
+export function erpDocForSave(doc: Partial<ErpTransactionDoc>): Partial<ErpTransactionDoc> {
+  if (!doc.details) return doc;
+  return {
+    ...doc,
+    details: doc.details.map((item) => ({
+      ...item,
+      qty: blankAmountAsZero(item.qty),
+      price: blankAmountAsZero(item.price),
+      sumamount: blankAmountAsZero(item.sumamount),
+    })),
+  };
 }
 
 export type ErpDocLifecycle = "draft" | "approved" | "cancelled";
@@ -830,7 +930,7 @@ export async function saveErpTransaction(
     const res = await apiFetch(`/api/erp-transaction/${path}`, {
       method,
       headers: { "Content-Type": "application/json", ...languageHeader(language) },
-      body: JSON.stringify(doc),
+      body: JSON.stringify(erpDocForSave(doc)),
     });
     if (!res.ok) {
       return { success: false, message: statusErrorKey(res.status, "save_failed", "erp_err_action_forbidden") };

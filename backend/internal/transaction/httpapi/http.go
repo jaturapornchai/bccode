@@ -287,6 +287,9 @@ func (h *Http) get(request microservice.IContext) error {
 func docFailure(request microservice.IContext, err error, notFound bool) error {
 	var ledger *ledgerError
 	if _, isUser := gl.AsUserError(err); isUser || errors.As(err, &ledger) {
+		if internalFailure(err) {
+			request.Log(fmt.Sprintf("transaction: %v", err))
+		}
 		status, body := glhttp.SessionFailure(err, requestLanguage(request))
 		request.Response(status, body)
 		return nil
@@ -298,14 +301,34 @@ func docFailure(request microservice.IContext, err error, notFound bool) error {
 	return fail(request, http.StatusInternalServerError, "erp_err_internal")
 }
 
+// maxDocBodyBytes: ขนาดคำขอบันทึก/แก้เอกสารสูงสุด (Rule 10) — ใบตรวจนับสต็อกหลายพันรายการยังพอ
+const maxDocBodyBytes = 8 << 20
+
+// readDoc อ่านเอกสารจากคำขอ: จำกัดขนาด body และความยาวตัวเลขทุกช่อง (ErpTransactionDoc.UnmarshalJSON) ก่อนแปลงเป็น decimal;
+// ผิดรูปแบบ/ใหญ่เกิน = 400 erp_err_invalid_payload, ตัวเลขยาวเกิน = 400 erp_amount_out_of_range บอกช่อง — ตอบเองแล้วคืน false
+func readDoc(request microservice.IContext) (ErpTransactionDoc, bool) {
+	var doc ErpTransactionDoc
+	body := http.MaxBytesReader(request.ResponseWriter(), request.Request().Body, maxDocBodyBytes)
+	err := json.NewDecoder(body).Decode(&doc)
+	if err == nil {
+		return doc, true
+	}
+	if _, isUser := gl.AsUserError(err); isUser {
+		_ = docFailure(request, err, false)
+	} else {
+		_ = fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
+	}
+	return doc, false
+}
+
 func (h *Http) create(request microservice.IContext) error {
 	access := h.authorize(request, actionCreate)
 	if access == nil {
 		return nil
 	}
-	var doc ErpTransactionDoc
-	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
-		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
+	doc, ok := readDoc(request)
+	if !ok {
+		return nil
 	}
 
 	saved, err := h.store.SaveDoc(access.ctx, access.db, access.scope, access.dt, &doc, false)
@@ -330,9 +353,9 @@ func (h *Http) update(request microservice.IContext) error {
 		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
-	var doc ErpTransactionDoc
-	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
-		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
+	doc, ok := readDoc(request)
+	if !ok {
+		return nil
 	}
 	if doc.DocNo == "" {
 		doc.DocNo = id
@@ -472,7 +495,7 @@ func (h *Http) approveBatch(request microservice.IContext) error {
 		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
-	results := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), requestLanguage(request))
+	results := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), requestLanguage(request), request.Log)
 
 	return success(request, BatchApproveResponse{
 		Success: true,
@@ -491,7 +514,7 @@ func (h *Http) unapproveBatch(request microservice.IContext) error {
 		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
-	results := h.store.UnapproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), payload.Reason, requestLanguage(request))
+	results := h.store.UnapproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), payload.Reason, requestLanguage(request), request.Log)
 
 	return success(request, BatchApproveResponse{
 		Success: true,
@@ -514,7 +537,7 @@ func (h *Http) cancelBatch(request microservice.IContext) error {
 		return docFailure(request, cancelReasonRequiredError(), false)
 	}
 
-	results := h.store.CancelBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), reason, requestLanguage(request))
+	results := h.store.CancelBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), reason, requestLanguage(request), request.Log)
 
 	return success(request, BatchApproveResponse{
 		Success: true,

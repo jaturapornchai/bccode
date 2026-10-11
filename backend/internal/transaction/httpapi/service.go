@@ -539,40 +539,55 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 }
 
 // ApproveBatchDocs อนุมัติเอกสารหลายใบพร้อมกันแบบทีละใบ (ไม่ล้มเหลวยกชุดตามแบบ Champ)
-func (s *Store) ApproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, lang string) []BatchApproveItemResult {
-	return runBatch(ids, lang, func(id string) error {
+func (s *Store) ApproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, lang string, logf func(string)) []BatchApproveItemResult {
+	return runBatch(ids, lang, logf, func(id string) error {
 		_, err := s.ApproveDoc(ctx, db, scope, dt, id)
 		return err
 	})
 }
 
 // UnapproveBatchDocs ยกเลิกการอนุมัติเอกสารหลายใบพร้อมกันแบบทีละใบ
-func (s *Store) UnapproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string) []BatchApproveItemResult {
-	return runBatch(ids, lang, func(id string) error {
+func (s *Store) UnapproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string, logf func(string)) []BatchApproveItemResult {
+	return runBatch(ids, lang, logf, func(id string) error {
 		_, err := s.UnapproveDoc(ctx, db, scope, dt, id, reason)
 		return err
 	})
 }
 
 // CancelBatchDocs ยกเลิกเอกสารหลายใบพร้อมกันแบบทีละใบ (คืนค่าสต็อกและกลับรายการบัญชีถ้ามี)
-func (s *Store) CancelBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string) []BatchApproveItemResult {
-	return runBatch(ids, lang, func(id string) error {
+func (s *Store) CancelBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string, logf func(string)) []BatchApproveItemResult {
+	return runBatch(ids, lang, logf, func(id string) error {
 		_, err := s.CancelDoc(ctx, db, scope, dt, id, reason)
 		return err
 	})
 }
 
-// runBatch ทำคำสั่งทีละใบ (ใบหนึ่งพลาดไม่ล้มทั้งชุด แต่ละใบเป็นธุรกรรมของตัวเอง) แล้วคืนผลรายใบ {id, success, code, message}
-func runBatch(ids []string, lang string, act func(id string) error) []BatchApproveItemResult {
+// runBatch ทำคำสั่งทีละใบ (ใบหนึ่งพลาดไม่ล้มทั้งชุด แต่ละใบเป็นธุรกรรมของตัวเอง) แล้วคืนผลรายใบ {id, success, code, message};
+// ความผิดของระบบรายใบตอบผู้ใช้เป็นข้อความกลาง แต่รายละเอียดต้องลง log ฝั่งเซิร์ฟเวอร์ผ่าน logf (request.Log) เหมือน docFailure
+func runBatch(ids []string, lang string, logf func(string), act func(id string) error) []BatchApproveItemResult {
 	results := make([]BatchApproveItemResult, 0, len(ids))
 	for _, id := range ids {
 		trimmedID := strings.TrimSpace(id)
 		if trimmedID == "" {
 			continue
 		}
-		results = append(results, batchItemResult(trimmedID, act(trimmedID), lang))
+		err := act(trimmedID)
+		if internalFailure(err) && logf != nil {
+			logf(fmt.Sprintf("transaction: batch document %s: %v", trimmedID, err))
+		}
+		results = append(results, batchItemResult(trimmedID, err, lang))
 	}
 	return results
+}
+
+// internalFailure ตัดสินจากตัว error (ไม่ใช่ code ที่ตอบ): ทุกอย่างที่ไม่ใช่ความผิดที่ผู้ใช้แก้ได้และไม่ใช่ "ไม่พบเอกสาร"
+// เป็นความผิดของระบบที่ต้องลง log — รวมถึงที่ห่อด้วย ledgerError ซึ่งตอบผู้ใช้เป็น unavailable ข้อความกลาง (เช่น lock timeout)
+func internalFailure(err error) bool {
+	if err == nil || errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	_, isUser := gl.AsUserError(err)
+	return !isUser
 }
 
 // batchItemResult: ความผิดที่ผู้ใช้แก้ได้ (สถานะเอกสาร งวดปิด ...) ส่ง code + ข้อความตามภาษาแบบเดียวกับคำสั่งรายใบ;

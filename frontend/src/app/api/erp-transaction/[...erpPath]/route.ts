@@ -10,6 +10,17 @@ function sanitizeSegments(segments: string[]): boolean {
   return segments.every((seg) => /^[\p{L}\p{M}\p{N}_.-]+$/u.test(seg) && seg !== "." && seg !== "..");
 }
 
+// ส่งข้อความ JSON เดิมต่อ ไม่ parse แล้ว stringify ใหม่: ยอดเงินที่ส่งเป็นตัวเลข JSON ความละเอียดสูง (เช่น 9999999999.99999999)
+// จะถูกปัดเป็น double ระหว่างทาง (Rule 20) — parse เพื่อตรวจรูปแบบอย่างเดียว; null = ไม่ใช่ JSON
+async function readJsonText(request: Request): Promise<{ text: string; body: unknown } | null> {
+  try {
+    const text = await request.text();
+    return { text, body: JSON.parse(text) };
+  } catch {
+    return null;
+  }
+}
+
 // partner = จอวันที่ส่งของ; from_/to_*, sale_code = จอปรับปรุงสถานะใบรับสินค้าและพิมพ์ใบวางบิลอัตโนมัติ (ชื่อตรงกับที่ backend อ่านจริง)
 const ALLOWED_GET_PARAMS = [
   "q",
@@ -79,14 +90,10 @@ export async function POST(request: Request, context: Context) {
     return bad("พารามิเตอร์ไม่ถูกต้อง", 400);
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return bad("รูปแบบข้อมูลไม่ถูกต้อง");
-  }
+  const payload = await readJsonText(request);
+  if (!payload) return bad("รูปแบบข้อมูลไม่ถูกต้อง");
 
-  if (!isRecord(body) && !Array.isArray(body)) {
+  if (!isRecord(payload.body) && !Array.isArray(payload.body)) {
     return bad("ข้อมูลต้องอยู่ในรูปแบบ JSON");
   }
 
@@ -96,7 +103,7 @@ export async function POST(request: Request, context: Context) {
       request,
       getMainApiUrl(getBackendUrlFromRequest(request)),
       targetPath,
-      { method: "POST", body: JSON.stringify(body) },
+      { method: "POST", body: payload.text },
       { userErrorStatusOk: true }
     );
   } catch {
@@ -119,14 +126,10 @@ export async function PUT(request: Request, context: Context) {
     return bad("พารามิเตอร์ไม่ถูกต้อง", 400);
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return bad("รูปแบบข้อมูลไม่ถูกต้อง");
-  }
+  const payload = await readJsonText(request);
+  if (!payload) return bad("รูปแบบข้อมูลไม่ถูกต้อง");
 
-  if (!isRecord(body)) {
+  if (!isRecord(payload.body)) {
     return bad("ข้อมูลต้องอยู่ในรูปแบบ JSON Object");
   }
 
@@ -136,7 +139,7 @@ export async function PUT(request: Request, context: Context) {
       request,
       getMainApiUrl(getBackendUrlFromRequest(request)),
       targetPath,
-      { method: "PUT", body: JSON.stringify(body) },
+      { method: "PUT", body: payload.text },
       { userErrorStatusOk: true }
     );
   } catch {

@@ -136,9 +136,9 @@ func newTestDoc() *ErpTransactionDoc {
 	return &ErpTransactionDoc{
 		DocDateTime: "2026-10-08",
 		CustCode:    "C101",
-		TotalAmount: 5350,
+		TotalAmount: amt("5350"),
 		Details: []ErpDetailItem{{
-			ItemCode: "P-1001", UnitCode: "PCS", Qty: 1, Price: 5000, SumAmount: 5000, WhCode: "WH01",
+			ItemCode: "P-1001", UnitCode: "PCS", Qty: amt("1"), Price: amt("5000"), SumAmount: amt("5000"), WhCode: "WH01",
 		}},
 	}
 }
@@ -396,7 +396,7 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	mock.ExpectCommit()
 	edit := newTestDoc()
 	edit.DocNo = docNo
-	edit.Details[0].Price = 5200
+	edit.Details[0].Price = amt("5200")
 	if _, err := store.SaveDoc(ctx, db, testScope(), dt, edit, true); err != nil {
 		t.Fatal(err)
 	}

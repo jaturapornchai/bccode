@@ -129,8 +129,8 @@ func (s *Store) insertStockRows(ctx context.Context, tx *sql.Tx, company string,
 		if whCode == "" {
 			whCode = defaultWarehouse
 		}
-		qty := decimal.NewFromFloat(detail.Qty).Abs()
-		price := decimal.NewFromFloat(detail.Price)
+		qty := detail.Qty.Abs()
+		price := detail.Price
 		if price.IsNegative() {
 			price = decimal.Zero
 		}

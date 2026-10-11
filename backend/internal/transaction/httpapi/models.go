@@ -1,57 +1,63 @@
 package httpapi
 
-import "time"
+import (
+	"time"
 
+	"github.com/shopspring/decimal"
+)
+
+// ยอดเงิน/จำนวน/ราคา/ภาษีเป็น decimal.Decimal (Rule 20): JSON ตอบเป็นข้อความทศนิยม เช่น "107.5"; คำขอรับได้ทั้งตัวเลขและข้อความ;
+// สแกน numeric ของ PostgreSQL ตรงตัว ไม่ผ่าน float — omitzero ละช่องที่เป็นศูนย์เหมือน omitempty เดิม
 type ErpDetailItem struct {
-	ID             int     `json:"id,omitempty"`
-	LineNumber     int     `json:"linenumber"`
-	ItemCode       string  `json:"itemcode"`
-	ItemName       string  `json:"itemname,omitempty"`
-	Barcode        string  `json:"barcode,omitempty"`
-	UnitCode       string  `json:"unitcode,omitempty"`
-	UnitName       string  `json:"unitname,omitempty"`
-	Qty            float64 `json:"qty"`
-	Price          float64 `json:"price"`
-	Discount       string  `json:"discount,omitempty"`
-	DiscountAmount float64 `json:"discountamount,omitempty"`
-	SumAmount      float64 `json:"sumamount"`
-	VatCal         int     `json:"vatcal,omitempty"`
-	WhCode         string  `json:"whcode,omitempty"`
-	LocationCode   string  `json:"locationcode,omitempty"`
-	Description    string  `json:"description,omitempty"`
-	DocRef         string  `json:"docref,omitempty"`
+	ID             int             `json:"id,omitempty"`
+	LineNumber     int             `json:"linenumber"`
+	ItemCode       string          `json:"itemcode"`
+	ItemName       string          `json:"itemname,omitempty"`
+	Barcode        string          `json:"barcode,omitempty"`
+	UnitCode       string          `json:"unitcode,omitempty"`
+	UnitName       string          `json:"unitname,omitempty"`
+	Qty            decimal.Decimal `json:"qty"`
+	Price          decimal.Decimal `json:"price"`
+	Discount       string          `json:"discount,omitempty"`
+	DiscountAmount decimal.Decimal `json:"discountamount,omitzero"`
+	SumAmount      decimal.Decimal `json:"sumamount"`
+	VatCal         int             `json:"vatcal,omitempty"`
+	WhCode         string          `json:"whcode,omitempty"`
+	LocationCode   string          `json:"locationcode,omitempty"`
+	Description    string          `json:"description,omitempty"`
+	DocRef         string          `json:"docref,omitempty"`
 }
 
 type ErpTransactionDoc struct {
-	ID              string     `json:"id,omitempty"`
-	DocNo           string     `json:"docno"`
-	DocDateTime     string     `json:"docdatetime"`
-	TransFlag       int        `json:"transflag"`
-	CustCode        string     `json:"custcode,omitempty"`
-	CustName        string     `json:"custname,omitempty"`
-	DocRef          string     `json:"docref,omitempty"`
-	DocRefTransFlag int        `json:"docreftransflag,omitempty"`
-	Description     string     `json:"description,omitempty"`
-	TotalAmount     float64    `json:"totalamount"`
-	TotalValue      float64    `json:"totalvalue,omitempty"`
-	TotalDiscount   float64    `json:"totaldiscount,omitempty"`
-	TotalVatValue   float64    `json:"totalvatvalue,omitempty"`
-	TotalBeforeVat  float64    `json:"totalbeforevat,omitempty"`
-	TotalAfterVat   float64    `json:"totalaftervat,omitempty"`
-	VatType         int        `json:"vattype,omitempty"`
-	VatRate         float64    `json:"vatrate,omitempty"`
-	Status          int        `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
-	IsClosed        bool       `json:"isclosed,omitempty"`
-	IsCancel        bool       `json:"iscancel,omitempty"`
-	ApprovalStatus  string     `json:"approvalstatus,omitempty"`
-	ApprovedBy      string     `json:"approvedby,omitempty"`
-	ApprovedAt      *time.Time `json:"approvedat,omitempty"`
-	CancelledBy     string     `json:"cancelledby,omitempty"`
-	CancelledAt     *time.Time `json:"cancelledat,omitempty"`
-	CancelReason    string     `json:"cancelreason,omitempty"`
-	CreatedBy       string     `json:"createdby,omitempty"`
-	BranchCode      string     `json:"branchcode,omitempty"`
-	Remark          string     `json:"remark,omitempty"`
+	ID              string          `json:"id,omitempty"`
+	DocNo           string          `json:"docno"`
+	DocDateTime     string          `json:"docdatetime"`
+	TransFlag       int             `json:"transflag"`
+	CustCode        string          `json:"custcode,omitempty"`
+	CustName        string          `json:"custname,omitempty"`
+	DocRef          string          `json:"docref,omitempty"`
+	DocRefTransFlag int             `json:"docreftransflag,omitempty"`
+	Description     string          `json:"description,omitempty"`
+	TotalAmount     decimal.Decimal `json:"totalamount"`
+	TotalValue      decimal.Decimal `json:"totalvalue,omitzero"`
+	TotalDiscount   decimal.Decimal `json:"totaldiscount,omitzero"`
+	TotalVatValue   decimal.Decimal `json:"totalvatvalue,omitzero"`
+	TotalBeforeVat  decimal.Decimal `json:"totalbeforevat,omitzero"`
+	TotalAfterVat   decimal.Decimal `json:"totalaftervat,omitzero"`
+	VatType         int             `json:"vattype,omitempty"`
+	VatRate         decimal.Decimal `json:"vatrate,omitzero"`
+	Status          int             `json:"status,omitempty"` // 0=Draft, 1=Approved, 2=Cancelled
+	IsClosed        bool            `json:"isclosed,omitempty"`
+	IsCancel        bool            `json:"iscancel,omitempty"`
+	ApprovalStatus  string          `json:"approvalstatus,omitempty"`
+	ApprovedBy      string          `json:"approvedby,omitempty"`
+	ApprovedAt      *time.Time      `json:"approvedat,omitempty"`
+	CancelledBy     string          `json:"cancelledby,omitempty"`
+	CancelledAt     *time.Time      `json:"cancelledat,omitempty"`
+	CancelReason    string          `json:"cancelreason,omitempty"`
+	CreatedBy       string          `json:"createdby,omitempty"`
+	BranchCode      string          `json:"branchcode,omitempty"`
+	Remark          string          `json:"remark,omitempty"`
 	// GLStatus/GLDocNo answer a save: "posted" with the voucher number, "no_mapping" when the company has not set up
 	// the posting pattern of this document type yet, "no_amount" for a zero-total document; empty = the type does not post.
 	GLStatus   string          `json:"glstatus,omitempty"`

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { GET, POST, PUT } from "./route";
 
 const get = (path: string) =>
   GET(
@@ -81,6 +81,51 @@ describe("erp-transaction BFF path check", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await get("sale-invoice/..");
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // ยอดเงินที่ลูกค้า API ส่งเป็นตัวเลข JSON ความละเอียดสูงต้องถึง backend ตรงตัว (เดิม parse แล้ว stringify ใหม่ = ปัดเป็น double)
+  it.each([
+    ["POST", POST, "sale-invoice"],
+    ["PUT", PUT, "sale-invoice/IV6910-0001"],
+  ] as const)("forwards %s amounts exactly as sent", async (method, handler, path) => {
+    const raw = '{"docno":"IV6910-0001","totalamount":9999999999.99999999,"details":[{"qty":0.1,"price":"0.2"}]}';
+    let forwarded: unknown;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+        forwarded = init?.body;
+        return Response.json({ success: true, data: {} });
+      }),
+    );
+
+    const response = await handler(
+      new Request(`http://localhost/api/erp-transaction/${path}`, {
+        method,
+        body: raw,
+        headers: { Authorization: "Bearer access-token", "x-bc-backend-url": "http://localhost:8888/goapi" },
+      }),
+      { params: Promise.resolve({ erpPath: path.split("/") }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(forwarded).toBe(raw);
+  });
+
+  it("still rejects a body that is not JSON without calling mainapi", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      new Request("http://localhost/api/erp-transaction/sale-invoice", {
+        method: "POST",
+        body: "{not json",
+        headers: { Authorization: "Bearer access-token", "x-bc-backend-url": "http://localhost:8888/goapi" },
+      }),
+      { params: Promise.resolve({ erpPath: ["sale-invoice"] }) },
+    );
 
     expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();

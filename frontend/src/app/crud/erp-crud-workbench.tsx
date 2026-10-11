@@ -32,12 +32,16 @@ import {
   type ErpTransactionDoc,
   type ErpDetailItem,
   erpDocLifecycle,
+  erpDocTotals,
+  erpLineAmount,
+  erpMoneyDisplay,
   getErpModuleConfig,
   fetchErpTransactions,
   saveErpTransaction,
   deleteErpTransaction,
 } from "@/lib/erp-transaction";
 import { ERP_AUTO_POSTING_MODULES } from "@/lib/erp-transaction-modules";
+import { formatAmount } from "@/lib/general-ledger";
 import { useScreenActions } from "@/lib/use-screen-actions";
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
 
@@ -217,11 +221,11 @@ export function ErpCrudWorkbench({
       custcode: "",
       custname: "",
       description: "",
-      totalamount: 0,
-      totalbeforevat: 0,
-      totalvatvalue: 0,
+      totalamount: "0",
+      totalbeforevat: "0",
+      totalvatvalue: "0",
       vattype: 1,
-      vatrate: 7,
+      vatrate: "7",
       status: 0,
       details: config?.hasLineItems
         ? [
@@ -230,9 +234,9 @@ export function ErpCrudWorkbench({
               itemcode: "",
               itemname: "",
               unitcode: "PCS",
-              qty: 1,
-              price: 0,
-              sumamount: 0,
+              qty: "1",
+              price: "0",
+              sumamount: "0",
             },
           ]
         : [],
@@ -324,28 +328,18 @@ export function ErpCrudWorkbench({
     await loadData();
   };
 
-  // Calculate Details & Net Totals
+  // ยอดบรรทัด/ยอดรวมระหว่างแก้เป็นตัวอย่างทศนิยมตรงตัว (erpLineAmount/erpDocTotals) — หลังบันทึกแสดงยอดที่ backend ตอบกลับ
   const updateLineItem = (index: number, patch: Partial<ErpDetailItem>) => {
     if (!formDoc.details) return;
     const nextDetails = [...formDoc.details];
     const item = { ...nextDetails[index], ...patch };
-    const qty = Number(item.qty) || 0;
-    const price = Number(item.price) || 0;
-    const discountAmt = Number(item.discountamount) || 0;
-    item.sumamount = Math.max(0, qty * price - discountAmt);
+    item.sumamount = erpLineAmount(item);
     nextDetails[index] = item;
-
-    const totalBeforeVat = nextDetails.reduce((sum, d) => sum + d.sumamount, 0);
-    const vatRate = formDoc.vatrate ?? 7;
-    const vatValue = formDoc.vattype === 1 ? Math.round(totalBeforeVat * (vatRate / 100) * 100) / 100 : 0;
-    const totalAmount = totalBeforeVat + vatValue;
 
     setFormDoc({
       ...formDoc,
       details: nextDetails,
-      totalbeforevat: totalBeforeVat,
-      totalvatvalue: vatValue,
-      totalamount: totalAmount,
+      ...erpDocTotals(nextDetails, formDoc.vattype, formDoc.vatrate),
     });
     setIsDirty(true);
   };
@@ -363,9 +357,9 @@ export function ErpCrudWorkbench({
       itemcode: "",
       itemname: "",
       unitcode: "PCS",
-      qty: 1,
-      price: 0,
-      sumamount: 0,
+      qty: "1",
+      price: "0",
+      sumamount: "0",
     };
     setFormDoc((prev) => ({ ...prev, details: [...(prev.details || []), newItem] }));
     setIsDirty(true);
@@ -388,17 +382,10 @@ export function ErpCrudWorkbench({
       .filter((_, i) => i !== index)
       .map((item, i) => ({ ...item, linenumber: i + 1 }));
 
-    const totalBeforeVat = nextDetails.reduce((sum, d) => sum + d.sumamount, 0);
-    const vatRate = formDoc.vatrate ?? 7;
-    const vatValue = formDoc.vattype === 1 ? Math.round(totalBeforeVat * (vatRate / 100) * 100) / 100 : 0;
-    const totalAmount = totalBeforeVat + vatValue;
-
     setFormDoc({
       ...formDoc,
       details: nextDetails,
-      totalbeforevat: totalBeforeVat,
-      totalvatvalue: vatValue,
-      totalamount: totalAmount,
+      ...erpDocTotals(nextDetails, formDoc.vattype, formDoc.vatrate),
     });
     setIsDirty(true);
   };
@@ -730,7 +717,7 @@ export function ErpCrudWorkbench({
                         {item.custname || item.custcode || "-"}
                       </td>
                       <td className="py-2 px-2 text-right font-mono font-medium">
-                        {Number(item.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        {formatAmount(item.totalamount || "0")}
                       </td>
                       <td className="py-2 px-2 text-center">
                         <span
@@ -979,7 +966,7 @@ export function ErpCrudWorkbench({
                               <Input
                                 type="number"
                                 value={item.qty}
-                                onChange={(e) => updateLineItem(idx, { qty: Number(e.target.value) })}
+                                onChange={(e) => updateLineItem(idx, { qty: e.target.value })}
                                 className="h-7 text-xs text-right font-mono"
                               />
                             </td>
@@ -987,12 +974,12 @@ export function ErpCrudWorkbench({
                               <Input
                                 type="number"
                                 value={item.price}
-                                onChange={(e) => updateLineItem(idx, { price: Number(e.target.value) })}
+                                onChange={(e) => updateLineItem(idx, { price: e.target.value })}
                                 className="h-7 text-xs text-right font-mono"
                               />
                             </td>
                             <td className="p-2 text-right font-mono font-semibold text-foreground">
-                              {Number(item.sumamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                              {formatAmount(erpMoneyDisplay(item.sumamount))}
                             </td>
                             <td className="p-1.5 text-center">
                               <button
@@ -1014,19 +1001,19 @@ export function ErpCrudWorkbench({
                     <div className="flex justify-between w-64 text-muted-foreground">
                       <span>{backendText(dictionary, "goods_subtotal", "รวมมูลค่าสินค้า") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
-                        {Number(formDoc.totalbeforevat || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        {formatAmount(erpMoneyDisplay(formDoc.totalbeforevat))}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-muted-foreground">
                       <span>{backendText(dictionary, "vat_7_percent", "ภาษีมูลค่าเพิ่ม (7%)") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
-                        {Number(formDoc.totalvatvalue || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        {formatAmount(erpMoneyDisplay(formDoc.totalvatvalue))}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
                       <span>{backendText(dictionary, "net_total", "รวมทั้งสิ้น") + ":"}</span>
                       <span className="font-mono">
-                        {Number(formDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
+                        {formatAmount(erpMoneyDisplay(formDoc.totalamount))} ฿
                       </span>
                     </div>
                   </div>
@@ -1125,7 +1112,7 @@ export function ErpCrudWorkbench({
                     {backendText(dictionary, "net_total", "รวมทั้งสิ้น")}
                   </span>
                   <span className="font-bold text-primary font-mono text-base">
-                    {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
+                    {formatAmount(selectedDoc.totalamount || "0")} ฿
                   </span>
                 </div>
               </div>
@@ -1159,10 +1146,10 @@ export function ErpCrudWorkbench({
                             <td className="p-2 text-center text-muted-foreground">{item.unitcode || "PCS"}</td>
                             <td className="p-2 text-right font-mono">{item.qty}</td>
                             <td className="p-2 text-right font-mono">
-                              {Number(item.price || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                              {formatAmount(item.price || "0")}
                             </td>
                             <td className="p-2 text-right font-mono font-semibold text-foreground">
-                              {Number(item.sumamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                              {formatAmount(item.sumamount || "0")}
                             </td>
                           </tr>
                         ))}
@@ -1175,19 +1162,19 @@ export function ErpCrudWorkbench({
                     <div className="flex justify-between w-64 text-muted-foreground">
                       <span>{backendText(dictionary, "goods_subtotal", "รวมมูลค่าสินค้า") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
-                        {Number(selectedDoc.totalbeforevat || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        {formatAmount(selectedDoc.totalbeforevat || "0")}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-muted-foreground">
                       <span>{backendText(dictionary, "vat_7_percent", "ภาษีมูลค่าเพิ่ม (7%)") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
-                        {Number(selectedDoc.totalvatvalue || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        {formatAmount(selectedDoc.totalvatvalue || "0")}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
                       <span>{backendText(dictionary, "net_total", "รวมทั้งสิ้น") + ":"}</span>
                       <span className="font-mono">
-                        {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
+                        {formatAmount(selectedDoc.totalamount || "0")} ฿
                       </span>
                     </div>
                   </div>

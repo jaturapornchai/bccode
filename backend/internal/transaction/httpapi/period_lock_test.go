@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -289,7 +290,9 @@ func TestBatchResultsCarryCodedPerRowErrors(t *testing.T) {
 		WillReturnError(sql.ErrNoRows)
 	mock.ExpectRollback()
 
-	results := NewStore().ApproveBatchDocs(ctx, db, testScope(), pr, []string{"PR6910-0010", "  ", "PR6910-0011", "PR6910-0012"}, "en")
+	var logged []string
+	results := NewStore().ApproveBatchDocs(ctx, db, testScope(), pr, []string{"PR6910-0010", "  ", "PR6910-0011", "PR6910-0012"}, "en",
+		func(line string) { logged = append(logged, line) })
 	if len(results) != 3 {
 		t.Fatalf("results = %+v, want 3 rows (blank ids skipped)", results)
 	}
@@ -307,8 +310,77 @@ func TestBatchResultsCarryCodedPerRowErrors(t *testing.T) {
 			t.Errorf("row %d leaks the internal error: %q", i, got.Message)
 		}
 	}
+	// เฉพาะความผิดของระบบ (PR6910-0011) ลง log ฝั่งเซิร์ฟเวอร์พร้อมรายละเอียดจริง; ความผิดที่ผู้ใช้แก้ได้/ไม่พบเอกสารไม่ลง
+	if len(logged) != 1 || !strings.Contains(logged[0], "PR6910-0011") || !strings.Contains(logged[0], "connection reset by peer") {
+		t.Errorf("server log = %q, want one line with PR6910-0011 and the internal error", logged)
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
+	}
+}
+
+// runBatch: ความผิดที่ไม่ใช่ของผู้ใช้ยังได้ code erp_err_internal + ข้อความกลาง (สัญญา {id, success, code, message} เดิม)
+// และรายละเอียดภายในลง log ฝั่งเซิร์ฟเวอร์เท่านั้น ไม่หลุดถึงผู้ใช้
+func TestRunBatchLogsInternalErrorAndKeepsGenericCode(t *testing.T) {
+	var logged []string
+	results := runBatch([]string{"RE6910-0001", "RE6910-0002"}, "en", func(line string) { logged = append(logged, line) }, func(id string) error {
+		if id == "RE6910-0001" {
+			return fmt.Errorf("commit tx: %w", errors.New("pq: deadlock detected"))
+		}
+		return nil
+	})
+	if len(results) != 2 {
+		t.Fatalf("results = %+v, want 2 rows", results)
+	}
+	failed := results[0]
+	if failed.ID != "RE6910-0001" || failed.Success || failed.Code != "erp_err_internal" || failed.Message != langText("erp_err_internal", "en") {
+		t.Fatalf("failed row = %+v, want erp_err_internal with the generic message", failed)
+	}
+	if strings.Contains(failed.Message, "deadlock") {
+		t.Fatalf("message leaks the internal error: %q", failed.Message)
+	}
+	if !results[1].Success || results[1].Code != "" {
+		t.Fatalf("second row = %+v, want success", results[1])
+	}
+	if len(logged) != 1 || !strings.Contains(logged[0], "RE6910-0001") || !strings.Contains(logged[0], "pq: deadlock detected") {
+		t.Fatalf("server log = %q, want one line with the document and the internal error", logged)
+	}
+	// ไม่มี logger (nil) ต้องไม่ panic
+	if got := runBatch([]string{"RE6910-0001"}, "th", nil, func(string) error { return errors.New("boom") }); got[0].Code != "erp_err_internal" {
+		t.Fatalf("nil logger row = %+v", got[0])
+	}
+}
+
+// runBatch: ความผิดของระบบที่ห่อด้วย ledgerError (เช่น lock timeout จากเครื่องบัญชี) ตอบเป็น unavailable ข้อความกลาง
+// แต่ต้องลง log ด้วย — ตัดสินจากตัว error ไม่ใช่ code ที่ตอบ; ความผิดที่ผู้ใช้แก้ได้และไม่พบเอกสารไม่ลง log
+func TestRunBatchLogsWrappedLedgerFailure(t *testing.T) {
+	var logged []string
+	failures := map[string]error{
+		"RE6910-0001": ledgerFail(errors.New("pq: canceling statement due to lock timeout")),
+		"RE6910-0002": docLockedError(),
+		"RE6910-0003": sql.ErrNoRows,
+		"RE6910-0004": ledgerFail(docNotPendingError()),
+	}
+	results := runBatch([]string{"RE6910-0001", "RE6910-0002", "RE6910-0003", "RE6910-0004"}, "en", func(line string) { logged = append(logged, line) }, func(id string) error {
+		return failures[id]
+	})
+	if len(results) != 4 {
+		t.Fatalf("results = %+v, want 4 rows", results)
+	}
+	if got := results[0]; got.Success || got.Code != "unavailable" || strings.Contains(got.Message, "lock timeout") {
+		t.Fatalf("wrapped ledger failure row = %+v, want unavailable with a generic message", got)
+	}
+	if got := results[1]; got.Code != "erp_doc_locked" {
+		t.Fatalf("user error row = %+v, want erp_doc_locked", got)
+	}
+	if got := results[2]; got.Code != "erp_err_doc_not_found" {
+		t.Fatalf("not found row = %+v, want erp_err_doc_not_found", got)
+	}
+	if got := results[3]; got.Code != "erp_doc_not_pending" {
+		t.Fatalf("wrapped user error row = %+v, want erp_doc_not_pending", got)
+	}
+	if len(logged) != 1 || !strings.Contains(logged[0], "RE6910-0001") || !strings.Contains(logged[0], "lock timeout") {
+		t.Fatalf("server log = %q, want exactly one line for the wrapped internal failure", logged)
 	}
 }
 
@@ -321,7 +393,7 @@ func TestCancelBatchStopsLockedRowInThai(t *testing.T) {
 	expectDateOpen(mock, testDocDay, true)
 	mock.ExpectRollback()
 
-	results := NewStore().CancelBatchDocs(context.Background(), db, testScope(), po, []string{"PO6910-0020"}, "สั่งซ้ำ", "th")
+	results := NewStore().CancelBatchDocs(context.Background(), db, testScope(), po, []string{"PO6910-0020"}, "สั่งซ้ำ", "th", nil)
 	if len(results) != 1 || results[0].Success || results[0].Code != "source_period_locked" ||
 		!strings.Contains(results[0].Message, "ถูกล็อก") || !strings.Contains(results[0].Message, testDocDay) {
 		t.Fatalf("results = %+v", results)

@@ -1,17 +1,21 @@
 package httpapi
 
 import (
-	"math"
+	"context"
+	"encoding/json"
+	"net/http"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 
 	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
+	"smlcloudplatform/pkg/apperr"
 )
 
 func dec(t *testing.T, value string) decimal.Decimal {
@@ -23,17 +27,23 @@ func dec(t *testing.T, value string) decimal.Decimal {
 	return d
 }
 
-// ยอดเงินของเอกสารรับมาเป็น float64 จาก JSON — เข้าฝั่งบัญชีต้องกลายเป็นทศนิยมสองตำแหน่งที่แน่นอนทันที (Rule 20)
+// amt คือยอดทศนิยมคงที่ในตารางทดสอบ (ค่าผิดรูป = panic ทันที)
+func amt(value string) decimal.Decimal { return decimal.RequireFromString(value) }
+
+// ยอดเงินของเอกสารเป็น decimal ตั้งแต่ JSON — เข้าฝั่งบัญชีปัดเป็นทศนิยมสองตำแหน่งที่ระดับเอกสาร (Rule 20)
 func TestPostingAmountsAreExactTwoDecimals(t *testing.T) {
 	cases := []struct {
 		name                      string
 		doc                       ErpTransactionDoc
 		wantTotal, wantVat, goods string
 	}{
-		{"0.1+0.2 stays exact", ErpTransactionDoc{TotalAmount: 0.1 + 0.2, TotalVatValue: 0.0}, "0.30", "0.00", "0.30"},
-		{"rounds half up at 2dp", ErpTransactionDoc{TotalAmount: 107.005, TotalVatValue: 7.0}, "107.01", "7.00", "100.01"},
-		{"vat from before-vat difference", ErpTransactionDoc{TotalAmount: 5350, TotalBeforeVat: 5000}, "5350.00", "350.00", "5000.00"},
-		{"explicit vat wins", ErpTransactionDoc{TotalAmount: 5350, TotalVatValue: 350, TotalBeforeVat: 5000}, "5350.00", "350.00", "5000.00"},
+		{"0.1+0.2 stays exact", ErpTransactionDoc{TotalAmount: amt("0.1").Add(amt("0.2"))}, "0.30", "0.00", "0.30"},
+		{"goods = total - vat exactly", ErpTransactionDoc{TotalAmount: amt("0.3"), TotalVatValue: amt("0.1")}, "0.30", "0.10", "0.20"},
+		{"vat = total - before exactly", ErpTransactionDoc{TotalAmount: amt("0.3"), TotalBeforeVat: amt("0.1")}, "0.30", "0.20", "0.10"},
+		{"rounds half up at 2dp", ErpTransactionDoc{TotalAmount: amt("107.005"), TotalVatValue: amt("7")}, "107.01", "7.00", "100.01"},
+		{"just under the half stays down", ErpTransactionDoc{TotalAmount: amt("107.00499999"), TotalVatValue: amt("7")}, "107.00", "7.00", "100.00"},
+		{"vat from before-vat difference", ErpTransactionDoc{TotalAmount: amt("5350"), TotalBeforeVat: amt("5000")}, "5350.00", "350.00", "5000.00"},
+		{"explicit vat wins", ErpTransactionDoc{TotalAmount: amt("5350"), TotalVatValue: amt("350"), TotalBeforeVat: amt("5000")}, "5350.00", "350.00", "5000.00"},
 		{"zero total", ErpTransactionDoc{}, "0.00", "0.00", "0.00"},
 	}
 	for _, tc := range cases {
@@ -53,19 +63,135 @@ func TestPostingAmountsAreExactTwoDecimals(t *testing.T) {
 	}
 }
 
+// ขอบการปัดที่ .005: ปัดครึ่งออกจากศูนย์ — ค่าที่ float64 เก็บไม่ตรง (1.005, 2.675) ต้องได้ผลเหมือนเลขฐานสิบ
+func TestMoneyRoundsHalfAwayFromZeroAtTwoDecimals(t *testing.T) {
+	for in, want := range map[string]string{
+		"1.005": "1.01", "1.0049999": "1.00", "2.675": "2.68", "0.125": "0.13", "-1.005": "-1.01", "1070": "1070.00",
+	} {
+		if got := money(amt(in)).StringFixed(2); got != want {
+			t.Errorf("money(%s) = %s, want %s", in, got, want)
+		}
+	}
+}
+
 func TestPostingAmountsRejectNonsense(t *testing.T) {
 	for name, doc := range map[string]ErpTransactionDoc{
-		"negative total": {TotalAmount: -1},
-		"negative vat":   {TotalAmount: 100, TotalVatValue: -7},
-		"vat over total": {TotalAmount: 100, TotalVatValue: 107},
-		"NaN":            {TotalAmount: math.NaN()},
-		"Inf":            {TotalAmount: math.Inf(1)},
+		"negative total": {TotalAmount: amt("-1")},
+		"negative vat":   {TotalAmount: amt("100"), TotalVatValue: amt("-7")},
+		"vat over total": {TotalAmount: amt("100"), TotalVatValue: amt("107")},
 	} {
 		doc := doc
 		t.Run(name, func(t *testing.T) {
 			_, err := postingAmounts(&doc)
 			if userErrorCode(err) != "erp_amount_invalid" {
 				t.Fatalf("postingAmounts error = %v, want erp_amount_invalid", err)
+			}
+		})
+	}
+}
+
+// สัญญา JSON: ยอดเงินตอบเป็นข้อความทศนิยม; คำขอรับได้ทั้งตัวเลขและข้อความโดยไม่ผ่าน float; ช่องเสริมที่เป็นศูนย์ละไว้เหมือนเดิม
+func TestDocJSONAmountsAreDecimalStrings(t *testing.T) {
+	var doc ErpTransactionDoc
+	body := `{"totalamount":0.30000000000000004,"totalbeforevat":"0.1","totalvatvalue":0.2,"vatrate":"7",
+		"details":[{"qty":3,"price":"0.1","sumamount":0.3,"discountamount":"0"}]}`
+	if err := json.Unmarshal([]byte(body), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.TotalAmount.String() != "0.30000000000000004" {
+		t.Errorf("number literal must be parsed exactly, got %s", doc.TotalAmount)
+	}
+	if !doc.TotalBeforeVat.Add(doc.TotalVatValue).Equal(amt("0.3")) {
+		t.Errorf("0.1 + 0.2 = %s, want exactly 0.3", doc.TotalBeforeVat.Add(doc.TotalVatValue))
+	}
+	if !doc.Details[0].Qty.Mul(doc.Details[0].Price).Equal(doc.Details[0].SumAmount) {
+		t.Errorf("3 x 0.1 = %s, want exactly %s", doc.Details[0].Qty.Mul(doc.Details[0].Price), doc.Details[0].SumAmount)
+	}
+
+	out, err := json.Marshal(ErpTransactionDoc{TotalAmount: amt("1070.00000000"), TotalVatValue: amt("70"),
+		Details: []ErpDetailItem{{Qty: amt("10"), Price: amt("100.00"), SumAmount: amt("1000.00")}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(out)
+	for _, want := range []string{`"totalamount":"1070"`, `"totalvatvalue":"70"`, `"qty":"10"`, `"price":"100"`, `"sumamount":"1000"`} {
+		if !strings.Contains(text, want) {
+			t.Errorf("JSON %s must contain %s", text, want)
+		}
+	}
+	for _, absent := range []string{"totalbeforevat", "totalvalue", "totaldiscount", "totalaftervat", "vatrate", "discountamount"} {
+		if strings.Contains(text, `"`+absent+`"`) {
+			t.Errorf("zero %s must be omitted like before, JSON %s", absent, text)
+		}
+	}
+
+	for _, bad := range []string{`{"totalamount":"NaN"}`, `{"totalamount":"12,000"}`, `{"totalamount":""}`, `{"details":[{"qty":"abc"}]}`} {
+		var rejected ErpTransactionDoc
+		if err := json.Unmarshal([]byte(bad), &rejected); err == nil {
+			t.Errorf("%s must be rejected, got %+v", bad, rejected.TotalAmount)
+		}
+	}
+}
+
+// ขอบเขตตัวเลข: น้อยกว่า 1e10 (numeric(18,8)) ทศนิยมไม่เกิน 20 ตำแหน่ง — เลขชี้กำลังมหาศาลต้องถูกปฏิเสธโดยไม่ขยายค่า
+func TestAmountInRangeBoundaries(t *testing.T) {
+	for _, ok := range []string{"0", "0.1", "-9999999999.99999999", "9999999999.99999999", "1e9", "0.00000000000000000001"} {
+		if !amountInRange(amt(ok)) {
+			t.Errorf("%s must be accepted", ok)
+		}
+	}
+	if !amountInRange(decimal.Decimal{}) {
+		t.Error("zero value must be accepted")
+	}
+	for _, bad := range []string{"10000000000", "-10000000000", "1e10", "1e2000000000", "0e2000000000", "1e-2000000000",
+		"0.000000000000000000001", "123456789012345678901234567890123456789"} {
+		if amountInRange(amt(bad)) {
+			t.Errorf("%s must be rejected", bad)
+		}
+	}
+}
+
+// คำขอที่มีตัวเลขเลขชี้กำลังมหาศาล (JSON ตัวเลขหรือข้อความ) ต้องได้ 400 ทันทีก่อนเปิดธุรกรรม — เดิมไหลไปถึง String()/Round
+// ซึ่งขยายเป็น 10^2e9 จนเครื่องค้าง/หน่วยความจำหมด
+func TestSaveDocRejectsHugeExponentAmountsFast(t *testing.T) {
+	cases := []struct{ name, body, field string }{
+		{"header-string", `{"totalamount":"1e2000000000"}`, "totalamount"},
+		{"header-number", `{"totalamount":1e2000000000}`, "totalamount"},
+		{"tiny-vatrate", `{"vatrate":"1e-2000000000"}`, "vatrate"},
+		{"tiny-qty", `{"totalamount":"5","details":[{"qty":"1","price":"5","sumamount":"5"},{"qty":"1e-2000000000"}]}`, "details[1].qty"},
+		{"price-over-limit", `{"details":[{"qty":"1","price":"99999999999","sumamount":"5"}]}`, "details[0].price"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, _ := newRecordedMock(t)
+			var doc ErpTransactionDoc
+			if err := json.NewDecoder(strings.NewReader(tc.body)).Decode(&doc); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			done := make(chan error, 1)
+			go func() {
+				_, err := (&Store{}).SaveDoc(context.Background(), db, testScope(), doctype.All()[0], &doc, false)
+				done <- err
+			}()
+			var err error
+			select {
+			case err = <-done:
+			case <-time.After(5 * time.Second):
+				t.Fatal("SaveDoc hung on a huge exponent")
+			}
+			user, ok := gl.AsUserError(err)
+			if !ok || user.Code != "erp_amount_out_of_range" || user.Field != tc.field || user.HTTPStatus() != http.StatusBadRequest {
+				t.Fatalf("err = %v, want erp_amount_out_of_range on %s with 400", err, tc.field)
+			}
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("must fail before opening a transaction: %v", err)
+			}
+			request := newPermContext("sale-invoice", "?lang=en")
+			if docFailure(request, err, false); request.status != http.StatusBadRequest {
+				t.Errorf("status = %d, want 400", request.status)
+			}
+			if response, ok := request.body.(apperr.Response); !ok || response.Message == "" || response.Message == "gl_err_erp_amount_out_of_range" {
+				t.Errorf("response must carry translated text, got %#v", request.body)
 			}
 		})
 	}

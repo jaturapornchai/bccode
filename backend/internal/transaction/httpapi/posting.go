@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -67,8 +66,24 @@ func amountInvalidError() *gl.UserError {
 	return erpError("erp_amount_invalid", "totalamount")
 }
 
+// amountOutOfRangeError: ตัวเลขในคำขอเกินขอบเขตที่บันทึกได้ (validateDocAmounts) — field = ชื่อช่อง เช่น details[0].qty
+func amountOutOfRangeError(field string) *gl.UserError {
+	e := erpError("erp_amount_out_of_range", field)
+	e.Status = http.StatusBadRequest
+	return e
+}
+
 func settledError(docNo string) *gl.UserError {
 	return erpError("erp_doc_settled", "", docNo)
+}
+
+// settleExceedsOutstandingError: ยอดตัดชำระเกินหนี้คงเหลือ (Champ arfrmbcreceipt1view.cpp:1760 / apfrmappayment1view.cpp:1100
+// ปฏิเสธแล้วบอกยอดสูงสุด) — {0} = เลขที่เอกสารหนี้ที่อ้างถึง, {1} = ยอดคงเหลือที่ตัดได้
+func settleExceedsOutstandingError(debtDocNo string, outstanding decimal.Decimal) *gl.UserError {
+	if outstanding.IsNegative() {
+		outstanding = decimal.Zero
+	}
+	return erpError("erp_settle_exceeds_remaining", "totalamount", debtDocNo, outstanding.StringFixed(2))
 }
 
 func duplicateDocError(docNo string) *gl.UserError {
@@ -132,28 +147,16 @@ func glRequestID(company string, flag int, docNo string, revision int, action st
 
 type docAmounts struct{ total, vat, goods decimal.Decimal }
 
-func money(value float64) (decimal.Decimal, error) {
-	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return decimal.Zero, amountInvalidError()
-	}
-	return decimal.NewFromFloat(value).Round(2), nil
+// money ปัดยอดเงินเป็นทศนิยมสองตำแหน่ง ปัดครึ่งออกจากศูนย์ (decimal.Round: 0.005 → 0.01)
+func money(value decimal.Decimal) decimal.Decimal {
+	return value.Round(2)
 }
 
-// postingAmounts แปลงยอดของเอกสาร (float64 ที่รับมาจาก JSON) เป็นทศนิยมสองตำแหน่งทันทีที่เข้าฝั่งบัญชี
-// ยอดรวม = มูลค่าสินค้า + ภาษี; ไม่มียอดภาษีแต่มียอดก่อนภาษีให้ใช้ส่วนต่างเป็นภาษี
+// postingAmounts คือยอดที่ลงบัญชีของเอกสาร — กติกาปัดเศษ: ปัดที่ระดับเอกสาร (ยอดรวม/ภาษี/ก่อนภาษีของหัวเอกสาร)
+// ทีละยอดด้วย money (2 ตำแหน่ง ปัดครึ่งออกจากศูนย์) ไม่ปัดรายบรรทัด; มูลค่าสินค้า = ยอดรวม − ภาษี จึงเดบิต = เครดิตเสมอ
+// ไม่มียอดภาษีแต่มียอดก่อนภาษีให้ใช้ส่วนต่างเป็นภาษี
 func postingAmounts(doc *ErpTransactionDoc) (docAmounts, error) {
-	total, err := money(doc.TotalAmount)
-	if err != nil {
-		return docAmounts{}, err
-	}
-	vat, err := money(doc.TotalVatValue)
-	if err != nil {
-		return docAmounts{}, err
-	}
-	before, err := money(doc.TotalBeforeVat)
-	if err != nil {
-		return docAmounts{}, err
-	}
+	total, vat, before := money(doc.TotalAmount), money(doc.TotalVatValue), money(doc.TotalBeforeVat)
 	if total.IsNegative() || vat.IsNegative() || before.IsNegative() {
 		return docAmounts{}, amountInvalidError()
 	}
@@ -343,14 +346,17 @@ type subledgerSpec struct {
 	settleSide   int    // ด้านของหนี้ที่เอกสารนี้ตัด; 0 = ไม่ตัดหนี้
 	settlePrefix string
 	debt         bool // เอกสารนี้เองเป็นหนี้ (มีวันครบกำหนด)
+	// excessAsCredit: ยอดเกินหนี้คงค้างไม่ปฏิเสธ — ตัดหนี้เท่าที่ค้าง ส่วนเกินคงเป็นเครดิตค้างของเอกสารนี้ให้ใช้ภายหลัง
+	// (รับคืน/ส่งคืนสินค้า: Champ BILLFrmInvCreditNote4.cpp:4336-4350 ปิดการตรวจยอดเกินไว้ และ :1172-1181 ใบลดหนี้เก็บยอดคงเหลือของตัวเอง)
+	excessAsCredit bool
 }
 
 var subledgerSpecs = map[string]subledgerSpec{
 	"sale-invoice":        {ledger: "ar", docPrefix: "AR-", side: 1, controlSide: gl.MappingSideDebit, debt: true},
-	"sale-invoice-return": {ledger: "ar", docPrefix: "CN-", side: 2, controlSide: gl.MappingSideCredit, settleSide: 1, settlePrefix: "SET-CN-"},
+	"sale-invoice-return": {ledger: "ar", docPrefix: "CN-", side: 2, controlSide: gl.MappingSideCredit, settleSide: 1, settlePrefix: "SET-CN-", excessAsCredit: true},
 	"paid":                {ledger: "ar", docPrefix: "RCP-", side: 2, controlSide: gl.MappingSideCredit, settleSide: 1, settlePrefix: "SET-AR-"},
 	"purchase":            {ledger: "ap", docPrefix: "AP-", side: 2, controlSide: gl.MappingSideCredit, debt: true},
-	"purchase-return":     {ledger: "ap", docPrefix: "PRN-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-PRN-"},
+	"purchase-return":     {ledger: "ap", docPrefix: "PRN-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-PRN-", excessAsCredit: true},
 	"pay":                 {ledger: "ap", docPrefix: "PAY-", side: 1, controlSide: gl.MappingSideDebit, settleSide: 2, settlePrefix: "SET-AP-"},
 }
 
@@ -420,8 +426,16 @@ func (s *Store) writeSubledger(ctx context.Context, tx *sql.Tx, scope gl.Scope, 
 	}
 	var debtID string
 	for _, candidate := range []string{debtPrefix(spec.ledger) + ref, ref} {
-		err = tx.QueryRowContext(ctx, `SELECT id FROM gl_subledger_documents WHERE company=$1 AND id=$2 AND ledger=$3 AND side=$4`,
-			scope.Company, candidate, spec.ledger, spec.settleSide).Scan(&debtID)
+		// FOR UPDATE: การตัดหนี้ใบเดียวกันพร้อมกันต้องรอกัน แล้วอ่านยอดคงเหลือหลังอีกฝั่ง commit
+		// หนี้ต้องเป็นของคู่ค้าและบัญชีคุมเดียวกัน (และสาขาเดียวกันเมื่อทำงานในสาขา) แบบเดียวกับการตัดหนี้ของจอบัญชี
+		// (subledger_allocations.go settlement) — อ้างเลขที่ของคู่ค้าอื่น = ไม่มีหนี้ให้ตัด
+		// เอกสารที่สร้างจากจอบัญชี (มี balance_side) ใช้ side 1 = หนี้, 2 = ผลชำระ/ลดหนี้ ทุกบัญชีย่อย จึงตัดได้เฉพาะ side 1
+		// (เงื่อนไข debt.Side==1 ของจอบัญชี) — ไม่อย่างนั้นใบจ่ายชำระ (settleSide 2) จะไปตัดเอกสารจ่ายชำระของจอบัญชี
+		err = tx.QueryRowContext(ctx, `SELECT id FROM gl_subledger_documents
+			WHERE company=$1 AND id=$2 AND ledger=$3 AND partner_code=$5 AND control_account_code=$6 AND ($7 = '' OR branch_code=$7)
+				AND side = CASE WHEN payload->>'balance_side' IS NOT NULL THEN 1 ELSE $4 END
+			FOR UPDATE`,
+			scope.Company, candidate, spec.ledger, spec.settleSide, partner, control, scope.Branch).Scan(&debtID)
 		if err == nil {
 			break
 		}
@@ -433,17 +447,54 @@ func (s *Store) writeSubledger(ctx context.Context, tx *sql.Tx, scope gl.Scope, 
 	if debtID == "" {
 		return nil
 	}
-	settlement, err := json.Marshal(map[string]any{"debt_id": debtID, "payment_id": ownID, "docno": docNo, "docref": ref, "amount": amount})
+	outstanding, err := debtOutstanding(ctx, tx, scope.Company, debtID)
+	if err != nil {
+		return err
+	}
+	settle := total
+	if total.GreaterThan(outstanding) {
+		if !spec.excessAsCredit {
+			return settleExceedsOutstandingError(ref, outstanding)
+		}
+		if !outstanding.IsPositive() {
+			return nil
+		}
+		settle = outstanding
+	}
+	settleAmount := settle.StringFixed(2)
+	settlement, err := json.Marshal(map[string]any{"debt_id": debtID, "payment_id": ownID, "docno": docNo, "docref": ref, "amount": settleAmount})
 	if err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT INTO gl_subledger_settlements (
 		company, id, journal_id, debt_id, payment_id, amount, settlement_date, payload, created_at, created_by
 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-		scope.Company, spec.settlePrefix+docNo, journalID, debtID, ownID, amount, date, settlement, now, scope.Actor); err != nil {
+		scope.Company, spec.settlePrefix+docNo, journalID, debtID, ownID, settleAmount, date, settlement, now, scope.Actor); err != nil {
 		return fmt.Errorf("insert subledger settlement: %w", err)
 	}
 	return nil
+}
+
+// debtOutstanding คือยอดหนี้คงเหลือของเอกสาร debtID ณ ตอนนี้ ตามเงื่อนไขการตัดหนี้ของจอบัญชี (subledger_allocations.go settlement):
+// ยอดที่ผ่านบัญชีแล้ว − การตัดหนี้ทุกแถวที่ยังไม่ถอน (ไม่ดูสถานะใบสำคัญของการตัดหนี้ จึงเข้มกว่ารายงานหนี้คงค้างที่นับเฉพาะที่ผ่านรายการ); ยอดที่ผ่านบัญชี = ยอดจัดสรรจากใบสำคัญที่ผ่านรายการ (เอกสารที่สร้างจากจอบัญชี มี balance_side)
+// หรือยอดเอกสารเมื่อใบสำคัญที่สร้างเอกสารยังผ่านรายการอยู่ (เอกสารจาก ERP) — การจัดสรรเป็นที่มาของหนี้ ไม่ใช่การลดหนี้
+func debtOutstanding(ctx context.Context, tx *sql.Tx, company, debtID string) (decimal.Decimal, error) {
+	var text string
+	if err := tx.QueryRowContext(ctx, `SELECT (
+		CASE WHEN d.payload->>'balance_side' IS NOT NULL THEN COALESCE((SELECT SUM(a.amount) FROM gl_subledger_allocations a
+				JOIN gl_records r ON r.company=a.company AND r.kind='journals' AND r.id=a.journal_id
+				WHERE a.company=d.company AND a.document_id=d.id AND a.reversed_at IS NULL AND r.payload->>'status'='posted'), 0)
+			WHEN EXISTS(SELECT 1 FROM gl_records r WHERE r.company=d.company AND r.kind='journals' AND r.id=d.created_journal_id AND r.payload->>'status'='posted') THEN d.amount
+			ELSE 0 END
+		- COALESCE((SELECT SUM(s.amount) FROM gl_subledger_settlements s WHERE s.company=d.company AND (s.debt_id=d.id OR s.payment_id=d.id) AND s.reversed_at IS NULL), 0)
+	)::text FROM gl_subledger_documents d WHERE d.company=$1 AND d.id=$2`, company, debtID).Scan(&text); err != nil {
+		return decimal.Zero, fmt.Errorf("read debt outstanding: %w", err)
+	}
+	outstanding, err := decimal.NewFromString(text)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("parse debt outstanding %q: %w", text, err)
+	}
+	return outstanding, nil
 }
 
 // cleanSubledger ลบแถวบัญชีย่อยที่เอกสารนี้สร้างไว้ (เอกสารลูกหนี้/เจ้าหนี้ + การตัดหนี้ของตัวเอง) ก่อนลงใหม่หรือลบเอกสาร

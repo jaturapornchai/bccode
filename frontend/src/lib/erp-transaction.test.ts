@@ -13,6 +13,11 @@ import {
   unapproveBatchErpDocs,
   cancelBatchErpDocs,
   erpDocLifecycle,
+  erpLineAmount,
+  erpDocTotals,
+  erpDocForSave,
+  erpBeforeVatAmount,
+  erpMoneyDisplay,
   type ErpTransactionDoc,
 } from "./erp-transaction";
 import { ERP_AUTO_POSTING_MODULES, ERP_TRANSACTION_MODULES } from "./erp-transaction-modules";
@@ -532,5 +537,80 @@ describe("ERP batch approve / unapprove / cancel helpers", () => {
     expect(erpDocLifecycle({ approvalstatus: "approved" })).toBe("approved");
     expect(erpDocLifecycle({ status: 2 })).toBe("cancelled");
     expect(erpDocLifecycle({ status: 1, iscancel: true, approvalstatus: "approved" })).toBe("cancelled");
+  });
+});
+
+// Rule 20: ยอดเงินเป็นข้อความทศนิยมจาก backend — ตัวอย่างยอดระหว่างแก้ต้องตรงตัว ไม่ผ่าน Number()
+describe("ERP document amounts are exact decimal strings", () => {
+  it("adds 0.1 + 0.2 exactly and multiplies without float drift", () => {
+    expect(erpLineAmount({ qty: "3", price: "0.1" })).toBe("0.3");
+    const details = [
+      { sumamount: erpLineAmount({ qty: "1", price: "0.1" }) },
+      { sumamount: erpLineAmount({ qty: "1", price: "0.2" }) },
+    ];
+    expect(erpDocTotals(details, 0)).toEqual({ totalbeforevat: "0.3", totalvatvalue: "0", totalamount: "0.3" });
+    expect(erpLineAmount({ qty: "0.12345678", price: "1234567.89" })).toBe("152415.7763907942");
+  });
+
+  it("keeps the screen's rounding rule: lines unrounded, VAT rounded half up at document level to 2 places", () => {
+    // 100.5 × 7% = 7.035 → 7.04 (ขอบ .005 ปัดขึ้น); 100.49 × 7% = 7.0343 → 7.03
+    expect(erpDocTotals([{ sumamount: "100.5" }], 1, "7")).toEqual({ totalbeforevat: "100.5", totalvatvalue: "7.04", totalamount: "107.54" });
+    expect(erpDocTotals([{ sumamount: "100.49" }], 1, "7")).toEqual({ totalbeforevat: "100.49", totalvatvalue: "7.03", totalamount: "107.52" });
+    expect(erpDocTotals([{ sumamount: "0.5" }], 1)).toMatchObject({ totalvatvalue: "0.04" });
+    // บรรทัดไม่ปัด: 3 × 0.333 = 0.999 รวมก่อนภาษีตามจริง
+    const lines = [{ sumamount: erpLineAmount({ qty: "3", price: "0.333" }) }, { sumamount: "1000" }];
+    expect(erpDocTotals(lines, 1, "7")).toEqual({ totalbeforevat: "1000.999", totalvatvalue: "70.07", totalamount: "1071.069" });
+  });
+
+  // ตัวอย่างระหว่างแก้แสดงยอดที่ระดับเงิน 2 ตำแหน่ง (ยอดบรรทัดที่บันทึกถูก PostgreSQL ปัดแบบเดียวกัน) — ค่าที่ส่งบันทึกไม่เปลี่ยน
+  it("shows preview amounts at money scale 2, rounding the .005 boundary away from zero", () => {
+    expect(erpMoneyDisplay(erpLineAmount({ qty: "0.12345678", price: "1234567.89" }))).toBe("152415.78");
+    expect(erpMoneyDisplay("1.005")).toBe("1.01");
+    expect(erpMoneyDisplay("1.0049")).toBe("1");
+    expect(erpMoneyDisplay("-1.005")).toBe("-1.01");
+    expect(erpMoneyDisplay("1071.069")).toBe("1071.07");
+    expect(erpMoneyDisplay("")).toBe("0");
+    expect(erpMoneyDisplay(undefined)).toBe("0");
+  });
+
+  it("treats blank or partial input as zero, clamps a discount larger than the line, and accepts exponent input", () => {
+    expect(erpLineAmount({ qty: "", price: "100" })).toBe("0");
+    expect(erpLineAmount({ qty: "-", price: "." })).toBe("0");
+    expect(erpLineAmount({ qty: "1", price: "10", discountamount: "15" })).toBe("0");
+    expect(erpLineAmount({ qty: "2", price: "10", discountamount: "0.5" })).toBe("19.5");
+    expect(erpLineAmount({ qty: "1e2", price: "1.5" })).toBe("150");
+    expect(erpLineAmount({ qty: "1e999", price: "1" })).toBe("0");
+  });
+
+  it("derives the before-VAT amount exactly when the backend omitted a zero field", () => {
+    expect(erpBeforeVatAmount({ totalamount: "1070", totalvatvalue: "70" })).toBe("1000");
+    expect(erpBeforeVatAmount({ totalamount: "0.3", totalvatvalue: "0.1" })).toBe("0.2");
+    expect(erpBeforeVatAmount({ totalamount: "500" })).toBe("500");
+    expect(erpBeforeVatAmount({ totalamount: "1070", totalbeforevat: "1000.5", totalvatvalue: "70" })).toBe("1000.5");
+  });
+
+  it("sends amounts as decimal strings and a cleared field as 0", async () => {
+    const bodies: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        bodies.push(String(init?.body));
+        return { ok: true, status: 200, json: async () => ({ success: true, data: {} }) } as unknown as Response;
+      }),
+    );
+    const config = getErpModuleConfig("/transaction/quotation")!;
+    const doc: Partial<ErpTransactionDoc> = {
+      docno: "",
+      totalbeforevat: "0.3",
+      totalvatvalue: "0.02",
+      totalamount: "0.32",
+      details: [{ linenumber: 1, itemcode: "P-1", unitcode: "PCS", qty: "", price: "0.1", sumamount: "0" }],
+    };
+    expect(erpDocForSave(doc).details?.[0].qty).toBe("0");
+    await saveErpTransaction(config, doc, false);
+    const sent = JSON.parse(bodies[0]);
+    expect(sent).toMatchObject({ totalbeforevat: "0.3", totalvatvalue: "0.02", totalamount: "0.32" });
+    expect(sent.details[0]).toMatchObject({ qty: "0", price: "0.1", sumamount: "0" });
+    vi.unstubAllGlobals();
   });
 });

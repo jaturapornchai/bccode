@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 import { Printer, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { thaiBahtText } from "@/lib/thai-baht-text";
-import type { ErpTransactionDoc } from "@/lib/erp-transaction";
+import { erpBeforeVatAmount, type ErpTransactionDoc } from "@/lib/erp-transaction";
+import { formatAmount } from "@/lib/general-ledger";
 
 export type ThaiDocPrintType = "tax_invoice" | "purchase_order" | "delivery_order" | "payment_voucher";
 
@@ -61,8 +62,8 @@ export function ThaiDocumentPrintModal({
 
   const currentTitle = docTitleMap[docType] || docTitleMap.tax_invoice;
 
-  const totalBeforeVat = doc.totalbeforevat ?? (doc.totalamount - (doc.totalvatvalue ?? 0));
-  const vatValue = doc.totalvatvalue ?? 0;
+  const totalBeforeVat = erpBeforeVatAmount(doc);
+  const vatValue = doc.totalvatvalue ?? "0";
   const netTotal = doc.totalamount;
   const bahtText = thaiBahtText(netTotal);
 
@@ -182,11 +183,11 @@ export function ThaiDocumentPrintModal({
                       <td className="py-2 px-2 font-medium text-slate-900">
                         {item.itemname || item.itemcode}
                       </td>
-                      <td className="py-2 px-2 text-right font-mono tabular-nums">{item.qty?.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-right font-mono tabular-nums">{formatAmount(item.qty ?? "0", 0)}</td>
                       <td className="py-2 px-2 text-center text-slate-600">{item.unitname || item.unitcode || "ชิ้น"}</td>
-                      <td className="py-2 px-2 text-right font-mono tabular-nums">{item.price?.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                      <td className="py-2 px-2 text-right font-mono tabular-nums">{formatAmount(item.price ?? "0")}</td>
                       <td className="py-2 px-2 text-right font-mono tabular-nums text-slate-600">{item.discount || "—"}</td>
-                      <td className="py-2 px-2 text-right font-mono font-medium tabular-nums">{item.sumamount?.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                      <td className="py-2 px-2 text-right font-mono font-medium tabular-nums">{formatAmount(item.sumamount ?? "0")}</td>
                     </tr>
                   ))
                 ) : (
@@ -215,15 +216,15 @@ export function ThaiDocumentPrintModal({
               <div className="w-64 space-y-1 text-[12px]">
                 <div className="flex justify-between py-0.5">
                   <span className="text-slate-600">รวมมูลค่าสินค้า:</span>
-                  <span className="font-mono tabular-nums">{totalBeforeVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono tabular-nums">{formatAmount(totalBeforeVat)}</span>
                 </div>
                 <div className="flex justify-between py-0.5">
                   <span className="text-slate-600">ภาษีมูลค่าเพิ่ม 7%:</span>
-                  <span className="font-mono tabular-nums">{vatValue.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono tabular-nums">{formatAmount(vatValue)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-t border-slate-900 text-sm font-bold">
                   <span className="text-slate-900">ยอดเงินสุทธิ:</span>
-                  <span className="text-slate-900 font-mono tabular-nums">{netTotal.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+                  <span className="text-slate-900 font-mono tabular-nums">{formatAmount(netTotal)}</span>
                 </div>
               </div>
             </div>

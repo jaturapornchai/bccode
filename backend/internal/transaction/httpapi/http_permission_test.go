@@ -31,10 +31,11 @@ func newPermContext(module, query string) *permContext {
 	}
 }
 
-func (c *permContext) Request() *http.Request        { return c.req }
-func (c *permContext) Param(name string) string      { return c.params[name] }
-func (c *permContext) QueryParam(name string) string { return c.req.URL.Query().Get(name) }
-func (c *permContext) Header(name string) string     { return c.req.Header.Get(name) }
+func (c *permContext) Request() *http.Request              { return c.req }
+func (c *permContext) ResponseWriter() http.ResponseWriter { return httptest.NewRecorder() }
+func (c *permContext) Param(name string) string            { return c.params[name] }
+func (c *permContext) QueryParam(name string) string       { return c.req.URL.Query().Get(name) }
+func (c *permContext) Header(name string) string           { return c.req.Header.Get(name) }
 func (c *permContext) Response(code int, data interface{}) {
 	c.status, c.body = code, data
 }

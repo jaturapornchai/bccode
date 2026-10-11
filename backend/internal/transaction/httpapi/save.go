@@ -3,10 +3,13 @@ package httpapi
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 
 	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
@@ -59,9 +62,149 @@ func normalizeLines(details []ErpDetailItem) {
 	}
 }
 
+// ขอบเขตตัวเลขที่รับ (Rule 10): คอลัมน์แคบสุดที่ค่าเหล่านี้ลงคือ numeric(18,8) จึงต้อง |x| < 1e10
+// decimal.UnmarshalJSON รับ "1e2000000000" ได้ และ String/Round/Cmp ของค่านั้นขยายเป็น 10^2e9 (กิน RAM/CPU จนเครื่องล่ม)
+// จึงตรวจเลขชี้กำลังและจำนวนบิตของตัวเลขก่อน (ถูก ไม่ขยายค่า) แล้วค่อยเทียบขนาด
+const (
+	amountMaxExponent = 10
+	amountMinExponent = -20 // ทศนิยมไม่เกิน 20 ตำแหน่ง (PostgreSQL ปัดเหลือ scale ของคอลัมน์)
+	amountMaxBits     = 128 // ราว 38 หลัก
+)
+
+var amountLimit = decimal.New(1, amountMaxExponent)
+
+// maxAmountTokenBytes: ความยาวสูงสุดของตัวเลขหนึ่งช่องในคำขอ (นับเครื่องหมายคำพูด) — ค่าที่บันทึกได้จริงยาวไม่เกินราว 34 ไบต์
+// (10 หลัก + ทศนิยม 20 ตำแหน่ง + เครื่องหมาย/จุด/คำพูด); ต้องตัดก่อนแปลงเพราะ decimal แปลงตัวเลขยาว n หลักใช้เวลา O(n^2)
+// (ล้านหลัก ≈ 1–3 วินาทีต่อช่อง ทั้งแบบข้อความและตัวเลข JSON) — amountInRange ตรวจได้หลังแปลงเสร็จแล้วเท่านั้น
+const maxAmountTokenBytes = 48
+
+// decodeAmount แปลงตัวเลขดิบหนึ่งช่องจากคำขอ: ไม่มีช่อง = คงค่าเดิม (ศูนย์), ยาวเกิน = 400 บอกช่อง, ผิดรูป = error ของ decimal
+func decodeAmount(field string, raw json.RawMessage, dst *decimal.Decimal) error {
+	if len(raw) == 0 {
+		return nil
+	}
+	if len(raw) > maxAmountTokenBytes {
+		return amountOutOfRangeError(field)
+	}
+	return dst.UnmarshalJSON(raw)
+}
+
+// UnmarshalJSON ของรายการ: ช่องตัวเลขรับเป็นข้อความดิบก่อน (ช่องตื้นกว่าบัง Qty/Price/... ของ plain) แล้วตรวจความยาวก่อนแปลง
+func (item *ErpDetailItem) UnmarshalJSON(data []byte) error {
+	type plain ErpDetailItem
+	wire := struct {
+		*plain
+		Qty            json.RawMessage `json:"qty"`
+		Price          json.RawMessage `json:"price"`
+		DiscountAmount json.RawMessage `json:"discountamount"`
+		SumAmount      json.RawMessage `json:"sumamount"`
+	}{plain: (*plain)(item)}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	for _, amount := range []struct {
+		field string
+		raw   json.RawMessage
+		dst   *decimal.Decimal
+	}{
+		{"qty", wire.Qty, &item.Qty}, {"price", wire.Price, &item.Price},
+		{"discountamount", wire.DiscountAmount, &item.DiscountAmount}, {"sumamount", wire.SumAmount, &item.SumAmount},
+	} {
+		if err := decodeAmount(amount.field, amount.raw, amount.dst); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UnmarshalJSON ของเอกสาร: ตรวจความยาวตัวเลขหัวเอกสารแบบเดียวกับรายการ และแปลงรายการทีละบรรทัดเพื่อบอกช่องเป็น details[i].<ช่อง>
+func (doc *ErpTransactionDoc) UnmarshalJSON(data []byte) error {
+	type plain ErpTransactionDoc
+	wire := struct {
+		*plain
+		TotalAmount    json.RawMessage   `json:"totalamount"`
+		TotalValue     json.RawMessage   `json:"totalvalue"`
+		TotalDiscount  json.RawMessage   `json:"totaldiscount"`
+		TotalVatValue  json.RawMessage   `json:"totalvatvalue"`
+		TotalBeforeVat json.RawMessage   `json:"totalbeforevat"`
+		TotalAfterVat  json.RawMessage   `json:"totalaftervat"`
+		VatRate        json.RawMessage   `json:"vatrate"`
+		Details        []json.RawMessage `json:"details"`
+	}{plain: (*plain)(doc)}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	for _, amount := range []struct {
+		field string
+		raw   json.RawMessage
+		dst   *decimal.Decimal
+	}{
+		{"totalamount", wire.TotalAmount, &doc.TotalAmount}, {"totalvalue", wire.TotalValue, &doc.TotalValue},
+		{"totaldiscount", wire.TotalDiscount, &doc.TotalDiscount}, {"totalvatvalue", wire.TotalVatValue, &doc.TotalVatValue},
+		{"totalbeforevat", wire.TotalBeforeVat, &doc.TotalBeforeVat}, {"totalaftervat", wire.TotalAfterVat, &doc.TotalAfterVat},
+		{"vatrate", wire.VatRate, &doc.VatRate},
+	} {
+		if err := decodeAmount(amount.field, amount.raw, amount.dst); err != nil {
+			return err
+		}
+	}
+	if wire.Details == nil {
+		return nil
+	}
+	doc.Details = make([]ErpDetailItem, len(wire.Details))
+	for i, raw := range wire.Details {
+		if err := doc.Details[i].UnmarshalJSON(raw); err != nil {
+			if user, ok := gl.AsUserError(err); ok && user.Code == "erp_amount_out_of_range" {
+				return amountOutOfRangeError(fmt.Sprintf("details[%d].%s", i, user.Field))
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func amountInRange(value decimal.Decimal) bool {
+	exp := value.Exponent()
+	if exp > amountMaxExponent || exp < amountMinExponent || value.Coefficient().BitLen() > amountMaxBits {
+		return false
+	}
+	return value.Abs().LessThan(amountLimit)
+}
+
+// validateDocAmounts ตรวจทุกยอดเงิน/จำนวน/ราคา/อัตราภาษีของคำขอก่อนใช้งาน — เกินขอบเขต = 400 บอกช่องที่ผิด
+func validateDocAmounts(doc *ErpTransactionDoc) error {
+	header := []struct {
+		field string
+		value decimal.Decimal
+	}{
+		{"totalamount", doc.TotalAmount}, {"totalvalue", doc.TotalValue}, {"totaldiscount", doc.TotalDiscount},
+		{"totalvatvalue", doc.TotalVatValue}, {"totalbeforevat", doc.TotalBeforeVat}, {"totalaftervat", doc.TotalAfterVat},
+		{"vatrate", doc.VatRate},
+	}
+	for _, amount := range header {
+		if !amountInRange(amount.value) {
+			return amountOutOfRangeError(amount.field)
+		}
+	}
+	for i, item := range doc.Details {
+		for _, amount := range []struct {
+			field string
+			value decimal.Decimal
+		}{{"qty", item.Qty}, {"price", item.Price}, {"discountamount", item.DiscountAmount}, {"sumamount", item.SumAmount}} {
+			if !amountInRange(amount.value) {
+				return amountOutOfRangeError(fmt.Sprintf("details[%d].%s", i, amount.field))
+			}
+		}
+	}
+	return nil
+}
+
 // SaveDoc บันทึกเอกสารหนึ่งใบเป็นธุรกรรมเดียว: หัว/รายการ/การอ้างอิง + สต็อก + ใบสำคัญบัญชี + บัญชีย่อย
 // ทั้งหมดสำเร็จหรือถอยกลับพร้อมกัน; แก้ไข = กลับรายการผลเดิมก่อนแล้วลงใหม่
 func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, doc *ErpTransactionDoc, isEdit bool) (*ErpTransactionDoc, error) {
+	if err := validateDocAmounts(doc); err != nil {
+		return nil, err
+	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
