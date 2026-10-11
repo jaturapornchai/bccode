@@ -100,10 +100,10 @@ describe("budget detail print conditions (Champ 5525)", () => {
     expect(reportQuery("budgetdetail", budgetPrintFilters({ ...DEFAULT_BUDGET_PRINT, branchcode: " 00001 ", departments: ["D1", "D2", "D1"], projects: ["P1"] })))
       .toEqual({ branchcode: "00001", departmentcode: "D1,D2", projectcode: "P1" });
   });
-  it("other reports drop budgetcodeto (only budgetdetail takes the budget code range)", () => {
+  it("other reports drop the budget code and its range (only budgetdetail takes them; budget comparison runs from the central registry)", () => {
     const filters = { ...emptyReportFilters, budgetcode: "BG-1", budgetcodeto: "BG-3" };
     expect(reportQuery("budgetdetail", filters)).toMatchObject({ budgetcode: "BG-1", budgetcodeto: "BG-3" });
-    expect(reportQuery("budgetcomparison", filters)).toEqual({ budgetcode: "BG-1" });
+    expect(reportQuery("budgetcomparison", filters)).toEqual({});
     expect(reportQuery("trialbalance", filters)).toEqual({});
   });
   it("refuses a reversed budget or account range", () => {

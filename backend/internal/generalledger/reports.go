@@ -73,11 +73,15 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		return empty, err
 	}
 	defer tx.Rollback()
+	if q.Timeout > 0 {
+		// SET LOCAL equivalent with a bound parameter: ends with this read-only transaction
+		if _, err = tx.ExecContext(ctx, `SELECT set_config('statement_timeout', $1, true)`, strconv.FormatInt(q.Timeout.Milliseconds(), 10)); err != nil {
+			return empty, err
+		}
+	}
 	var rc reportContext
 	if name == "budgetdetail" {
 		rc, err = newBudgetDetailContext(tx, scope, q)
-	} else if name == "chartofaccounts" || name == "journalbooks" || name == "departments" || name == "projects" {
-		rc, err = newMasterReportContext(tx, scope, q)
 	} else {
 		rc, err = newReportContext(ctx, tx, scope, q)
 	}
@@ -116,12 +120,6 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.budgetDetail(ctx)
 	case "statement":
 		report, err = rc.statement(ctx)
-	case "chartofaccounts":
-		report, err = rc.chartOfAccounts(ctx)
-	case "journalbooks":
-		report, err = rc.journalBooks(ctx)
-	case "departments", "projects":
-		report, err = rc.dimensionList(ctx, name)
 	default:
 		return empty, fmt.Errorf("รายงานนี้ยังไม่มีรูปแบบที่ยืนยันแล้ว")
 	}
@@ -156,7 +154,10 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 		q.BranchCode = scope.Branch
 	}
 	if q.From != "" && !validDate(q.From) || q.To != "" && !validDate(q.To) {
-		return r, fmt.Errorf("วันที่รายงานไม่ถูกต้อง")
+		return r, fieldError("report_date_invalid", "from", "วันที่รายงานไม่ถูกต้อง")
+	}
+	if !validPostStatus(q.PostStatus) {
+		return r, fieldError("report_post_status_invalid", "poststatus", "สถานะรายการต้องเป็น ผ่านรายการ ยังไม่ผ่านรายการ หรือทั้งหมด")
 	}
 	q.AccountFrom, q.AccountTo = NormalizeCode(q.AccountFrom), NormalizeCode(q.AccountTo)
 	// เทียบแบบไบต์ (Go string compare) ให้ตรงกับ account_code COLLATE "C" ใน r.filter
@@ -201,7 +202,7 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 		return r, rowErr
 	}
 	if count != 1 {
-		return r, fmt.Errorf("กรุณาเลือกปีบัญชีให้ชัดเจนก่อนออกรายงาน")
+		return r, fieldError("report_fiscal_year_unclear", "fiscalyear", "กรุณาเลือกปีบัญชีให้ชัดเจนก่อนออกรายงาน")
 	}
 	if q.From == "" {
 		q.From = r.fiscal.StartDate
@@ -210,10 +211,10 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 		q.To = r.fiscal.EndDate
 	}
 	if q.From > q.To || q.From < r.fiscal.StartDate || q.To > r.fiscal.EndDate {
-		return r, fmt.Errorf("ช่วงรายงานต้องอยู่ในปีบัญชีที่เลือก")
+		return r, fieldError("report_range_outside_fiscal_year", "from", "ช่วงรายงานต้องอยู่ในปีบัญชีที่เลือก")
 	}
 	q.FiscalYear = r.fiscal.Code
-	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
+	q.Page, q.Limit = reportPage(q)
 	r.query = q
 	r.args = []any{scope.Company, q.FiscalYear, q.From, q.To, q.AccountCode, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), pq.Array(r.books), q.AccountFrom, q.AccountTo}
 	// $10/$11 = ช่วงรหัสบัญชีแบบ Champ (รวมปลายทั้งสอง) เทียบแบบไบต์ให้ผลเหมือนกันทุก locale ของฐานข้อมูล
@@ -364,7 +365,55 @@ func (r reportContext) setTotals(ctx context.Context, report *Report, query stri
 
 // RECURSIVE allows the chart tree CTE of accountBalanceReport; it changes nothing for plain CTEs.
 func (r reportContext) base() string {
-	return `WITH RECURSIVE filtered AS (SELECT * FROM gl_lines WHERE ` + r.filter + `)`
+	return `WITH RECURSIVE filtered AS (SELECT * FROM ` + lineSource(r.query.PostStatus) + ` WHERE ` + r.filter + `)`
+}
+
+// reportPage = paging of one report call: in-process print/export (RowCap) reads one page of RowCap rows in the same
+// snapshot; everything else keeps pageBounds (HTTP never sets RowCap)
+func reportPage(q ReportQuery) (int, int) {
+	if q.RowCap > 0 {
+		return 1, q.RowCap
+	}
+	return pageBounds(q.Page, q.Limit)
+}
+
+const (
+	PostStatusPosted   = "posted"
+	PostStatusUnposted = "unposted"
+	PostStatusAll      = "all"
+)
+
+func validPostStatus(status string) bool {
+	return status == "" || status == PostStatusPosted || status == PostStatusUnposted || status == PostStatusAll
+}
+
+// draftLines = the lines of saved draft journals in gl_lines column order, so a report can read "ยังไม่ผ่านรายการ"
+// like Champ reads BCTrans IsConfirm=0 (GLRepTransDlg.cpp:217-224). Drafts were validated on save (Journal.Validate:
+// date, active posting accounts, decimal amounts); account type/side/cash come from the live chart of accounts.
+const draftLines = `SELECT j.company,j.id AS journal_id,l.ord::integer AS line_no,j.payload->>'docno' AS doc_no,(j.payload->>'date')::date AS entry_date,
+      j.payload->>'fiscalyear' AS fiscal_year,COALESCE(j.payload->>'bookcode','') AS book_code,COALESCE(j.payload->>'branchcode','') AS branch_code,
+      COALESCE(l.v->>'departmentcode','') AS department_code,COALESCE(l.v->>'projectcode','') AS project_code,COALESCE(j.payload->>'kind','') AS kind,
+      'THB'::text AS currency,2 AS scale,l.v->>'accountcode' AS account_code,
+      COALESCE(NULLIF(l.v->>'accountname',''),(SELECT n->>'name' FROM jsonb_array_elements(COALESCE(a.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1),'') AS account_name,
+      COALESCE(a.payload->>'accounttype','') AS account_type,COALESCE(a.payload->>'normalbalance','') AS normal_balance,COALESCE((a.payload->>'iscash')::boolean,false) AS is_cash,
+      COALESCE(l.v->>'description','') AS description,COALESCE(l.v->>'cashflow','') AS cash_flow,
+      COALESCE(NULLIF(l.v->>'debit',''),'0')::numeric AS debit,COALESCE(NULLIF(l.v->>'credit',''),'0')::numeric AS credit
+    FROM gl_records j CROSS JOIN LATERAL jsonb_array_elements(COALESCE(j.payload->'lines','[]'::jsonb)) WITH ORDINALITY AS l(v,ord)
+    LEFT JOIN gl_records a ON a.company=j.company AND a.kind='accounts' AND a.code=l.v->>'accountcode' AND NOT COALESCE((a.payload->>'isdeleted')::boolean,false)
+    WHERE j.company=$1 AND j.kind='journals' AND j.payload->>'status'='draft' AND NOT COALESCE((j.payload->>'isdeleted')::boolean,false)`
+
+// postedLineColumns lists gl_lines in draftLines order so "all" can UNION ALL both sets
+const postedLineColumns = `company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit`
+
+// lineSource = the journal lines one report reads for its post status (r.filter $1..$11 applies on top)
+func lineSource(status string) string {
+	switch status {
+	case PostStatusUnposted:
+		return `(` + draftLines + `) AS report_lines`
+	case PostStatusAll:
+		return `(SELECT ` + postedLineColumns + ` FROM gl_lines WHERE company=$1 UNION ALL ` + draftLines + `) AS report_lines`
+	}
+	return `gl_lines`
 }
 
 // breakdownDim = one "แยกแผนก"/"แยกโครงการ" grouping of the trial balance family (Champ 5506/5499/5535): the report lists
@@ -587,6 +636,14 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	if r.query.HideOpening {
 		accounts = `accts a LEFT JOIN openings o USING(account_code)`
 	}
+	// ยอดยกมาทุกสถานะ = ทุกรายการก่อนวันเริ่ม (ผ่านแล้ว + ร่าง) ส่วนรายการในช่วงตามสถานะ: Champ 5534 ดูตามวันที่ (BC มีแต่แบบวันที่)
+	// อ่านยอดยกมาจาก bctranssub โดยไม่กรอง IsConfirm ทุกสถานะ (GLRepGL2Dlg.cpp:29-34,438-444,625-631 → แถว type 0 GLRepGL2View.cpp:388-394)
+	// และกรอง IsConfirm เฉพาะรายการเคลื่อนไหว (GLRepGL2View.cpp:757-766)
+	base, openingLines := r.base(), "filtered"
+	if r.query.PostStatus != PostStatusAll {
+		base += `, opening_lines AS (SELECT * FROM ` + lineSource(PostStatusAll) + ` WHERE ` + r.filter + `)`
+		openingLines = "opening_lines"
+	}
 	special := func(rowtype string, sort int, debit, credit, balance string) string {
 		return `SELECT la.account_code,la.account_name,'','','','','','','',(` + debit + `)::text,(` + credit + `)::text,` + balance + `,'` + rowtype + `','','` + fmt.Sprint(sort) + `',NULL::text,'','' FROM ledger_accounts la`
 	}
@@ -604,7 +661,7 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	if !r.query.HideOpening {
 		rows = append(rows, special("opening", 1, `GREATEST(la.opening,0)`, `GREATEST(-la.opening,0)`, `la.opening::text`))
 	}
-	cte := r.base() + `, openings AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit-credit) AS opening FROM filtered WHERE entry_date<$3::date OR kind='opening' GROUP BY account_code),
+	cte := base + `, openings AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit-credit) AS opening FROM ` + openingLines + ` WHERE entry_date<$3::date OR kind='opening' GROUP BY account_code),
       movements AS (SELECT * FROM filtered WHERE entry_date>=$3::date AND kind<>'opening'),
       accts AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit) AS debit,SUM(credit) AS credit FROM movements GROUP BY account_code),
       ledger_accounts AS (SELECT account_code,COALESCE(a.account_name,o.account_name) AS account_name,` + opening + ` AS opening,COALESCE(a.debit,0) AS debit,COALESCE(a.credit,0) AS credit FROM ` + accounts + `),
@@ -622,7 +679,9 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 		err = r.setTotals(ctx, &result, r.base()+` SELECT COALESCE(SUM(debit-credit) FILTER(WHERE entry_date>=$3::date AND kind<>'opening'),0)::text FROM filtered`, "balance")
 		return result, err
 	}
-	err = r.setTotals(ctx, &result, r.base()+` SELECT COALESCE(SUM(CASE WHEN entry_date<$3::date OR kind='opening' THEN debit-credit ELSE 0 END),0)::text,COALESCE(SUM(debit-credit),0)::text FROM filtered`, "opening", "balance")
+	err = r.setTotals(ctx, &result, base+`, sums AS (SELECT (SELECT COALESCE(SUM(debit-credit),0) FROM `+openingLines+` WHERE entry_date<$3::date OR kind='opening') AS opening,
+      (SELECT COALESCE(SUM(debit-credit),0) FROM filtered WHERE entry_date>=$3::date AND kind<>'opening') AS movement)
+      SELECT opening::text,(opening+movement)::text FROM sums`, "opening", "balance")
 	return result, err
 }
 
@@ -937,7 +996,7 @@ func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportConte
 	if q.BudgetCodeTo != "" && q.BudgetCode > q.BudgetCodeTo {
 		return r, fieldError("report_budget_range_invalid", "budgetcode", "รหัสงบประมาณเริ่มต้นต้องไม่มากกว่ารหัสงบประมาณสิ้นสุด")
 	}
-	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
+	q.Page, q.Limit = reportPage(q)
 	r.query = q
 	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), q.BudgetCode, q.AccountFrom, q.AccountTo, q.BudgetCodeTo}
 	return r, nil
@@ -1007,135 +1066,4 @@ func budgetPeriodsInRange(y FiscalYear, from, to string) []int64 {
 		}
 	}
 	return out
-}
-
-// newMasterReportContext prepares the report context for master data reports (Champ 5520, 5531, 5538, 5521)
-func newMasterReportContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportContext, error) {
-	r := reportContext{tx: tx, scope: scope, query: q}
-	if scope.Company == "" {
-		return r, fmt.Errorf("กรุณาเลือกบริษัท")
-	}
-	q.AccountFrom, q.AccountTo = NormalizeCode(q.AccountFrom), NormalizeCode(q.AccountTo)
-	if q.AccountFrom != "" && q.AccountTo != "" && q.AccountFrom > q.AccountTo {
-		return r, fieldError("report_account_range_invalid", "accountfrom", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")
-	}
-	q.CodeFrom, q.CodeTo = NormalizeCode(q.CodeFrom), NormalizeCode(q.CodeTo)
-	if q.CodeFrom != "" && q.CodeTo != "" && q.CodeFrom > q.CodeTo {
-		return r, fieldError("report_code_range_invalid", "codefrom", "รหัสเริ่มต้นต้องไม่มากกว่ารหัสสิ้นสุด")
-	}
-	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
-	from := q.CodeFrom
-	to := q.CodeTo
-	if from == "" && q.AccountFrom != "" {
-		from = q.AccountFrom
-	}
-	if to == "" && q.AccountTo != "" {
-		to = q.AccountTo
-	}
-	r.args = []any{scope.Company, from, to}
-	return r, nil
-}
-
-// chartOfAccounts (Champ 5520: รายงานรายละเอียดผังบัญชี)
-func (r reportContext) chartOfAccounts(ctx context.Context) (Report, error) {
-	cte := `WITH accounts AS (
-		SELECT code,
-			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
-			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='en' LIMIT 1), '') AS account_name_en,
-			COALESCE(payload->>'accounttype', '') AS account_type,
-			COALESCE(payload->>'parentaccountcode', '') AS parent_code,
-			COALESCE((payload->>'level')::int, 1) AS account_level,
-			COALESCE((payload->>'allowposting')::boolean, true) AS allow_posting
-		FROM gl_records
-		WHERE company=$1 AND kind='accounts' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
-			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
-	), result AS (
-		SELECT code AS accountcode, account_name AS accountname, account_name_en AS accountnameen,
-			CASE account_type
-				WHEN 'asset' THEN 'สินทรัพย์'
-				WHEN 'liability' THEN 'หนี้สิน'
-				WHEN 'equity' THEN 'ส่วนของเจ้าของ'
-				WHEN 'income' THEN 'รายได้'
-				WHEN 'expense' THEN 'ค่าใช้จ่าย'
-				ELSE account_type
-			END AS accounttype,
-			parent_code AS parentaccountcode,
-			account_level::text AS accountlevel,
-			CASE WHEN allow_posting THEN 'ลงรายการได้' ELSE 'บัญชีคุม' END AS postingstatus
-		FROM accounts
-	)`
-	cols := []ReportColumn{
-		textColumn("accountcode", "รหัสบัญชี"),
-		textColumn("accountname", "ชื่อบัญชี (ไทย)"),
-		textColumn("accountnameen", "ชื่อบัญชี (อังกฤษ)"),
-		textColumn("accounttype", "หมวดบัญชี"),
-		textColumn("parentaccountcode", "บัญชีคุม"),
-		textColumn("accountlevel", "ระดับ"),
-		textColumn("postingstatus", "สถานะ"),
-	}
-	return r.runWithTotals(ctx, cte, "accountcode", cols, nil)
-}
-
-// journalBooks (Champ 5531: รายงานรายละเอียดสมุดบัญชี)
-func (r reportContext) journalBooks(ctx context.Context) (Report, error) {
-	cte := `WITH books AS (
-		SELECT code,
-			COALESCE(payload->>'name', '') AS book_name,
-			COALESCE((payload->>'booktype')::int, 1) AS book_type,
-			COALESCE(payload->>'docformat', '') AS doc_format,
-			COALESCE((payload->>'isactive')::boolean, true) AS is_active
-		FROM gl_records
-		WHERE company=$1 AND kind='journal-books' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
-			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
-	), result AS (
-		SELECT code AS bookcode, book_name AS bookname,
-			CASE book_type
-				WHEN 1 THEN 'ทั่วไป'
-				WHEN 2 THEN 'จ่าย'
-				WHEN 3 THEN 'รับ'
-				WHEN 4 THEN 'ขาย'
-				WHEN 5 THEN 'ซื้อ'
-				WHEN 6 THEN 'ยอดยกมา'
-				ELSE 'ทั่วไป'
-			END AS booktypename,
-			doc_format AS docformat,
-			CASE WHEN is_active THEN 'ใช้งาน' ELSE 'ปิดใช้งาน' END AS status
-		FROM books
-	)`
-	cols := []ReportColumn{
-		textColumn("bookcode", "รหัสสมุด"),
-		textColumn("bookname", "ชื่อสมุดรายวัน"),
-		textColumn("booktypename", "ประเภทสมุด"),
-		textColumn("docformat", "รูปแบบเลขที่"),
-		textColumn("status", "สถานะ"),
-	}
-	return r.runWithTotals(ctx, cte, "bookcode", cols, nil)
-}
-
-// dimensionList (Champ 5538: รายงานรายละเอียดแผนก / 5521: รายงานรายละเอียดโครงการ)
-func (r reportContext) dimensionList(ctx context.Context, kind string) (Report, error) {
-	kindLiteral := "departments"
-	titleName := "แผนก"
-	if kind == "projects" {
-		kindLiteral = "projects"
-		titleName = "โครงการ"
-	}
-	cte := `WITH dims AS (
-		SELECT code,
-			COALESCE(payload->>'name', '') AS dim_name,
-			COALESCE((payload->>'isactive')::boolean, true) AS is_active
-		FROM gl_records
-		WHERE company=$1 AND kind='` + kindLiteral + `' AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
-			AND ($2='' OR code COLLATE "C">=$2) AND ($3='' OR code COLLATE "C"<=$3)
-	), result AS (
-		SELECT code AS dimcode, dim_name AS dimname,
-			CASE WHEN is_active THEN 'ใช้งาน' ELSE 'ปิดใช้งาน' END AS status
-		FROM dims
-	)`
-	cols := []ReportColumn{
-		textColumn("dimcode", "รหัส" + titleName),
-		textColumn("dimname", "ชื่อ" + titleName),
-		textColumn("status", "สถานะ"),
-	}
-	return r.runWithTotals(ctx, cte, "dimcode", cols, nil)
 }

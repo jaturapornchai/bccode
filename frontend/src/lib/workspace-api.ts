@@ -67,13 +67,13 @@ export async function proxyMainApiJson(
   mainApiUrl: string,
   path: string,
   init: RequestInit,
-  options?: { userErrorStatusOk?: boolean },
+  options?: { userErrorStatusOk?: boolean; timeoutMs?: number },
 ): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), options?.timeoutMs ?? 20000);
 
   try {
     const response = await fetch(`${mainApiUrl}${path}`, {

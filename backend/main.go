@@ -24,6 +24,7 @@ import (
 	"smlcloudplatform/internal/organization/businesstype"
 	"smlcloudplatform/internal/organization/company"
 	"smlcloudplatform/internal/organization/rolepermission"
+	reporthttp "smlcloudplatform/internal/report/httpapi"
 	"smlcloudplatform/internal/setupconfig"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/employee"
@@ -166,6 +167,7 @@ func main() {
 		rolepermission.NewRolePermissionHttp(ms, cfg),
 		txhttp.NewHttp(ms, cfg),
 		chequehttp.NewHttp(ms, cfg),
+		reporthttp.NewHttp(ms, cfg),
 	)
 	ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
 

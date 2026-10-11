@@ -31,6 +31,24 @@ export function isActionEntry(entry: string): boolean {
   return entry.includes(":");
 }
 
+// Champ "สิทธิ์เฉพาะ" (กำหนดสิทธิ์การใช้งาน แท็บเฉพาะ): rights that are not a screen, stored and checked as the literal
+// entry (backend report.PermissionPrint / PermissionExport). report:print = bcoption1 bCanPrintReport, report:export =
+// BCOption13 bCanExportReportData (champ/champ/BC5Account.cpp:6177-6178,6213-6214)
+export type SpecialPermission = "report:print" | "report:export";
+
+export const SPECIAL_PERMISSION_LABELS: Record<SpecialPermission, { th: string; en: string }> = {
+  "report:print": { th: "พิมพ์รายงานได้", en: "Can print reports" },
+  "report:export": { th: "ส่งออกข้อมูลของรายงานได้", en: "Can export report data" },
+};
+
+// the labels above are the fallback — these keys read languages.tsv
+export const specialPermissionTextKeys: Record<SpecialPermission, string> = {
+  "report:print": "perm_special_report_print",
+  "report:export": "perm_special_report_export",
+};
+
+export const SPECIAL_PERMISSIONS = Object.keys(SPECIAL_PERMISSION_LABELS) as SpecialPermission[];
+
 export function hasScreenAccess(permissions: readonly string[], screen: string): boolean {
   return permissions.includes("*") || permissions.includes(screen);
 }

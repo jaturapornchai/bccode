@@ -1,6 +1,9 @@
 package httpapi
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 	p := map[string]bool{"gl-post": true, "financial-close": true}
@@ -130,5 +133,32 @@ func TestJournalListPermissionsDoNotDependOnBookCode(t *testing.T) {
 	}
 	if anyLedger(map[string]bool{"jv-journal": true}) || anyLedger(map[string]bool{"gl-unpost": true}) {
 		t.Fatal("legacy screen ids must not grant ledger lookups")
+	}
+}
+
+// พิมพ์/ส่งออกรายงานบัญชี (purpose=print|export) ต้องมีสิทธิ์เฉพาะแบบ Champ (BaseReportView.cpp:736-745,2406-2415):
+// อ่านรายงานบนจอได้ไม่ได้แปลว่าพิมพ์หรือส่งออกได้ — ปฏิเสธที่ backend พร้อมข้อความบอกวิธีขอสิทธิ์
+func TestReportPrintExportNeedSpecialRights(t *testing.T) {
+	reader := map[string]bool{"profit-loss": true}
+	if status, _ := reportPurposeRefusal(reader, "", "th"); status != 0 {
+		t.Fatalf("screen read refused: %d", status)
+	}
+	status, body := reportPurposeRefusal(reader, "print", "th")
+	if status != 403 || body.Code != "REPORT_PRINT_FORBIDDEN" || !strings.Contains(body.Message, "พิมพ์รายงานได้") {
+		t.Fatalf("print without right = %d %+v", status, body)
+	}
+	status, body = reportPurposeRefusal(map[string]bool{"profit-loss": true, "report:print": true}, "export", "en")
+	if status != 403 || body.Code != "REPORT_EXPORT_FORBIDDEN" || !strings.Contains(body.Message, "Can export report data") || !strings.Contains(body.MessageTH, "ส่งออกข้อมูลของรายงานได้") {
+		t.Fatalf("export with print right only = %d %+v", status, body)
+	}
+	for _, p := range []map[string]bool{{"report:print": true, "report:export": true}, {"*": true}} {
+		for _, purpose := range []string{"print", "export"} {
+			if status, body := reportPurposeRefusal(p, purpose, "th"); status != 0 {
+				t.Fatalf("%v %s refused: %+v", p, purpose, body)
+			}
+		}
+	}
+	if status, _ := reportPurposeRefusal(map[string]bool{"*": true}, "download", "th"); status != 400 {
+		t.Fatalf("unknown purpose = %d", status)
 	}
 }

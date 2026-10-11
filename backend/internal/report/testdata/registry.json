@@ -1,0 +1,100 @@
+[
+  {
+    "menu_id": "gl-journal-books-report",
+    "champ_menu_id": "5531",
+    "route": "/report/journal-books",
+    "code": "gl_journal_book_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-department-report",
+    "champ_menu_id": "5538",
+    "route": "/report/departments",
+    "code": "gl_department_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-project-report",
+    "champ_menu_id": "5521",
+    "route": "/report/projects",
+    "code": "gl_project_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-budget-detail",
+    "champ_menu_id": "5525",
+    "route": "/report/budget-detail",
+    "code": "gl_budget_detail",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-chart-of-accounts-report",
+    "champ_menu_id": "5520",
+    "route": "/report/chart-of-accounts",
+    "code": "gl_chart_of_accounts_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-daily-report",
+    "champ_menu_id": "5532",
+    "route": "/report/gljournal",
+    "code": "gl_journal",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-daily-summary-report",
+    "champ_menu_id": "5533",
+    "route": "/report/gljournal-summary",
+    "code": "gl_journal",
+    "status": "ready"
+  },
+  {
+    "menu_id": "general-ledger",
+    "champ_menu_id": "5534",
+    "route": "/report/ledger",
+    "code": "gl_ledger",
+    "status": "ready"
+  },
+  {
+    "menu_id": "general-ledger-summary",
+    "champ_menu_id": "5535",
+    "route": "/report/ledger-summary",
+    "code": "gl_ledger",
+    "status": "ready"
+  },
+  {
+    "menu_id": "budget-comparison-report",
+    "champ_menu_id": "5530",
+    "route": "/report/budgetcomparison",
+    "code": "gl_budget_comparison",
+    "status": "ready"
+  },
+  {
+    "menu_id": "trial-balance",
+    "champ_menu_id": "5506",
+    "route": "/report/trialbalance",
+    "code": "gl_trial_balance",
+    "status": "ready"
+  },
+  {
+    "menu_id": "trial-balance-2",
+    "champ_menu_id": "5507",
+    "route": "/report/trialbalance-2",
+    "code": "gl_trial_balance",
+    "status": "ready"
+  },
+  {
+    "menu_id": "working-paper",
+    "champ_menu_id": "5499",
+    "route": "/gl/workingpaper",
+    "code": "gl_working_paper",
+    "status": "ready"
+  },
+  {
+    "menu_id": "financial-statement-designer",
+    "champ_menu_id": "5505",
+    "route": "/gl/statement-designer",
+    "code": "gl_statement",
+    "status": "planned"
+  }
+]

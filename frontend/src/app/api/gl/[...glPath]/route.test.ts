@@ -6,10 +6,11 @@ describe("GL authenticated proxy", () => {
   afterEach(() => vi.unstubAllGlobals());
   it("forwards only supported report filters and snapshot", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
-    const response = await GET(new Request("http://localhost/api/gl/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true&holdingcode=other&backendUrl=http://localhost:8888", { headers }), context("reports", "ledger"));
+    const response = await GET(new Request("http://localhost/api/gl/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true&purpose=print&holdingcode=other&backendUrl=http://localhost:8888", { headers }), context("reports", "ledger"));
     expect(response.status).toBe(200);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/gl/v2/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true");
+    // purpose=print|export reaches the backend, which checks report:print / report:export
+    expect(url).toContain("/gl/v2/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true&purpose=print");
     expect(url).not.toContain("holdingcode");
     expect(init.headers.Authorization).toBe("Bearer test-token");
   });

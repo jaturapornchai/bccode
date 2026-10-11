@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { SPECIAL_PERMISSIONS } from "@/lib/permission-actions";
 
 const source = readFileSync(
   join(process.cwd(), "src/app/system-settings/system-settings-screen.tsx"),
@@ -27,5 +28,16 @@ describe("SystemSettingsScreen layout contract", () => {
     expect(source).toContain("if (isMenuBackendRetired(currentConfig.route)) return;");
     // The warehouse screen called /warehouse/* (removed with MongoDB); it comes back with a PostgreSQL API.
     expect(source).not.toContain("WarehouseTreeView");
+  });
+
+  // Champ ResetUserAuthorization grants print / export by default (champ-lib/BC5FRMWRK/BCSWinApp.cpp:1636-1653):
+  // only a NEW permission group starts ticked; formFromRecord reads saved groups as stored (no backfill)
+  it("starts a new permission group with report print / export ticked", () => {
+    expect(SPECIAL_PERMISSIONS).toEqual(["report:print", "report:export"]);
+    const line = 'if (config.slug === "permissiongroup") form.permissions = JSON.stringify(SPECIAL_PERMISSIONS);';
+    const at = source.indexOf(line);
+    expect(at).toBeGreaterThan(source.indexOf("function defaultForm("));
+    expect(at).toBeLessThan(source.indexOf("function formFromRecord("));
+    expect(source.indexOf(line, at + 1)).toBe(-1);
   });
 });

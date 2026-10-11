@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MENU_SECTIONS, flattenMenuItems, menuSearchHaystack, menuSearchMatches, menuText, normalizeMenuSearchText } from "./menu-data";
 import { getSystemSettingConfig } from "./system-setting-screens";
+import { REPORT_ROUTES } from "./report-registry";
 import type { BackendLanguageDictionary } from "./backend-language";
 
 function readyDictionary(values: BackendLanguageDictionary): BackendLanguageDictionary {
@@ -70,6 +71,12 @@ function collectMenuLanguageKeys(): string[] {
 }
 
 describe("menu language labels", () => {
+  it("lists every central-registry report route in the GL reports group, each route once", () => {
+    const group = MENU_SECTIONS.find((section) => section.id === "gl")?.groups.find((entry) => entry.id === "gl-reports");
+    const routes = (group?.items ?? []).map((item) => item.route);
+    for (const route of Object.keys(REPORT_ROUTES)) expect(routes.filter((entry) => entry === route), route).toHaveLength(1);
+  });
+
   it("preserves all pre-upgrade permission IDs and routes without duplicate destinations", () => {
     const baseline = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8")) as { id: string; route: string }[];
     const items = flattenMenuItems();
@@ -81,7 +88,8 @@ describe("menu language labels", () => {
     // +10 รายการหัว "จัดการระบบ" ของ Champ ที่ BC ยังไม่มีจอ (S2, 2026-10-09)
     // +8 รายการหัว "หน้าต่าง" และ "ช่วยเหลือ" ของ Champ ที่ BC ยังไม่มีจอ (2026-10-10)
     // +5 จอกำหนดรหัสธนาคาร/สาขา/บริการ/ประเภทบัญชี/สถานะเช็คเพิ่มเติม ใต้ "กำหนดรหัสต่างๆ" (CB-1, 2026-10-11)
-    expect(items).toHaveLength(243);
+    // +8 รายงาน Champ ที่เปิดจอรายงานกลาง: ข้อมูลหลัก 5 + รายงานรายวันแบบสรุป + งบทดลอง 2 + รายละเอียดงบประมาณ (2026-10-11)
+    expect(items).toHaveLength(251);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) {

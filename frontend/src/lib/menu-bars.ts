@@ -279,12 +279,23 @@ export const MENU_BARS: MenuBar[] = [
     DIVIDER,
     items("gl-opening-balance", "financial-close", "purchase-vat-adjust", "withholding-tax-deduction", "gl-fiscal-years", "gl-year-end"),
     DIVIDER,
-    submenu("gl-reports-daily", ...REPORTS_DAILY, ...items("gl-daily-report", "general-ledger")),
+    // Champ order (docs/kms/champ/report-parity-r0-gl.md §4): master-data reports nested first, then the daily reports, budget comparison last
+    submenu(
+      "gl-reports-daily", ...REPORTS_DAILY,
+      ...submenu(
+        "gl-reports-master", "gl_reports_master", "รายงานข้อมูลหลักต่างๆ", "Master Data Reports",
+        ...items("gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-budget-detail", "gl-chart-of-accounts-report"),
+      ),
+      DIVIDER,
+      ...items("gl-daily-report", "gl-daily-summary-report", "general-ledger", "general-ledger-summary"),
+      DIVIDER,
+      ...items("budget-comparison-report"),
+    ),
     submenu(
       "gl-reports-financial", "menu_sub_reports_financial", "รายงานงบการเงิน", "Financial Statement Reports",
       ...items(
-        "trial-balance", "working-paper", "financial-statement-designer", "profit-loss", "balance-sheet",
-        "budget-comparison-report", "gl-ar-outstanding", "gl-ap-outstanding", "gl-bank-unmatched",
+        "trial-balance", "trial-balance-2", "working-paper", "financial-statement-designer", "profit-loss", "balance-sheet",
+        "gl-ar-outstanding", "gl-ap-outstanding", "gl-bank-unmatched",
       ),
     ),
     submenu(

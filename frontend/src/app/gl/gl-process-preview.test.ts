@@ -23,3 +23,19 @@ describe("every ReportGrid gets the journal books",()=>{
     expect(missing).toEqual([]);
   });
 });
+// Champ checks the print / export right before it prints or exports (BaseReportView.cpp:736-745,2406-2415): every
+// page of a GL report pulled for print / export carries purpose so the backend checks report:print / report:export
+describe("GL report print / export rights",()=>{
+  it("marks the whole-report pulls with their purpose and leaves screen reads unmarked",async()=>{
+    const applied={...emptyReportFilters,fiscalyear:"2026"};
+    await fetchReport("pnl",applied,2,500,7,false,"export");
+    expect(new URLSearchParams(vi.mocked(glRequest).mock.calls.at(-1)![0].split("?")[1]).get("purpose")).toBe("export");
+    await fetchReport("pnl",applied);
+    expect(new URLSearchParams(vi.mocked(glRequest).mock.calls.at(-1)![0].split("?")[1]).has("purpose")).toBe(false);
+    const source=readFileSync(resolve(process.cwd(),"src/app/gl/gl-reports.tsx"),"utf8");
+    const complete=source.slice(source.indexOf("async function completeReport("),source.indexOf("async function printReport("));
+    expect(complete.match(/fetchReport\([^)]*, purpose\)/g)).toHaveLength(2);
+    expect(source.slice(source.indexOf("async function printReport("),source.indexOf("async function exportCsv("))).toMatch(/completeReport\([\s\S]*, "print"\);/);
+    expect(source.slice(source.indexOf("async function exportCsv("),source.indexOf("const resultReady"))).toMatch(/completeReport\([\s\S]*, "export"\);/);
+  });
+});

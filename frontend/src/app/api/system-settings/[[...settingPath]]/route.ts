@@ -3,6 +3,7 @@ import { serverGoApiBase, validateBackendUrl } from "@/lib/backend-url";
 import { verifyHs256Jwt } from "@/lib/server-jwt";
 import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-setting-screens";
 import { flattenMenuItems } from "@/lib/menu-data";
+import { SPECIAL_PERMISSIONS, SPECIAL_PERMISSION_LABELS } from "@/lib/permission-actions";
 import {
   getBackendUrlFromRequest,
   getMainApiUrl,
@@ -233,17 +234,29 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
 function permissionCatalogResponse(request: Request, id: string): NextResponse {
   const url = new URL(request.url);
   const query = (url.searchParams.get("q") ?? "").trim().toLowerCase();
-  const catalog = flattenMenuItems().map((item) => ({
-    _id: item.id,
-    permissioncode: item.id,
-    permissionname: item.label.th,
-    names: Object.entries(item.label)
-      .filter(([code, name]) => code !== "key" && typeof name === "string" && name.trim())
-      .map(([code, name]) => ({ code, name })),
-    description: item.route,
-    category: item.category,
-    isactive: true,
-  }));
+  const catalog = [
+    ...flattenMenuItems().map((item) => ({
+      _id: item.id,
+      permissioncode: item.id,
+      permissionname: item.label.th,
+      names: Object.entries(item.label)
+        .filter(([code, name]) => code !== "key" && typeof name === "string" && name.trim())
+        .map(([code, name]) => ({ code, name })),
+      description: item.route,
+      category: item.category,
+      isactive: true,
+    })),
+    // Champ "สิทธิ์เฉพาะ": rights that are not a screen (report print / export), ticked in the same role
+    ...SPECIAL_PERMISSIONS.map((code) => ({
+      _id: code,
+      permissioncode: code,
+      permissionname: SPECIAL_PERMISSION_LABELS[code].th,
+      names: [{ code: "th", name: SPECIAL_PERMISSION_LABELS[code].th }, { code: "en", name: SPECIAL_PERMISSION_LABELS[code].en }],
+      description: "",
+      category: "special",
+      isactive: true,
+    })),
+  ];
   const matched = catalog.filter((item) => {
     if (id && item.permissioncode !== id) return false;
     if (!query) return true;

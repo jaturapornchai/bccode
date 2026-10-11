@@ -10,8 +10,11 @@ import {
   PERMISSION_ACTIONS,
   PERMISSION_ACTION_KEYS,
   PERMISSION_ACTION_LABELS,
+  SPECIAL_PERMISSIONS,
+  SPECIAL_PERMISSION_LABELS,
   actionEntry,
   isActionEntry,
+  specialPermissionTextKeys,
   type PermissionAction,
 } from "@/lib/permission-actions";
 import { cn } from "@/lib/utils";
@@ -38,6 +41,7 @@ const TEXT = {
   presetHint: { th: "ผู้ใช้ = เข้า+เพิ่ม+แก้ไข · ผู้ดูแล/เจ้าของ = ทั้งหมด (ใช้กับจอที่แสดงอยู่)", en: "User = enter+create+edit · Admin/Owner = everything (applies to the screens shown)" },
   other: { th: "อื่น ๆ", en: "Other" },
   visibleHint: { th: "ติ๊กที่หัวตารางเพื่อเลือกทุกจอที่แสดงอยู่", en: "Header checkboxes apply to the screens shown" },
+  special: { th: "สิทธิ์เฉพาะ", en: "Special rights" },
 };
 
 // 2026-09-16: the table above is the fallback; these keys read languages.tsv.
@@ -54,6 +58,7 @@ const roleMatrixTextKeys: Record<string, string> = {
   "presetHint": "rsm_user_enter_create_edit_admin",
   "other": "ss_other",
   "visibleHint": "rsm_header_checkboxes_apply_to_the",
+  "special": "rsm_special_rights",
 };
 
 /**
@@ -97,9 +102,13 @@ export function RoleScreenMatrix({
     return map;
   }, [language]);
 
+  // rights that are not a screen (Champ แท็บ "เฉพาะ") get their own checkbox list below the screen table
+  const specials = useMemo(() => SPECIAL_PERMISSIONS.filter((code) => options.some((option) => option.code === code)), [options]);
+
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const rows = options.filter((option) => {
+      if ((SPECIAL_PERMISSIONS as readonly string[]).includes(option.code)) return false;
       const hasEntry = selectedSet.has(option.code);
       if (filter === "selected" && !hasEntry) return false;
       if (filter === "unselected" && hasEntry) return false;
@@ -302,6 +311,26 @@ export function RoleScreenMatrix({
           </tbody>
         </table>
       </div>
+
+      {specials.length > 0 ? (
+        <fieldset className="grid gap-2 rounded-xl border border-border bg-card px-3 pb-3 pt-1">
+          <legend className="px-1 text-sm font-bold text-foreground">{t("special")}</legend>
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {specials.map((code) => (
+              <label className={cn("inline-flex min-h-10 items-center gap-2 text-sm font-semibold", !readOnly && "cursor-pointer")} key={code}>
+                <input
+                  checked={selectedSet.has(code)}
+                  className={box}
+                  disabled={readOnly}
+                  onChange={(event) => setRow(code, event.target.checked)}
+                  type="checkbox"
+                />
+                {tr(specialPermissionTextKeys[code], SPECIAL_PERMISSION_LABELS[code].th)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
     </div>
   );
 }

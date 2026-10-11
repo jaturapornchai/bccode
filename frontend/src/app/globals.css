@@ -7993,3 +7993,13 @@ tr.bc-list-row > td {
     page: gl-print-landscape;
   }
 }
+
+/* 2026-10-11 Central report print — frontend/src/app/report/report-center-print.tsx
+   One <table> per printed page (server page_totals), so every table after the first starts a new sheet; the first follows the @page <style>
+   in .gl-print-root and must not break (no blank first page). */
+@media print {
+  .gl-print-root table.gl-print-pagebreak {
+    break-before: page;
+    page-break-before: always;
+  }
+}

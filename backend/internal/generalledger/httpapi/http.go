@@ -22,6 +22,7 @@ import (
 	gl "smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/report"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -92,7 +93,7 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 }
 
 var resourceScreens = map[string]string{gl.BankAccountKind: bookBankScreen, "journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.DepartmentKind: dimensionsScreen, gl.ProjectKind: dimensionsScreen, gl.JournalTemplateKind: "gl-journals", gl.PostBatchKind: postingScreen, gl.VatAdjustKind: vatAdjustScreen}
-var reportScreens = map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report", "budgetdetail": "gl-budget", "statement": "financial-statement-designer", "chartofaccounts": "chart-of-accounts", "journalbooks": "gl-journal-books", "departments": dimensionsScreen, "projects": dimensionsScreen}
+var reportScreens = map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report", "budgetdetail": "gl-budget", "statement": "financial-statement-designer"}
 
 func allowed(p map[string]bool, screen, action string) bool {
 	if p["*"] {
@@ -586,6 +587,27 @@ func (h *Http) get(request microservice.IContext) error {
 	return response(request, data)
 }
 
+// reportPurposes: purpose=print|export marks the reads that pull a whole GL report into a printout or a file. Champ
+// checks the role's right before it prints / exports (BaseReportView.cpp:736-745 print, 2406-2415 export), the same
+// rights the central report registry checks (report.PermissionPrint / PermissionExport, สิทธิ์เฉพาะ)
+var reportPurposes = map[string]struct{ permission, code, key string }{
+	"":       {},
+	"print":  {report.PermissionPrint, "REPORT_PRINT_FORBIDDEN", "report_error_print_forbidden"},
+	"export": {report.PermissionExport, "REPORT_EXPORT_FORBIDDEN", "report_error_export_forbidden"},
+}
+
+// reportPurposeRefusal = the status + payload refusing a read for purpose, or status 0 when it may go ahead
+func reportPurposeRefusal(p map[string]bool, purpose, lang string) (int, errorPayload) {
+	right, known := reportPurposes[purpose]
+	if !known {
+		return http.StatusBadRequest, apperr.New(fallbackCode(http.StatusBadRequest), http.StatusBadRequest, language.Text("gl_err_invalid_payload", lang), language.Text("gl_err_invalid_payload", "th")).ToResponse()
+	}
+	if right.permission == "" || allowed(p, right.permission, "") {
+		return 0, errorPayload{}
+	}
+	return http.StatusForbidden, apperr.New(right.code, http.StatusForbidden, language.Text(right.key, lang), language.Text(right.key, "th")).ToResponse()
+}
+
 func (h *Http) report(request microservice.IContext) error {
 	ctx, cancel, scope, err := h.begin(request)
 	defer cancel()
@@ -595,6 +617,10 @@ func (h *Http) report(request microservice.IContext) error {
 	name := request.Param("report")
 	if !canReadReport(scope.Permissions, name) {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านรายงานบัญชีนี้")
+	}
+	if status, body := reportPurposeRefusal(scope.Permissions, request.QueryParam("purpose"), getRequestLanguage(request)); status != 0 {
+		request.Response(status, body)
+		return nil
 	}
 	if request.QueryParam("companywide") == "true" {
 		scope, err = scope.companyScope()
@@ -606,7 +632,7 @@ func (h *Http) report(request microservice.IContext) error {
 	if err != nil {
 		return failure(request, err)
 	}
-	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), AccountFrom: request.QueryParam("accountfrom"), AccountTo: request.QueryParam("accountto"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), BudgetCodeTo: request.QueryParam("budgetcodeto"), CodeFrom: request.QueryParam("codefrom"), CodeTo: request.QueryParam("codeto"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), HideOpening: queryFlag(request.QueryParam("hideopening")), HideZero: queryFlag(request.QueryParam("hidezero")), ControlTotals: queryFlag(request.QueryParam("controltotals")), Summary: queryFlag(request.QueryParam("summary")), Gross: queryFlag(request.QueryParam("gross")), DayTotals: queryFlag(request.QueryParam("daytotals")), DocNoFrom: request.QueryParam("docnofrom"), DocNoTo: request.QueryParam("docnoto"), OrderBy: request.QueryParam("orderby"), ByDepartment: queryFlag(request.QueryParam("bydepartment")), ByProject: queryFlag(request.QueryParam("byproject")), DimTotals: queryFlag(request.QueryParam("dimtotals")), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
+	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), AccountFrom: request.QueryParam("accountfrom"), AccountTo: request.QueryParam("accountto"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), BudgetCodeTo: request.QueryParam("budgetcodeto"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), HideOpening: queryFlag(request.QueryParam("hideopening")), HideZero: queryFlag(request.QueryParam("hidezero")), ControlTotals: queryFlag(request.QueryParam("controltotals")), Summary: queryFlag(request.QueryParam("summary")), Gross: queryFlag(request.QueryParam("gross")), DayTotals: queryFlag(request.QueryParam("daytotals")), DocNoFrom: request.QueryParam("docnofrom"), DocNoTo: request.QueryParam("docnoto"), OrderBy: request.QueryParam("orderby"), ByDepartment: queryFlag(request.QueryParam("bydepartment")), ByProject: queryFlag(request.QueryParam("byproject")), DimTotals: queryFlag(request.QueryParam("dimtotals")), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
 	if name == statementSetReport {
 		return h.statementSet(ctx, request, scope.Scope, q, version)
 	}

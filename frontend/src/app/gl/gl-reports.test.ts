@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { accountTypes, reportCsv, type GLJournalBook, type GLReport } from "@/lib/general-ledger";
 import { GET } from "../api/gl/[...glPath]/route";
 import { ReportGrid, controlRowText, emptyReportFilters, isSummaryRow, labelledReportRows, reportQuery } from "./gl-reports";
+import { ReportFilterSummary, reportShortcut } from "./report-filter-bar";
 
 function render(patch: Partial<GLReport>) {
   const report: GLReport = { sequence: 1, columns: [], rows: [], totals: {}, totalrows: 0, warnings: [], asof: "2026-09-11", ...patch };
@@ -142,8 +143,6 @@ describe("Champ report filters and options", () => {
   it.each([
     ["trialbalance", { accountfrom: "11000", accountto: "11999", hidezero: "true", controltotals: "true", gross: "true" }, ["budgetcode", "hideopening", "summary", "daytotals"]],
     ["workingpaper", { hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary", "gross", "daytotals"]],
-    ["gljournal", { summary: "true", accountto: "11999" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "gross", "daytotals"]],
-    ["budgetcomparison", { budgetcode: "BG-1", accountfrom: "11000" }, ["hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"]],
     ["pnl", { accountfrom: "11000" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"]],
   ] as const)("%s keeps its own options and drops the rest", (name, kept, dropped) => {
     const query = reportQuery(name, all);
@@ -153,7 +152,7 @@ describe("Champ report filters and options", () => {
   });
   it("sends the picked departments and projects as one comma-separated value each (Champ multi-select), nothing when none is picked", () => {
     const picked = { ...emptyReportFilters, fiscalyear: "2569", departmentcode: "D1,D2", projectcode: "P1" };
-    for (const name of ["ledger", "trialbalance", "gljournal", "budgetcomparison", "budgetdetail", "statement"]) {
+    for (const name of ["ledger", "trialbalance", "budgetdetail", "statement"]) {
       expect(reportQuery(name, picked)).toMatchObject({ departmentcode: "D1,D2", projectcode: "P1" });
       expect(reportQuery(name, { ...picked, departmentcode: "", projectcode: "" })).not.toHaveProperty("departmentcode");
     }
@@ -240,18 +239,12 @@ describe("Champ report details: documents, books and dimension split", () => {
   const base = { ...emptyReportFilters, fiscalyear: "2569" };
   const tr = (_key: string, fallback: string) => fallback;
   it("sends several journal books as one comma-separated value on every report that filters by book", () => {
-    for (const name of ["gljournal", "ledger", "trialbalance"]) expect(reportQuery(name, { ...base, bookcode: "JV,PV" })).toMatchObject({ bookcode: "JV,PV" });
+    for (const name of ["ledger", "trialbalance"]) expect(reportQuery(name, { ...base, bookcode: "JV,PV" })).toMatchObject({ bookcode: "JV,PV" });
   });
-  it("gljournal keeps the document range and sort order; day totals only for the detail report sorted by date", () => {
-    const picked = { ...base, docnofrom: "JV6901-0001", docnoto: "JV6901-0009", orderby: "date", daytotals: "true" };
-    expect(reportQuery("gljournal", picked)).toMatchObject({ docnofrom: "JV6901-0001", docnoto: "JV6901-0009", orderby: "date", daytotals: "true" });
-    expect(reportQuery("gljournal", { ...picked, orderby: "docno" })).not.toHaveProperty("daytotals");
-    expect(reportQuery("gljournal", { ...picked, summary: "true" })).not.toHaveProperty("daytotals");
-    expect(reportQuery("gljournal", { ...picked, summary: "true" })).toMatchObject({ summary: "true", docnofrom: "JV6901-0001", orderby: "date" });
-    for (const name of ["ledger", "trialbalance", "workingpaper", "pnl"]) {
-      const query = reportQuery(name, picked);
-      for (const key of ["docnofrom", "docnoto", "orderby"]) expect(query).not.toHaveProperty(key);
-    }
+  it("the journal document range and sort order belong to the central registry: the legacy filters no longer carry them", () => {
+    for (const key of ["docnofrom", "docnoto", "orderby"]) expect(emptyReportFilters).not.toHaveProperty(key);
+    const query = reportQuery("ledger", { ...base, daytotals: "true" });
+    for (const key of ["docnofrom", "docnoto", "orderby"]) expect(query).not.toHaveProperty(key);
   });
   it("trial balance, working paper and the ledger summary send the department/project split; the total row only with the department split", () => {
     const split = { ...base, bydepartment: "true", byproject: "true", dimtotals: "true" };
@@ -261,7 +254,7 @@ describe("Champ report details: documents, books and dimension split", () => {
     expect(reportQuery("trialbalance", { ...split, bydepartment: "", dimtotals: "" })).toMatchObject({ byproject: "true" });
     for (const key of ["bydepartment", "byproject", "dimtotals"]) {
       expect(reportQuery("ledger", split)).not.toHaveProperty(key); // detail ledger has no split
-      expect(reportQuery("gljournal", split)).not.toHaveProperty(key);
+      expect(reportQuery("pnl", split)).not.toHaveProperty(key);
     }
   });
   it("day totals of the journal report say how many lines or documents the day holds; the ledger keeps its plain label", () => {
@@ -289,13 +282,29 @@ describe("Champ report details: documents, books and dimension split", () => {
     expect(forwarded.get("bookcode")).toBe("JV,PV");
   });
   it("provides Desktop ERP keyboard shortcuts and hints for Print (Alt+P), Export (Alt+E), and Submit (Enter / Alt+R)", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/app/gl/gl-reports.tsx"), "utf8");
-    expect(source).toContain("Alt+P");
-    expect(source).toContain("Alt+E");
-    expect(source).toContain("Alt+R");
-    expect(source).toContain("handleKeyDown");
-    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-black/15 dark:bg-white/15 px-1 rounded\">Enter</kbd>");
-    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded\">Alt+E</kbd>");
-    expect(source).toContain("<kbd className=\"hidden sm:inline-block ml-1 text-[10px] font-sans font-normal opacity-70 bg-muted px-1 rounded\">Alt+P</kbd>");
+    const print = () => undefined, exportCsv = () => undefined, refresh = () => undefined;
+    const actions = { print, exportCsv, refresh };
+    const press = (key: string, mods: { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } = {}) =>
+      reportShortcut({ key, altKey: false, ctrlKey: false, metaKey: false, ...mods }, actions);
+    expect([press("P", { altKey: true }), press("p", { ctrlKey: true }), press("p", { metaKey: true })]).toEqual([print, print, print]);
+    expect([press("e", { altKey: true }), press("R", { altKey: true })]).toEqual([exportCsv, refresh]);
+    // plain keys, Ctrl+R (reload) and an unavailable action stay with the browser
+    expect([press("p"), press("r", { ctrlKey: true }), reportShortcut({ key: "p", altKey: true, ctrlKey: false, metaKey: false }, { ...actions, print: null })]).toEqual([null, null, null]);
+  });
+
+  it("the GL report screen and the central report screen share the folding conditions, key hints and shortcuts", () => {
+    for (const file of ["src/app/gl/gl-reports.tsx", "src/app/report/report-center.tsx"]) {
+      const source = readFileSync(resolve(process.cwd(), file), "utf8");
+      for (const piece of ["useReportShortcuts({", "<ReportFilterToggle", "<ReportFilterSummary", "<KeyHint keys=\"Enter\" onPrimary />", "<KeyHint keys=\"Alt+E\" />", "<KeyHint keys=\"Alt+P\" />"]) {
+        expect(`${file}: ${source.includes(piece)}`).toBe(`${file}: true`);
+      }
+    }
+    const tr = (_key: string, fallback: string) => fallback;
+    const folded = renderToStaticMarkup(createElement(ReportFilterSummary, { summary: "ปีบัญชี 2569 · 1 ม.ค. 2569 - 31 ม.ค. 2569", busy: false, onExpand: () => undefined, onRun: () => undefined, onPrint: () => undefined, tr }));
+    expect(folded).toContain("ปีบัญชี 2569 · 1 ม.ค. 2569 - 31 ม.ค. 2569");
+    expect(folded).toContain("ขยายเงื่อนไข");
+    expect(folded).toContain("Alt+P");
+    // a report without CSV export shows no export action while folded
+    expect(folded).not.toContain("Alt+E");
   });
 });

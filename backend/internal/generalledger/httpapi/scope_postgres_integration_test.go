@@ -37,7 +37,7 @@ func TestPostgresScopeRevocation(t *testing.T) {
  CREATE TABLE companies(holding_code text,code text,is_active boolean);CREATE TABLE branches(holding_code text,company_code text,code text,is_active boolean);
  CREATE TABLE role_permissions(holding_code text,role_code text,permissions jsonb,is_active boolean);
  INSERT INTO holdings VALUES('H',true);INSERT INTO companies VALUES('H','C',true);INSERT INTO branches VALUES('H','C','B',true);
- INSERT INTO role_permissions VALUES('H','USER','[]',true),('H','ACCOUNTING','["gl-journals","gl-journals:update"]',true);`)
+ INSERT INTO role_permissions VALUES('H','USER','[]',true),('H','ACCOUNTING','["gl-journals","gl-journals:update","report:print"]',true);`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,6 +57,9 @@ func TestPostgresScopeRevocation(t *testing.T) {
 	}
 	if got, e := resolveScope(context.Background(), request, connect); e != nil || !allowed(got.Permissions, "gl-journals", "update") {
 		t.Fatalf("active scope rejected: %v", e)
+	} else if !allowed(got.Permissions, "report:print", "") || allowed(got.Permissions, "report:export", "") {
+		// Champ "สิทธิ์เฉพาะ" ticked on the role reach a USER as literal entries: print granted, export not
+		t.Fatalf("role special rights = %v", got.Permissions)
 	}
 	for _, tc := range []struct{ name, change, restore string }{
 		{"role disabled", `UPDATE role_permissions SET is_active=false WHERE role_code='ACCOUNTING'`, `UPDATE role_permissions SET is_active=true`},

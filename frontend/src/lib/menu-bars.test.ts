@@ -224,6 +224,11 @@ describe("Champ-style menu bar layout", () => {
     // Champ puts the three cheque/card reports under "รายงานข้อมูลหลัก"; the other daily reports are not built yet
     expect(MENU_BARS.find((bar) => bar.id === "cheque")?.nodes.flatMap((node) => (node.kind === "submenu" ? [node.id] : []))).toEqual(["cheque-registers", "cheque-reports-master"]);
     expect(submenuNodes("cheque", "cheque-reports-master")).toEqual(["cheque-received-report", "cheque-issued-report", "credit-card-report"]);
+    // Champ GL reports (central report screen): master-data reports nested first, then the daily reports, budget comparison last
+    const glDaily = MENU_BARS.find((bar) => bar.id === "gl")?.nodes.find((node) => node.kind === "submenu" && node.id === "gl-reports-daily");
+    const glMaster = glDaily?.kind === "submenu" ? glDaily.nodes.find((node) => node.kind === "submenu" && node.id === "gl-reports-master") : undefined;
+    expect(glMaster?.kind === "submenu" ? glMaster.nodes.map((node) => (node.kind === "item" ? node.item.id : node.kind)) : []).toEqual(["gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-budget-detail", "gl-chart-of-accounts-report"]);
+    expect(submenuNodes("gl", "gl-reports-daily")).toEqual(["submenu", "divider", "gl-daily-report", "gl-daily-summary-report", "general-ledger", "general-ledger-summary", "divider", "budget-comparison-report"]);
   });
 
   it("only binds system heads to functions the program already has", () => {

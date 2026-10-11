@@ -282,6 +282,17 @@ describe("system settings API route security", () => {
     expect(getPayload.total).toBeGreaterThan(0);
     expect(getPayload.data.every((item) => typeof item.permissioncode === "string" && item.isactive === true)).toBe(true);
 
+    // Champ "สิทธิ์เฉพาะ" print / export are tickable items of the same catalog (checked by the backend as report:print / report:export)
+    const specialResponse = await GET(
+      new Request("http://localhost/api/system-settings/permissiondefinition?q=special&limit=1000&offset=0", { headers }),
+      { params: Promise.resolve({ settingPath: ["permissiondefinition"] }) },
+    );
+    const special = await specialResponse.json() as { data: Array<Record<string, unknown>> };
+    expect(special.data.filter((item) => item.category === "special").map((item) => [item.permissioncode, item.permissionname])).toEqual([
+      ["report:print", "พิมพ์รายงานได้"],
+      ["report:export", "ส่งออกข้อมูลของรายงานได้"],
+    ]);
+
     const postResponse = await POST(
       new Request("http://localhost/api/system-settings/permissiondefinition", {
         method: "POST",

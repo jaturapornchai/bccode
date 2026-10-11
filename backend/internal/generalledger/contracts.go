@@ -54,8 +54,6 @@ type ReportQuery struct {
 	BookCode       string
 	BudgetCode     string
 	BudgetCodeTo   string // budgetdetail: ถึงรหัสงบประมาณ — ว่าง = เฉพาะรหัสใน BudgetCode (Champ 5525 GLRepBudgetDlg.cpp:244-251)
-	CodeFrom       string // รายงานข้อมูลหลัก: รหัสเริ่มต้น
-	CodeTo         string // รายงานข้อมูลหลัก: รหัสสิ้นสุด
 	Template       string // statement: รหัสรูปแบบงบการเงิน
 	// ตัวเลือกรายงานแบบ Champ (docs/kms/champ/09-gl.md §5.3-5.6) — รายงานที่ไม่รู้จักตัวเลือกนั้นไม่สนใจค่า
 	HideOpening   bool // ledger: ไม่แสดงยอดยกมา — ยอดคงเหลือสะสมเริ่มจากรายการในช่วง (Champ 5534)
@@ -73,8 +71,16 @@ type ReportQuery struct {
 	ByDepartment bool
 	ByProject    bool
 	DimTotals    bool
-	Page         int
-	Limit        int
+	// PostStatus = Champ "สถานะ" combo of 5532/5533/5534/5535/5507 (GLRepTransDlg.cpp:82-88,206-226; GLRepGL2Dlg.cpp:216-222,425-436):
+	// "" | "posted" = posted+reversed journals (gl_lines), "unposted" = draft journals, "all" = both
+	PostStatus string
+	Page       int
+	Limit      int
+	// RowCap and Timeout are set only by in-process callers (report registry print/export), never from HTTP input:
+	// RowCap > 0 returns page 1 with up to RowCap rows in this one snapshot instead of pageBounds; Timeout > 0 sets
+	// statement_timeout for the report's read-only transaction
+	RowCap  int
+	Timeout time.Duration
 }
 
 type ReportColumn struct {

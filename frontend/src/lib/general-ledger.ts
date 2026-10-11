@@ -97,7 +97,8 @@ export type GLReviewEvent = { eventno: number; version: number; status: GLReview
 export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
 export type GLPage<T> = { items: T[]; total: number; page: number; limit: number; sequence: number };
 export type GLReport = {
-  columns: { key: string; label: string; amount?: boolean; group?: string }[];
+  // scale: decimal places of an amount column from the central report registry (default 2)
+  columns: { key: string; label: string; amount?: boolean; group?: string; scale?: number }[];
   rows: Record<string, string>[]; totals: Record<string, string>;
   totalrows: number; warnings: string[]; asof: string; sequence: number;
   // statement: ช่วงของแต่ละคอลัมน์ยอดเงิน (ปีนี้/ปีก่อน) สำหรับหัวงบ
@@ -108,6 +109,9 @@ export type GLReport = {
   unassigned?: GLStatementUnassigned[];
   // แถวท้ายรายงานต่อจากแถวรวม (กระดาษทำการ: กำไรขาดทุนสุทธิ + รวมทั้งสิ้น) — labelkey = key ภาษาของป้าย, ยอดเป็นสตริงทศนิยมจาก backend
   footer?: Record<string, string>[];
+  // central report registry run: captions of totals that are not columns, and the totals that are counts (integers, not amounts)
+  totalLabels?: Record<string, string>;
+  countTotals?: string[];
 };
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
@@ -141,7 +145,7 @@ export type GLCommand = {
   postbatch?: GLPostBatchInput;
   vatadjust?: GLVatAdjustInput;
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement", "chartofaccounts", "journalbooks", "departments", "projects"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items.filter((item) => group.id.startsWith("gl-") || item.route.startsWith("/gl/")));
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
