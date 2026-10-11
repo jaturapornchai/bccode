@@ -42,6 +42,10 @@ type ClosePreviewLine struct {
 	AccountName    string `json:"accountname"`
 	DepartmentCode string `json:"departmentcode"`
 	ProjectCode    string `json:"projectcode"`
+	AllocateCode   string `json:"allocatecode"`
+	JobCode        string `json:"jobcode"`
+	PartCode       string `json:"partcode"`
+	SideCode       string `json:"sidecode"`
 	Debit          string `json:"debit"`
 	Credit         string `json:"credit"`
 	Transfer       bool   `json:"transfer"`
@@ -93,7 +97,7 @@ func closePreviewOf(plan *preparedProcess, docNoGiven bool) ClosePreview {
 		for i, line := range j.Lines {
 			d, c := line.Debit.Decimal(), line.Credit.Decimal()
 			debit, credit = debit.Add(d), credit.Add(c)
-			branch.Lines = append(branch.Lines, ClosePreviewLine{AccountCode: line.AccountCode, AccountName: line.AccountName, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, Debit: d.StringFixed(scale), Credit: c.StringFixed(scale), Transfer: hasTransfer && i >= transferFrom})
+			branch.Lines = append(branch.Lines, ClosePreviewLine{AccountCode: line.AccountCode, AccountName: line.AccountName, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, AllocateCode: line.AllocateCode, JobCode: line.JobCode, PartCode: line.PartCode, SideCode: line.SideCode, Debit: d.StringFixed(scale), Credit: c.StringFixed(scale), Transfer: hasTransfer && i >= transferFrom})
 		}
 		profit := plan.NetProfit[j.BranchCode]
 		branch.NetProfit, branch.TotalDebit, branch.TotalCredit = profit.StringFixed(scale), debit.StringFixed(scale), credit.StringFixed(scale)

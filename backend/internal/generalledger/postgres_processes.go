@@ -121,7 +121,10 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 		prepared.CloseYear = true
 	}
 	byBranch := map[string][]Line{}
-	type dimension struct{ branch, department, project string }
+	type dimension struct {
+		branch string
+		codes  dimensionCodes
+	}
 	closing := map[dimension]decimal.Decimal{}
 	for _, row := range snapshot.Rows {
 		value, err := decimal.NewFromString(row.Balance)
@@ -140,15 +143,14 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 		}
 		if cmd.Action == "close" {
 			value = value.Neg()
-			key := dimension{row.BranchCode, row.DepartmentCode, row.ProjectCode}
+			key := dimension{row.BranchCode, row.dimensionCodes()}
 			closing[key] = closing[key].Add(value)
 		}
 		line, err := signedLine(row.AccountCode, value, "ยอดประมวลผล "+year.Code)
 		if err != nil {
 			return nil, err
 		}
-		line.DepartmentCode = row.DepartmentCode
-		line.ProjectCode = row.ProjectCode
+		row.dimensionCodes().applyTo(&line)
 		byBranch[row.BranchCode] = append(byBranch[row.BranchCode], line)
 	}
 	keys := make([]dimension, 0, len(closing))
@@ -160,10 +162,7 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 		if a.branch != b.branch {
 			return a.branch < b.branch
 		}
-		if a.department != b.department {
-			return a.department < b.department
-		}
-		return a.project < b.project
+		return a.codes.less(b.codes)
 	})
 	for _, key := range keys {
 		balance := closing[key]
@@ -183,8 +182,7 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 			if err != nil {
 				return nil, err
 			}
-			line.DepartmentCode = key.department
-			line.ProjectCode = key.project
+			key.codes.applyTo(&line)
 			byBranch[key.branch] = append(byBranch[key.branch], line)
 		}
 	}
@@ -212,7 +210,7 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 			j.Reference = "YEAR-END:" + year.Code
 			j.Description = "ยอดยกมาจากปี " + year.Code
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &j, true, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true, false, nil); err != nil {
 			return nil, err
 		}
 		prepared.Journals = append(prepared.Journals, j)
@@ -222,14 +220,14 @@ func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope
 
 func processBalancesTx(ctx context.Context, tx *sql.Tx, scope Scope, year, to string) (ProcessBalanceSnapshot, error) {
 	result := ProcessBalanceSnapshot{Rows: []ProcessBalance{}}
-	rows, err := tx.QueryContext(ctx, `SELECT account_code,MAX(account_name),MAX(account_type),branch_code,department_code,project_code,SUM(debit-credit)::text FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$3::date GROUP BY account_code,branch_code,department_code,project_code HAVING SUM(debit-credit)<>0 ORDER BY branch_code,department_code,project_code,account_code LIMIT $4`, scope.Company, year, to, ProcessBalanceRowLimit+1)
+	rows, err := tx.QueryContext(ctx, processBalanceQuery, scope.Company, year, to, ProcessBalanceRowLimit+1)
 	if err != nil {
 		return result, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var b ProcessBalance
-		if err = rows.Scan(&b.AccountCode, &b.AccountName, &b.AccountType, &b.BranchCode, &b.DepartmentCode, &b.ProjectCode, &b.Balance); err != nil {
+		if err = rows.Scan(b.scanTargets()...); err != nil {
 			return result, err
 		}
 		result.Rows = append(result.Rows, b)

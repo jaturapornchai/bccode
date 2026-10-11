@@ -10,7 +10,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
 import { postBatchSignatories, type GLPostBatchInfo } from "@/lib/gl-journal-voucher";
-import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLDimension, type GLDimensionResource, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
+import { DIMENSIONS, STATEMENT_CURRENT_EARNINGS, accountName, dimensionDef, rowsHoldDimension, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLDimension, type GLDimensionResource, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { getAuthSession } from "@/lib/client-auth-session";
 import { useGLText } from "./gl-common";
@@ -129,8 +129,8 @@ function whtFormLabel(form: string, tr: GLTextFn) {
 export function GLVoucherPrint({ journal, books, company, tr, language, scale = 2, postBatch }: { journal: GLJournal; books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode; scale?: number; postBatch?: GLPostBatchInfo | null }) {
   const book = books.find((item) => item.code === journal.bookcode);
   const totals = journalTotals(journal.lines);
-  const showDepartment = journal.lines.some((line) => line.departmentcode?.trim());
-  const showProject = journal.lines.some((line) => line.projectcode?.trim());
+  // a dimension column is printed only when some line holds a code of it (all six, in Champ's journal order)
+  const dimensions = DIMENSIONS.filter((def) => rowsHoldDimension(journal.lines, def));
   const vats = journal.details?.vats ?? [];
   const withholdings = journal.details?.withholdings ?? [];
   const signatories = postBatchSignatories(postBatch);
@@ -157,17 +157,17 @@ export function GLVoucherPrint({ journal, books, company, tr, language, scale = 
     <table>
       <thead><tr>
         <th>{tr("gl_account_code", "รหัสบัญชี")}</th><th>{tr("gl_account_name", "ชื่อบัญชี")}</th><th>{tr("gl_description", "คำอธิบาย")}</th>
-        {showDepartment && <th>{tr("gl_department_code", "รหัสแผนก")}</th>}{showProject && <th>{tr("gl_project_code", "รหัสโครงการ")}</th>}
+        {dimensions.map((def) => <th key={def.line}>{tr(...def.codeLabel)}</th>)}
         <th className="gl-print-num">{tr("gl_debit", "เดบิต")}</th><th className="gl-print-num">{tr("gl_credit", "เครดิต")}</th>
       </tr></thead>
       <tbody>
         {journal.lines.map((line, index) => <tr key={index}>
           <td>{line.accountcode}</td><td>{line.accountname ?? ""}</td><td>{line.description}</td>
-          {showDepartment && <td>{line.departmentcode}</td>}{showProject && <td>{line.projectcode}</td>}
+          {dimensions.map((def) => <td key={def.line}>{line[def.line] ?? ""}</td>)}
           <td className="gl-print-num">{printAmountCell("debit", line.debit, scale)}</td><td className="gl-print-num">{printAmountCell("credit", line.credit, scale)}</td>
         </tr>)}
         <tr className="gl-print-total">
-          <td colSpan={3 + (showDepartment ? 1 : 0) + (showProject ? 1 : 0)}>{tr("gl_total", "ยอดรวม")}</td>
+          <td colSpan={3 + dimensions.length}>{tr("gl_total", "ยอดรวม")}</td>
           <td className="gl-print-num">{money(amountString(totals.debit))}</td><td className="gl-print-num">{money(amountString(totals.credit))}</td>
         </tr>
       </tbody>
@@ -445,21 +445,21 @@ export function GLJournalBooksPrint({ books, company, tr, language, conditions =
   );
 }
 
-/** Department / project listing like Champ 5538 / 5521 (GLRepDeaprtmentView, GLRepProjectView): code · name/description, rows in the order
- *  the backend returned them (ORDER BY code, already filtered by the code range), total-count line, the range as the print condition. */
+/** Register listing of the six analysis dimensions like Champ 5538 / 5521 / 5524 / 5526 / 5527 / 5528 (GLRepDeaprtmentView, GLRepProjectView …): code · name/description, rows in the order
+ *  the backend returned them (ORDER BY code, already filtered by the code range), total-count line, the range as the print condition. Title and code header come from the dimension definition. */
 export function GLDimensionsPrint({ kind, rows, conditions, company, tr, language }: { kind: GLDimensionResource; rows: GLDimension[]; conditions: string[]; company: string; tr: GLTextFn; language: LanguageCode }) {
-  const isDepartment = kind === "departments";
+  const def = dimensionDef(kind);
   return (
     <article className="gl-print-chart-of-accounts">
       <table>
         <thead>
           <tr className="gl-print-head">
             <th colSpan={2}>
-              <ReportPrintHeading company={company} title={isDepartment ? tr("gl_department_report_title", "รายงานรายละเอียดแผนก") : tr("gl_project_report_title", "รายงานรายละเอียดโครงการ")} printedBy={printUserName()} printedAt={printedAtText(language)} description={[]} tr={tr} />
+              <ReportPrintHeading company={company} title={tr(...def.reportTitle)} printedBy={printUserName()} printedAt={printedAtText(language)} description={[]} tr={tr} />
             </th>
           </tr>
           <tr>
-            <th style={{ width: "20%" }}>{isDepartment ? tr("gl_department_code", "รหัสแผนก") : tr("gl_project_code", "รหัสโครงการ")}</th>
+            <th style={{ width: "20%" }}>{tr(...def.codeLabel)}</th>
             <th style={{ width: "80%" }}>{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
           </tr>
         </thead>
@@ -478,10 +478,15 @@ export function GLDimensionsPrint({ kind, rows, conditions, company, tr, languag
   );
 }
 
-const BUDGET_PRINT_DIMENSIONS = ["branchcode", "departmentcode", "projectcode"] as const;
-/** Dimension columns of the budget detail report (Champ 5525): shown only when some budget row uses them. */
+const BUDGET_PRINT_DIMENSIONS: readonly string[] = ["branchcode", ...DIMENSIONS.map((def) => def.line)];
+/** Dimension columns of the budget detail report (Champ 5525): branch + the six analysis dimensions, shown only when some budget row uses them. */
 function budgetPrintDimensions(rows: Record<string, string>[]) {
   return BUDGET_PRINT_DIMENSIONS.filter((key) => rows.some((row) => (row[key] ?? "").trim() !== ""));
+}
+/** Column header of a budget dimension column: the dimension's register name, "สาขา" for the branch. */
+function budgetPrintDimensionLabel(key: string, tr: GLTextFn): string {
+  const def = DIMENSIONS.find((item) => item.line === key);
+  return def ? tr(...def.label) : tr("gl_budget_col_branch", "สาขา");
 }
 /** Code, name, start, end, amount + the dimensions in use; Champ prints landscape from 3 dimensions, which printOrientation gives at 8 columns. */
 export function budgetPrintColumnCount(rows: Record<string, string>[]) {
@@ -494,7 +499,6 @@ export function GLBudgetsPrint({ report, company, tr, language, conditions = [] 
   const rows = report.rows ?? [];
   const dimensions = budgetPrintDimensions(rows);
   const columnCount = budgetPrintColumnCount(rows);
-  const dimensionLabels = { branchcode: tr("gl_budget_col_branch", "สาขา"), departmentcode: tr("gl_department", "แผนก"), projectcode: tr("gl_project", "โครงการ") };
   const date = (value: string) => (value ? formatAppDate(value, language) : "");
   return (
     <article className="gl-print-chart-of-accounts">
@@ -512,7 +516,7 @@ export function GLBudgetsPrint({ report, company, tr, language, conditions = [] 
           <tr>
             <th>{tr("gl_code", "รหัส")}</th>
             <th>{tr("gl_budget_list_name", "ชื่อ/รายละเอียด")}</th>
-            {dimensions.map((key) => <th key={key}>{dimensionLabels[key]}</th>)}
+            {dimensions.map((key) => <th key={key}>{budgetPrintDimensionLabel(key, tr)}</th>)}
             <th>{tr("gl_budget_col_start", "วันที่เริ่ม")}</th>
             <th>{tr("gl_budget_col_end", "วันที่สิ้นสุด")}</th>
             <th className="gl-print-num">{tr("gl_amount", "จำนวนเงิน")}</th>

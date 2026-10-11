@@ -3,6 +3,8 @@ package generalledger
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -38,7 +40,42 @@ type JournalTemplateLine struct {
 	Description    string `json:"description,omitempty" bson:"description,omitempty"`
 	DepartmentCode string `json:"departmentcode,omitempty" bson:"departmentcode,omitempty"`
 	ProjectCode    string `json:"projectcode,omitempty" bson:"projectcode,omitempty"`
+	AllocateCode   string `json:"allocatecode,omitempty" bson:"allocatecode,omitempty"`
+	JobCode        string `json:"jobcode,omitempty" bson:"jobcode,omitempty"`
+	PartCode       string `json:"partcode,omitempty" bson:"partcode,omitempty"`
+	SideCode       string `json:"sidecode,omitempty" bson:"sidecode,omitempty"`
 	CashFlow       string `json:"cashflow,omitempty" bson:"cashflow,omitempty"`
+}
+
+// asLine is the template line as a voucher line, so the dimension rules of a voucher apply to it unchanged.
+func (l JournalTemplateLine) asLine() Line {
+	return Line{AccountCode: l.AccountCode, DepartmentCode: l.DepartmentCode, ProjectCode: l.ProjectCode,
+		AllocateCode: l.AllocateCode, JobCode: l.JobCode, PartCode: l.PartCode, SideCode: l.SideCode}
+}
+
+// storedTemplateLines reads the lines of the stored template with this code ("" code = a new template: none), so editing a
+// template that still names a code of a dimension switched off since is not refused for the value it already holds.
+func storedTemplateLines(ctx context.Context, tx *sql.Tx, company, code string) ([]Line, error) {
+	if code == "" {
+		return nil, nil
+	}
+	var data []byte
+	err := tx.QueryRowContext(ctx, `SELECT COALESCE(payload->'template'->'lines','[]'::jsonb) FROM gl_records WHERE company=$1 AND kind=$2 AND code=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, JournalTemplateKind, code).Scan(&data)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var stored []JournalTemplateLine
+	if err = json.Unmarshal(data, &stored); err != nil {
+		return nil, err
+	}
+	lines := make([]Line, len(stored))
+	for i, line := range stored {
+		lines[i] = line.asLine()
+	}
+	return lines, nil
 }
 
 // prepareJournalTemplate validates a journal-templates master and rewrites it to the stored shape: only name, code,
@@ -72,7 +109,7 @@ func prepareJournalTemplate(ctx context.Context, tx *sql.Tx, company string, m *
 	}
 	lines := make([]Line, len(body.Lines))
 	for i, line := range body.Lines {
-		lines[i] = Line{AccountCode: line.AccountCode, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode}
+		lines[i] = line.asLine()
 	}
 	accounts, err := loadLineAccounts(ctx, tx, company, lines)
 	if err != nil {
@@ -84,12 +121,14 @@ func prepareJournalTemplate(ctx context.Context, tx *sql.Tx, company string, m *
 			return fmt.Errorf("บรรทัด %d: กรุณาเลือกบัญชีที่เปิดใช้งานและลงรายการได้", i+1)
 		}
 	}
-	dims, err := loadLineDimensions(ctx, tx, company, lines)
-	if err != nil {
-		return err
-	}
-	if err = checkLineSeparation(lines, accounts, dims); err != nil {
-		return err
+	if lineNamesDimension(lines) {
+		oldLines, err := storedTemplateLines(ctx, tx, company, code)
+		if err != nil {
+			return err
+		}
+		if err = checkJournalDimensions(ctx, tx, company, lines, accounts, oldLines); err != nil {
+			return err
+		}
 	}
 	if code == "" {
 		if code, err = nextJournalTemplateCode(ctx, tx, company); err != nil {
@@ -131,7 +170,9 @@ func cleanJournalTemplate(in JournalTemplate) (JournalTemplate, error) {
 		field := fmt.Sprintf("lines[%d].accountcode", i)
 		clean := JournalTemplateLine{
 			AccountCode: NormalizeCode(line.AccountCode), Description: strings.TrimSpace(line.Description),
-			DepartmentCode: NormalizeCode(line.DepartmentCode), ProjectCode: NormalizeCode(line.ProjectCode), CashFlow: line.CashFlow,
+			DepartmentCode: NormalizeCode(line.DepartmentCode), ProjectCode: NormalizeCode(line.ProjectCode),
+			AllocateCode: NormalizeCode(line.AllocateCode), JobCode: NormalizeCode(line.JobCode), PartCode: NormalizeCode(line.PartCode), SideCode: NormalizeCode(line.SideCode),
+			CashFlow: line.CashFlow,
 		}
 		if err := checkCode(clean.AccountCode, field, "รหัสบัญชี", AccountCodeMaxRunes); err != nil {
 			return out, err
@@ -139,8 +180,11 @@ func cleanJournalTemplate(in JournalTemplate) (JournalTemplate, error) {
 		if utf8.RuneCountInString(clean.Description) > JournalLineDescriptionMaxRunes {
 			return out, fieldError("journal_line_description_too_long", fmt.Sprintf("lines[%d].description", i), fmt.Sprintf("บรรทัดที่ %d: คำอธิบายบรรทัดต้องไม่เกิน %d ตัวอักษร — กรุณาย่อให้สั้นลง", i+1, JournalLineDescriptionMaxRunes))
 		}
-		if utf8.RuneCountInString(clean.DepartmentCode) > codeMaxRunes || utf8.RuneCountInString(clean.ProjectCode) > codeMaxRunes {
-			return out, fmt.Errorf("บรรทัด %d: รหัสแผนกหรือรหัสโครงการยาวเกินกำหนด", i+1)
+		asLine := clean.asLine()
+		for _, d := range dimensionRegistry {
+			if utf8.RuneCountInString(asLine.dimensionCode(d.kind)) > codeMaxRunes {
+				return out, fmt.Errorf("บรรทัด %d: รหัส%sยาวเกินกำหนด", i+1, d.label)
+			}
 		}
 		if clean.CashFlow != "" && !contains([]string{"operating", "investing", "financing"}, clean.CashFlow) {
 			return out, fmt.Errorf("ประเภทกระแสเงินสดไม่ถูกต้อง")

@@ -307,7 +307,7 @@ func validateMasterCode(m *Master, allowUntypedBook bool) error {
 	if m.Kind == "journal-books" {
 		return validateJournalBookMaster(m, allowUntypedBook)
 	}
-	if isDimensionKind(m.Kind) {
+	if IsDimensionKind(m.Kind) {
 		return validateDimensionMaster(m)
 	}
 	label, ok := masterCodeLabels[m.Kind]

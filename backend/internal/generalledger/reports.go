@@ -20,9 +20,10 @@ type reportContext struct {
 	fiscal FiscalYear
 	args   []any
 	filter string
-	// departments/projects = รหัสแผนก/โครงการที่เลือกหลายค่าแบบ Champ (GLRepGLDlg.cpp: DepartCode IN (...)); ว่าง = ทุกรหัส
-	departments []string
-	projects    []string
+	// codes = รหัสของแต่ละทะเบียนมิติที่เลือกหลายค่าแบบ Champ (GLRepGLDlg.cpp: DepartCode IN (...)); ว่าง = ทุกรหัส
+	// params = เลข $n ของอาร์เรย์รหัสแต่ละทะเบียนใน r.args (แผนก/โครงการอยู่ที่เดิมของแต่ละรายงาน ทะเบียนที่เหลือต่อท้าย)
+	codes  map[string][]string
+	params map[string]int
 	// books = สมุดรายวันที่เลือกหลายสมุดแบบ Champ (GLRepTransDlg.cpp: BookCode IN (...)); ว่าง = ทุกสมุด
 	books []string
 }
@@ -44,19 +45,6 @@ func parseReportCodeList(raw, field string) ([]string, error) {
 		codes = []string{}
 	}
 	return codes, nil
-}
-
-// parseReportDimensions resolves the multi-value filters (department, project, journal book) of a report query.
-func (r *reportContext) parseReportDimensions(q ReportQuery) error {
-	var err error
-	if r.departments, err = parseReportCodeList(q.DepartmentCode, "departmentcode"); err != nil {
-		return err
-	}
-	if r.projects, err = parseReportCodeList(q.ProjectCode, "projectcode"); err != nil {
-		return err
-	}
-	r.books, err = parseReportCodeList(q.BookCode, "bookcode")
-	return err
 }
 
 func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q ReportQuery) (Report, error) {
@@ -216,9 +204,11 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 	q.FiscalYear = r.fiscal.Code
 	q.Page, q.Limit = reportPage(q)
 	r.query = q
-	r.args = []any{scope.Company, q.FiscalYear, q.From, q.To, q.AccountCode, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), pq.Array(r.books), q.AccountFrom, q.AccountTo}
+	r.args = []any{scope.Company, q.FiscalYear, q.From, q.To, q.AccountCode, q.BranchCode, pq.Array(r.codesOf(DepartmentKind)), pq.Array(r.codesOf(ProjectKind)), pq.Array(r.books), q.AccountFrom, q.AccountTo}
 	// $10/$11 = ช่วงรหัสบัญชีแบบ Champ (รวมปลายทั้งสอง) เทียบแบบไบต์ให้ผลเหมือนกันทุก locale ของฐานข้อมูล
-	r.filter = `company=$1 AND fiscal_year=$2 AND $3::date<=$4::date AND entry_date<=$4::date AND ($5='' OR account_code=$5) AND ($6='' OR branch_code=$6) AND (cardinality($7::text[])=0 OR department_code=ANY($7::text[])) AND (cardinality($8::text[])=0 OR project_code=ANY($8::text[])) AND (cardinality($9::text[])=0 OR book_code=ANY($9::text[]))` + accountRangeFilter("account_code")
+	// $12… = รหัสของทะเบียนมิติที่เหลือ (การจัดสรร งาน หน่วยงาน ฝ่าย) ต่อท้าย — addDimensionArgs
+	r.addDimensionArgs(7, 8)
+	r.filter = `company=$1 AND fiscal_year=$2 AND $3::date<=$4::date AND entry_date<=$4::date AND ($5='' OR account_code=$5) AND ($6='' OR branch_code=$6)` + r.dimensionConditions(columnOf("")) + ` AND (cardinality($9::text[])=0 OR book_code=ANY($9::text[]))` + accountRangeFilter("account_code")
 	return r, nil
 }
 
@@ -392,7 +382,9 @@ func validPostStatus(status string) bool {
 // date, active posting accounts, decimal amounts); account type/side/cash come from the live chart of accounts.
 const draftLines = `SELECT j.company,j.id AS journal_id,l.ord::integer AS line_no,j.payload->>'docno' AS doc_no,(j.payload->>'date')::date AS entry_date,
       j.payload->>'fiscalyear' AS fiscal_year,COALESCE(j.payload->>'bookcode','') AS book_code,COALESCE(j.payload->>'branchcode','') AS branch_code,
-      COALESCE(l.v->>'departmentcode','') AS department_code,COALESCE(l.v->>'projectcode','') AS project_code,COALESCE(j.payload->>'kind','') AS kind,
+      COALESCE(l.v->>'departmentcode','') AS department_code,COALESCE(l.v->>'projectcode','') AS project_code,
+      COALESCE(l.v->>'allocatecode','') AS allocate_code,COALESCE(l.v->>'jobcode','') AS job_code,COALESCE(l.v->>'partcode','') AS part_code,COALESCE(l.v->>'sidecode','') AS side_code,
+      COALESCE(j.payload->>'kind','') AS kind,
       'THB'::text AS currency,2 AS scale,l.v->>'accountcode' AS account_code,
       COALESCE(NULLIF(l.v->>'accountname',''),(SELECT n->>'name' FROM jsonb_array_elements(COALESCE(a.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1),'') AS account_name,
       COALESCE(a.payload->>'accounttype','') AS account_type,COALESCE(a.payload->>'normalbalance','') AS normal_balance,COALESCE((a.payload->>'iscash')::boolean,false) AS is_cash,
@@ -403,7 +395,7 @@ const draftLines = `SELECT j.company,j.id AS journal_id,l.ord::integer AS line_n
     WHERE j.company=$1 AND j.kind='journals' AND j.payload->>'status'='draft' AND NOT COALESCE((j.payload->>'isdeleted')::boolean,false)`
 
 // postedLineColumns lists gl_lines in draftLines order so "all" can UNION ALL both sets
-const postedLineColumns = `company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit`
+const postedLineColumns = `company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,allocate_code,job_code,part_code,side_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit`
 
 // lineSource = the journal lines one report reads for its post status (r.filter $1..$11 applies on top)
 func lineSource(status string) string {
@@ -416,22 +408,21 @@ func lineSource(status string) string {
 	return `gl_lines`
 }
 
-// breakdownDim = one "แยกแผนก"/"แยกโครงการ" grouping of the trial balance family (Champ 5506/5499/5535): the report lists
+// breakdownDim = one "แยกแผนก"/"แยกโครงการ"/… grouping of the trial balance family (Champ 5506/5499/5535): the report lists
 // one row per account × code instead of one row per account (GLRepTrialBalanceDlg.cpp:687-715 adds the code to the GROUP BY).
 type breakdownDim struct{ key, column, label string }
 
 func (r reportContext) breakdown() []breakdownDim {
 	var dims []breakdownDim
-	if r.query.ByDepartment {
-		dims = append(dims, breakdownDim{"departmentcode", "department_code", "แผนก"})
-	}
-	if r.query.ByProject {
-		dims = append(dims, breakdownDim{"projectcode", "project_code", "โครงการ"})
+	for _, d := range dimensionRegistry {
+		if r.query.groupsBy(d.kind) {
+			dims = append(dims, breakdownDim{d.jsonKey, d.column, d.label})
+		}
 	}
 	return dims
 }
 
-// dimColumns = ",department_code,project_code" for the chosen groupings (empty without a breakdown)
+// dimColumns = ",department_code,project_code,…" for the chosen groupings (empty without a breakdown)
 func dimColumns(dims []breakdownDim) string {
 	out := ""
 	for _, d := range dims {
@@ -578,7 +569,7 @@ func (r reportContext) accountBalanceReport(ctx context.Context, leafCTE string,
 	}
 	// "มียอดรวม" (Champ GLRepTrialBalanceView.cpp:706-717): หลังแถวแยกแผนกของบัญชีที่ตั้ง "แยกแผนก" พิมพ์แถวรวมผลรวมของแถวที่แสดง (rowtype=dimtotal)
 	// เฉพาะแผนก — โครงการไม่มีแถวรวมใน Champ; เทียบแบบไบต์ path||chr(3)… (แถวแยก) มาก่อน path||chr(4) (แถวรวม)
-	if r.query.DimTotals && r.query.ByDepartment {
+	if r.query.DimTotals && r.query.groupsBy(DepartmentKind) {
 		subtotals += `
 		UNION ALL
 		SELECT ` + selectFrom("d.", false) + `,'dimtotal',(cardinality(t.parents)+1)::text,t.path||chr(4) FROM (SELECT p.account_code,MAX(p.account_name) AS account_name,MAX(p.account_type) AS account_type,` + strings.Join(sums, ",") + ` FROM placed p JOIN chart ch ON ch.code=p.account_code AND ch.departseparate GROUP BY p.account_code) d JOIN tree t ON t.code=d.account_code`
@@ -616,7 +607,14 @@ func (r reportContext) accountBalanceReport(ctx context.Context, leafCTE string,
 // (the English prefixes are Champ's own literals; Champ shows a code only when its dimension is enabled — BC lines carry
 // them only where the account allows, so a non-empty code is always shown). The line's own text (BCTransSub.ExtDescription)
 // has its own column "รายละเอียดเพิ่มเติม". Reads m = the movement and j = the journal row of gl_records.
-const ledgerDescription = `concat_ws(',',NULLIF(btrim(split_part(replace(COALESCE(j.payload->>'description',''),chr(13),''),chr(10),1)),''),CASE WHEN m.department_code<>'' THEN 'Dep: '||m.department_code END,CASE WHEN m.project_code<>'' THEN 'Proj: '||m.project_code END,CASE WHEN m.branch_code<>'' THEN 'Bran: '||m.branch_code END)`
+var ledgerDescription = func() string {
+	parts := []string{`NULLIF(btrim(split_part(replace(COALESCE(j.payload->>'description',''),chr(13),''),chr(10),1)),'')`}
+	// Champ order (GLRepGL2View.cpp:889-926): Dep, Proj, Allo, Part, Side, Job, Bran — each only when the line carries a code
+	for _, p := range []struct{ column, prefix string }{{"department_code", "Dep: "}, {"project_code", "Proj: "}, {"allocate_code", "Allo: "}, {"part_code", "Part: "}, {"side_code", "Side: "}, {"job_code", "Job: "}, {"branch_code", "Bran: "}} {
+		parts = append(parts, "CASE WHEN m."+p.column+"<>'' THEN '"+p.prefix+"'||m."+p.column+" END")
+	}
+	return "concat_ws(',',"+strings.Join(parts, ",")+")"
+}()
 
 func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	if r.query.Summary {
@@ -786,8 +784,12 @@ func (r reportContext) allocation(ctx context.Context) (Report, error) {
 }
 
 // docNoFilter = Champ 5532/5533 เลขที่เอกสาร จาก–ถึง (GLRepTransDlg.cpp:167-184): ช่วง = BETWEEN, จากอย่างเดียว = เอกสารนั้นใบเดียว;
-// $12 = จาก, $13 = ถึง (ต่อท้าย r.args ด้วย withDocNoRange) — เทียบด้วย collation ของฐานข้อมูลเหมือนลำดับ ORDER BY docno
-const docNoFilter = ` AND ($12='' OR CASE WHEN $13='' THEN doc_no=$12 ELSE doc_no>=$12 AND doc_no<=$13 END)`
+// = จาก/ถึง ที่ต่อท้าย r.args ด้วย withDocNoRange (สองพารามิเตอร์สุดท้าย ไม่ผูกเลขตายตัวเพราะจำนวนพารามิเตอร์ก่อนหน้าเปลี่ยนตามทะเบียนมิติ)
+// — เทียบด้วย collation ของฐานข้อมูลเหมือนลำดับ ORDER BY docno
+func (r reportContext) docNoFilter() string {
+	from, to := fmt.Sprintf("$%d", len(r.args)-1), fmt.Sprintf("$%d", len(r.args))
+	return ` AND (` + from + `='' OR CASE WHEN ` + to + `='' THEN doc_no=` + from + ` ELSE doc_no>=` + from + ` AND doc_no<=` + to + ` END)`
+}
 
 func (r *reportContext) withDocNoRange() {
 	r.args = append(append([]any{}, r.args...), r.query.DocNoFrom, r.query.DocNoTo)
@@ -816,12 +818,12 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 			dayTotals = `
 		UNION ALL
 		SELECT entry_date::text, '', '', '', '', '', '', '', '', SUM(debit)::text, SUM(credit)::text,
-		       '', '', '', 'daytotal', SUM(lines)::text, '', '3', '0', '1'
+		       '', ` + dimensionEmptyList() + `, 'daytotal', SUM(lines)::text, '', '3', '0', '1'
 		FROM docs GROUP BY entry_date`
 		}
 	}
 	cte := r.base() + `, movements AS (
-		SELECT * FROM filtered WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind <> 'opening'` + docNoFilter + `
+		SELECT * FROM filtered WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind <> 'opening'` + r.docNoFilter() + `
 	), docs AS (
 		SELECT journal_id, MIN(entry_date) AS entry_date, MIN(doc_no) AS doc_no, MIN(book_code) AS book_code,
 		       SUM(debit) AS debit, SUM(credit) AS credit, COUNT(*) AS lines
@@ -831,16 +833,16 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 		       ` + vatDetailText("tax_invoice_date") + ` AS taxinvoicedate, ` + vatDetailText("tax_invoice_no") + ` AS taxinvoiceno,
 		       COALESCE(j.payload->>'reference','') AS referenceno, ''::text AS accountcode, ''::text AS accountname,
 		       COALESCE(j.payload->>'description','') AS description, NULL::text AS debit, NULL::text AS credit,
-		       ''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode,
+		       ''::text AS branchcode, ` + dimensionEmptyAliases() + `,
 		       'document'::text AS rowtype, ''::text AS linecount, d.journal_id AS journalid, '0'::text AS __sort, '0'::text AS __line_no, '0'::text AS __daysort
 		FROM docs d LEFT JOIN gl_records j ON j.company=$1 AND j.kind='journals' AND j.id=d.journal_id
 		UNION ALL
 		SELECT entry_date::text, book_code, doc_no, '', '', '', account_code, account_name, description, debit::text, credit::text,
-		       branch_code, department_code, project_code, 'docline', '', journal_id, '1', line_no::text, '0'
+		       branch_code, ` + dimensionColumnList("") + `, 'docline', '', journal_id, '1', line_no::text, '0'
 		FROM movements
 		UNION ALL
 		SELECT entry_date::text, book_code, doc_no, '', '', '', '', '', '', debit::text, credit::text,
-		       '', '', '', 'doctotal', lines::text, journal_id, '2', '0', '0'
+		       '', ` + dimensionEmptyList() + `, 'doctotal', lines::text, journal_id, '2', '0', '0'
 		FROM docs` + dayTotals + `
 	)`
 	cols := []ReportColumn{
@@ -853,12 +855,9 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 		textColumn("accountcode", "ผังบัญชี"),
 		textColumn("accountname", "ชื่อบัญชี"),
 		textColumn("description", "คำอธิบาย"),
-		textColumn("departmentcode", "แผนก"),
-		textColumn("projectcode", "โครงการ"),
-		amountColumn("debit", "เดบิต"),
-		amountColumn("credit", "เครดิต"),
-		textColumn("branchcode", "สาขา"),
 	}
+	cols = append(cols, dimensionTextColumns()...)
+	cols = append(cols, amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), textColumn("branchcode", "สาขา"))
 	lineOnly := func(key string) reportTotal {
 		return reportTotal{key: key, expr: "CASE WHEN rowtype='docline' THEN " + key + "::numeric ELSE 0 END"}
 	}
@@ -880,7 +879,7 @@ func (r reportContext) glJournalSummary(ctx context.Context) (Report, error) {
 	}
 	cte := r.base() + `, docs AS (
 		SELECT journal_id, MIN(entry_date) AS entry_date, MIN(doc_no) AS doc_no, MIN(book_code) AS book_code, SUM(debit) AS amount
-		FROM filtered WHERE entry_date >= $3::date AND kind <> 'opening'` + docNoFilter + ` GROUP BY journal_id
+		FROM filtered WHERE entry_date >= $3::date AND kind <> 'opening'` + r.docNoFilter() + ` GROUP BY journal_id
 	), result AS (
 		SELECT d.entry_date::text AS date, d.book_code AS bookcode, d.doc_no AS docno,
 		       COALESCE(j.payload->>'reference','') AS referenceno, COALESCE(j.payload->>'description','') AS description,
@@ -907,18 +906,18 @@ func (r reportContext) glJournalSummary(ctx context.Context) (Report, error) {
 // Budget = the periods of the fiscal year whose start date falls inside the report range
 // (budgetPeriodsInRange); variance = budget - actual as in Champ.
 func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
-	// $12 = งวดงบที่เริ่มในช่วงรายงาน, $13 = รหัสงบประมาณ ('' = ทุกงบ) ต่อท้าย r.args ($1-$11)
+	// งวดงบที่เริ่มในช่วงรายงาน และรหัสงบประมาณ ('' = ทุกงบ) ต่อท้าย r.args (เลขพารามิเตอร์ตามจำนวนที่มีอยู่ ไม่ผูกตายตัว)
+	periodsParam, budgetParam := fmt.Sprintf("$%d", len(r.args)+1), fmt.Sprintf("$%d", len(r.args)+2)
 	r.args = append(append([]any{}, r.args...), pq.Array(budgetPeriodsInRange(r.fiscal, r.query.From, r.query.To)), NormalizeCode(r.query.BudgetCode))
 	cte := r.base() + `, budget_rows AS (
 		SELECT b.code AS budget_code, b.name AS budget_name,
-			b.branch_code, b.department_code, b.project_code, l.account_code,
-			SUM(CASE WHEN l.period_no = ANY($12::smallint[]) THEN l.amount ELSE 0 END) AS budget_amount
+			b.branch_code, ` + dimensionColumnList("b.") + `, l.account_code,
+			SUM(CASE WHEN l.period_no = ANY(` + periodsParam + `::smallint[]) THEN l.amount ELSE 0 END) AS budget_amount
 		FROM gl_budgets b
 		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
-		WHERE b.company=$1 AND b.fiscal_year=$2 AND ($13='' OR b.code=$13)
-			AND ($5='' OR l.account_code=$5)` + accountRangeFilter("l.account_code") + ` AND ($6='' OR b.branch_code=$6)
-			AND (cardinality($7::text[])=0 OR b.department_code=ANY($7::text[])) AND (cardinality($8::text[])=0 OR b.project_code=ANY($8::text[]))
-		GROUP BY b.code, b.name, b.branch_code, b.department_code, b.project_code, l.account_code
+		WHERE b.company=$1 AND b.fiscal_year=$2 AND (` + budgetParam + `='' OR b.code=` + budgetParam + `)
+			AND ($5='' OR l.account_code=$5)` + accountRangeFilter("l.account_code") + ` AND ($6='' OR b.branch_code=$6)` + r.dimensionConditions(columnOf("b.")) + `
+		GROUP BY b.code, b.name, b.branch_code, ` + dimensionColumnList("b.") + `, l.account_code
 	), compared AS (
 		SELECT br.*,
 			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(acc.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
@@ -929,22 +928,20 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 			SELECT SUM(CASE WHEN f.normal_balance='credit' THEN f.credit-f.debit ELSE f.debit-f.credit END) AS actual
 			FROM filtered f
 			WHERE f.account_code=br.account_code AND f.entry_date>=$3::date AND f.kind NOT IN ('opening','closing')
-				AND (br.branch_code='' OR f.branch_code=br.branch_code)
-				AND (br.department_code='' OR f.department_code=br.department_code)
-				AND (br.project_code='' OR f.project_code=br.project_code)
+				AND (br.branch_code='' OR f.branch_code=br.branch_code)` + budgetActualDimensions() + `
 		) act ON true
 	), result AS (
 		-- Champ 5530 (GLRepBudgetCompView): หัวบัญชี (budgetaccount) → แถวงบ (budgetline) → รวมของบัญชี (budgettotal)
 		SELECT account_code AS accountcode, MIN(account_name) AS accountname, ''::text AS budgetcode, ''::text AS budgetname,
-			''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode,
+			''::text AS branchcode, ` + dimensionEmptyAliases() + `,
 			NULL::text AS budgetamount, NULL::text AS actualamount, NULL::text AS variance, 'budgetaccount'::text AS rowtype, '0'::text AS __sort
 		FROM compared GROUP BY account_code
 		UNION ALL
-		SELECT account_code, account_name, budget_code, budget_name, branch_code, department_code, project_code,
+		SELECT account_code, account_name, budget_code, budget_name, branch_code, ` + dimensionColumnList("") + `,
 			budget_amount::text, actual_amount::text, (budget_amount - actual_amount)::text, 'budgetline', '1'
 		FROM compared
 		UNION ALL
-		SELECT account_code, MIN(account_name), '', '', '', '', '',
+		SELECT account_code, MIN(account_name), '', '', '', ` + dimensionEmptyList() + `,
 			SUM(budget_amount)::text, SUM(actual_amount)::text, SUM(budget_amount - actual_amount)::text, 'budgettotal', '2'
 		FROM compared GROUP BY account_code
 	)`
@@ -955,12 +952,9 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 		textColumn("budgetcode", "รหัส"),
 		textColumn("budgetname", "ชื่อ/รายละเอียด"),
 		textColumn("branchcode", "สาขา"),
-		textColumn("departmentcode", "แผนก"),
-		textColumn("projectcode", "โครงการ"),
-		amountColumn("budgetamount", "จำนวนเงิน"),
-		amountColumn("actualamount", "งบประมาณที่ใช้จริง"),
-		amountColumn("variance", "ผลต่าง"),
 	}
+	cols = append(cols, dimensionTextColumns()...)
+	cols = append(cols, amountColumn("budgetamount", "จำนวนเงิน"), amountColumn("actualamount", "งบประมาณที่ใช้จริง"), amountColumn("variance", "ผลต่าง"))
 	lineOnly := func(key string) reportTotal {
 		return reportTotal{key: key, expr: "CASE WHEN rowtype='budgetline' THEN " + key + "::numeric ELSE 0 END"}
 	}
@@ -998,7 +992,8 @@ func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportConte
 	}
 	q.Page, q.Limit = reportPage(q)
 	r.query = q
-	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), q.BudgetCode, q.AccountFrom, q.AccountTo, q.BudgetCodeTo}
+	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.codesOf(DepartmentKind)), pq.Array(r.codesOf(ProjectKind)), q.BudgetCode, q.AccountFrom, q.AccountTo, q.BudgetCodeTo}
+	r.addDimensionArgs(4, 5) // $10… = the other registers, after the nine base parameters
 	return r, nil
 }
 
@@ -1009,14 +1004,14 @@ func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportConte
 // date range per row). Order = account code then budget code (GLRepBudgetDlg.cpp:429).
 func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
 	cte := `WITH budget_rows AS (
-		SELECT b.code AS budget_code, b.name AS budget_name, b.fiscal_year, b.branch_code, b.department_code, b.project_code,
+		SELECT b.code AS budget_code, b.name AS budget_name, b.fiscal_year, b.branch_code, ` + dimensionColumnList("b.") + `,
 			l.account_code, SUM(l.amount) AS amount
 		FROM gl_budgets b
 		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
-		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3) AND (cardinality($4::text[])=0 OR b.department_code=ANY($4::text[]))
-			AND (cardinality($5::text[])=0 OR b.project_code=ANY($5::text[])) AND ($6='' OR CASE WHEN $9='' THEN b.code=$6 ELSE b.code COLLATE "C">=$6 AND b.code COLLATE "C"<=$9 END)
+		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3)` + r.dimensionConditions(columnOf("b.")) + `
+			AND ($6='' OR CASE WHEN $9='' THEN b.code=$6 ELSE b.code COLLATE "C">=$6 AND b.code COLLATE "C"<=$9 END)
 			AND ($7='' OR l.account_code COLLATE "C">=$7) AND ($8='' OR l.account_code COLLATE "C"<=$8)
-		GROUP BY b.code, b.name, b.fiscal_year, b.branch_code, b.department_code, b.project_code, l.account_code
+		GROUP BY b.code, b.name, b.fiscal_year, b.branch_code, ` + dimensionColumnList("b.") + `, l.account_code
 	), budget_lines AS (
 		SELECT br.*,
 			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(acc.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
@@ -1026,15 +1021,15 @@ func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
 		LEFT JOIN gl_records fy ON fy.company=$1 AND fy.kind='fiscal-years' AND fy.code=br.fiscal_year AND NOT COALESCE((fy.payload->>'isdeleted')::boolean, false)
 	), result AS (
 		SELECT account_code AS accountcode, MIN(account_name) AS accountname, ''::text AS budgetcode, ''::text AS budgetname,
-			''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode, ''::text AS startdate, ''::text AS enddate,
+			''::text AS branchcode, ` + dimensionEmptyAliases() + `, ''::text AS startdate, ''::text AS enddate,
 			NULL::text AS amount, ''::text AS linecount, 'budgetaccount'::text AS rowtype, '0'::text AS __sort
 		FROM budget_lines GROUP BY account_code
 		UNION ALL
-		SELECT account_code, account_name, budget_code, budget_name, branch_code, department_code, project_code, start_date, end_date,
+		SELECT account_code, account_name, budget_code, budget_name, branch_code, ` + dimensionColumnList("") + `, start_date, end_date,
 			amount::text, '', 'budgetline', '1'
 		FROM budget_lines
 		UNION ALL
-		SELECT account_code, MIN(account_name), '', '', '', '', '', '', '', SUM(amount)::text, COUNT(*)::text, 'budgettotal', '2'
+		SELECT account_code, MIN(account_name), '', '', '', ` + dimensionEmptyList() + `, '', '', SUM(amount)::text, COUNT(*)::text, 'budgettotal', '2'
 		FROM budget_lines GROUP BY account_code
 	)`
 	cols := []ReportColumn{
@@ -1043,12 +1038,9 @@ func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
 		textColumn("budgetcode", "รหัส"),
 		textColumn("budgetname", "ชื่อ/รายละเอียด"),
 		textColumn("branchcode", "สาขา"),
-		textColumn("departmentcode", "แผนก"),
-		textColumn("projectcode", "โครงการ"),
-		textColumn("startdate", "วันที่เริ่ม"),
-		textColumn("enddate", "วันที่สิ้นสุด"),
-		amountColumn("amount", "จำนวนเงิน"),
 	}
+	cols = append(cols, dimensionTextColumns()...)
+	cols = append(cols, textColumn("startdate", "วันที่เริ่ม"), textColumn("enddate", "วันที่สิ้นสุด"), amountColumn("amount", "จำนวนเงิน"))
 	totals := []reportTotal{
 		{key: "amount", expr: "CASE WHEN rowtype='budgetline' THEN amount::numeric ELSE 0 END"},
 		{key: "linecount", expr: "CASE WHEN rowtype='budgetline' THEN 1 ELSE 0 END"},

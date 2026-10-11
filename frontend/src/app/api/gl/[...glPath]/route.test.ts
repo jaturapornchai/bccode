@@ -22,6 +22,26 @@ describe("GL authenticated proxy", () => {
     expect(query.get("departmentcode")).toBe("D1,D2");
     expect(query.get("projectcode")).toBe("P1,P2,P3");
   });
+  it("forwards the other four dimension filters and group-by flags", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const request = new Request("http://localhost/api/gl/reports/trialbalance?fiscalyear=FY&allocatecode=A1&jobcode=J1%2CJ2&partcode=PT1&sidecode=S1&byallocate=true&byjob=true&bypart=true&byside=true", { headers });
+    expect((await GET(request, context("reports", "trialbalance"))).status).toBe(200);
+    const query = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(Object.fromEntries(query)).toEqual({ fiscalyear: "FY", allocatecode: "A1", jobcode: "J1,J2", partcode: "PT1", sidecode: "S1", byallocate: "true", byjob: "true", bypart: "true", byside: "true" });
+  });
+  it("reads the company dimension switches and saves them only as the single update", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { departseparate: true, version: 1 } })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/dimension-settings", { headers }), context("dimension-settings"))).status).toBe(200);
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe("/gl/v2/dimension-settings");
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const save = (extra: Record<string, unknown>) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ resource: "dimension-settings", requestid, ...extra }) }), context("command"));
+    expect((await save({ action: "update", id: "default", version: 1, dimensionsettings: { departseparate: true, jobseparate: true }, holdingcode: "other" })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ resource: "dimension-settings", requestid, action: "update", id: "default", version: 1, dimensionsettings: { departseparate: true, jobseparate: true } });
+    expect((await save({ action: "delete", id: "default" })).status).toBe(400);
+    expect((await save({ action: "create" })).status).toBe(400);
+    expect((await save({ action: "update", id: "other", dimensionsettings: {} })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
   it("rejects unknown/traversal paths and unauthenticated reads", async () => {
     vi.stubGlobal("fetch", vi.fn());
     expect((await GET(new Request("http://localhost/api/gl/accounts"), context("accounts"))).status).toBe(401);

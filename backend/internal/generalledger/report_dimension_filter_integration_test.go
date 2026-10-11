@@ -91,6 +91,12 @@ func TestReportDepartmentProjectMultiSelectIntegration(t *testing.T) {
 func TestBudgetReportsDepartmentProjectMultiSelectIntegration(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	create := func(b Budget) { f.run(Command{Resource: "budgets", Action: "create", Budget: &b}) }
+	for _, code := range []string{"D1", "D2", "D3"} {
+		f.ensureDimension(DepartmentKind, code)
+	}
+	for _, code := range []string{"P1", "P2"} {
+		f.ensureDimension(ProjectKind, code)
+	}
 	for _, b := range []struct{ code, department, project string }{{"BG-1", "D1", "P1"}, {"BG-2", "D2", ""}, {"BG-3", "D3", "P2"}} {
 		create(Budget{Code: b.code, Name: "งบ " + b.code, FiscalYear: "2026", DepartmentCode: b.department, ProjectCode: b.project, Lines: []BudgetLine{{AccountCode: "4000", Periods: budgetMonths("10")}}})
 	}

@@ -284,7 +284,7 @@ export const MENU_BARS: MenuBar[] = [
       "gl-reports-daily", ...REPORTS_DAILY,
       ...submenu(
         "gl-reports-master", "gl_reports_master", "รายงานข้อมูลหลักต่างๆ", "Master Data Reports",
-        ...items("gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-budget-detail", "gl-chart-of-accounts-report"),
+        ...items("gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-allocate-report", "gl-job-report", "gl-part-report", "gl-side-report", "gl-budget-detail", "gl-chart-of-accounts-report"),
       ),
       DIVIDER,
       ...items("gl-daily-report", "gl-daily-summary-report", "general-ledger", "general-ledger-summary"),

@@ -159,6 +159,10 @@ CREATE TABLE gl_lines (
     branch_code TEXT NOT NULL,
     department_code TEXT NOT NULL,
     project_code TEXT NOT NULL,
+    allocate_code TEXT NOT NULL DEFAULT '',
+    job_code TEXT NOT NULL DEFAULT '',
+    part_code TEXT NOT NULL DEFAULT '',
+    side_code TEXT NOT NULL DEFAULT '',
     kind TEXT NOT NULL,
     currency TEXT NOT NULL,
     scale INTEGER NOT NULL CHECK (scale BETWEEN 0 AND 8),
@@ -177,6 +181,7 @@ CREATE TABLE gl_lines (
 CREATE INDEX gl_lines_period_idx ON gl_lines(company, fiscal_year, entry_date, account_code);
 CREATE INDEX gl_lines_account_idx ON gl_lines(company, fiscal_year, account_code, entry_date, journal_id, line_no);
 CREATE INDEX gl_lines_dimension_idx ON gl_lines(company, fiscal_year, branch_code, department_code, project_code, entry_date);
+CREATE INDEX gl_lines_dimension2_idx ON gl_lines(company, fiscal_year, allocate_code, job_code, part_code, side_code, entry_date);
 
 -- Audit append-only trigger
 CREATE OR REPLACE FUNCTION gl_reject_audit_mutation() RETURNS trigger LANGUAGE plpgsql AS $$

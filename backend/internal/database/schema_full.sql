@@ -225,6 +225,10 @@ CREATE TABLE IF NOT EXISTS gl_lines (
     branch_code TEXT NOT NULL DEFAULT '',
     department_code TEXT NOT NULL DEFAULT '',
     project_code TEXT NOT NULL DEFAULT '',
+    allocate_code TEXT NOT NULL DEFAULT '',
+    job_code TEXT NOT NULL DEFAULT '',
+    part_code TEXT NOT NULL DEFAULT '',
+    side_code TEXT NOT NULL DEFAULT '',
     kind TEXT NOT NULL DEFAULT 'general',
     currency TEXT NOT NULL DEFAULT 'THB',
     scale INTEGER NOT NULL DEFAULT 2 CHECK (scale BETWEEN 0 AND 8),
@@ -244,6 +248,7 @@ CREATE TABLE IF NOT EXISTS gl_lines (
 CREATE INDEX IF NOT EXISTS gl_lines_period_idx ON gl_lines(holding_code, company_code, fiscal_year, entry_date, account_code);
 CREATE INDEX IF NOT EXISTS gl_lines_account_idx ON gl_lines(holding_code, company_code, fiscal_year, account_code, entry_date, journal_id, line_no);
 CREATE INDEX IF NOT EXISTS gl_lines_dimension_idx ON gl_lines(holding_code, company_code, fiscal_year, branch_code, department_code, project_code, entry_date);
+CREATE INDEX IF NOT EXISTS gl_lines_dimension2_idx ON gl_lines(holding_code, company_code, fiscal_year, allocate_code, job_code, part_code, side_code, entry_date);
 
 CREATE TABLE IF NOT EXISTS gl_balances (
     holding_code TEXT NOT NULL,

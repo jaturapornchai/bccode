@@ -7,23 +7,33 @@ import { useEffect, useMemo, useState } from "react";
 import { Columns3, Plus, Printer, RefreshCw, Save, Search, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { BUDGET_PERIODS, amountString, blankAmountAsZero, budgetPeriodStarts, budgetPeriodsTotal, formatAmount, type GLBudget, type GLBudgetLine, type GLPage } from "@/lib/general-ledger";
+import { BUDGET_PERIODS, DIMENSIONS, amountString, blankAmountAsZero, budgetPeriodStarts, budgetPeriodsTotal, formatAmount, visibleDimensions, type GLBudget, type GLBudgetLine, type GLDimensionLineField, type GLDimensionResource, type GLLabel, type GLPage } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLLanguage, useGLText, useReferences } from "./gl-common";
+import { useDimensionRegisters } from "./gl-dimension-select";
 import { useGLPrint } from "./gl-print";
 import { BudgetPrintDialog } from "./gl-print-conditions";
 
-type BudgetDraft = Omit<GLBudget, "total">;
+export type BudgetDraft = Omit<GLBudget, "total">;
+// "ทุก…" placeholder of the six analysis-code boxes of the budget header: empty = the budget covers every code of the dimension
+const ALL_CODES_TEXT: Record<GLDimensionResource, GLLabel> = {
+  departments: ["gl_all_departments", "ทุกแผนก"], projects: ["gl_all_projects", "ทุกโครงการ"], "allocate-codes": ["gl_all_allocate_codes", "ทุกการจัดสรร"],
+  "job-codes": ["gl_all_job_codes", "ทุกงาน"], "part-codes": ["gl_all_part_codes", "ทุกหน่วยงาน"], "side-codes": ["gl_all_side_codes", "ทุกฝ่าย"],
+};
+/** The six analysis codes of a budget header (Champ GLFrmBudget.cpp:138-151) as strings; `clean` is applied to each (the payload trims them). */
+function dimensionCodes(source: Partial<Record<GLDimensionLineField, string>>, clean: (code: string) => string = (code) => code): Record<GLDimensionLineField, string> {
+  return Object.fromEntries(DIMENSIONS.map((def) => [def.line, clean(source[def.line] ?? "")])) as Record<GLDimensionLineField, string>;
+}
 const LIST_LIMIT = 30;
 const emptyPeriods = () => Array.from({ length: BUDGET_PERIODS }, () => "");
 const newLine = (): GLBudgetLine => ({ accountcode: "", periods: emptyPeriods() });
-function newBudget(fiscalyear: string): BudgetDraft {
-  return { code: "", name: "", fiscalyear, branchcode: "", departmentcode: "", projectcode: "", status: "open", remark: "", lines: [newLine()] };
+export function newBudget(fiscalyear: string): BudgetDraft {
+  return { code: "", name: "", fiscalyear, branchcode: "", ...dimensionCodes({}), status: "open", remark: "", lines: [newLine()] };
 }
-function toDraft(value: GLBudget): BudgetDraft {
+export function toDraft(value: GLBudget): BudgetDraft {
   return {
     id: value.id, version: value.version, code: value.code ?? "", name: value.name ?? "", fiscalyear: value.fiscalyear ?? "",
-    branchcode: value.branchcode ?? "", departmentcode: value.departmentcode ?? "", projectcode: value.projectcode ?? "",
+    branchcode: value.branchcode ?? "", ...dimensionCodes(value),
     status: value.status === "closed" ? "closed" : "open", remark: value.remark ?? "",
     lines: (value.lines ?? []).map((line) => ({ accountcode: line.accountcode ?? "", accountname: line.accountname, periods: Array.from({ length: BUDGET_PERIODS }, (_, index) => line.periods?.[index] ?? "") })),
   };
@@ -32,10 +42,10 @@ function toDraft(value: GLBudget): BudgetDraft {
 function safeTotal(periods: string[]) { try { return budgetPeriodsTotal(periods); } catch { return 0n; } }
 const money = (units: bigint) => formatAmount(amountString(units, 2));
 // งวดที่อยู่นอกปีบัญชี (ปีสั้น) ต้องส่งศูนย์ ตาม validateBudget ใน backend
-function budgetPayload(draft: BudgetDraft, periodCount: number) {
+export function budgetPayload(draft: BudgetDraft, periodCount: number) {
   return {
     code: draft.code.trim(), name: draft.name.trim(), fiscalyear: draft.fiscalyear, branchcode: draft.branchcode.trim(),
-    departmentcode: draft.departmentcode.trim(), projectcode: draft.projectcode.trim(), status: draft.status, remark: draft.remark.trim(),
+    ...dimensionCodes(draft, (code) => code.trim()), status: draft.status, remark: draft.remark.trim(),
     lines: (draft.lines ?? []).map((line) => ({ accountcode: line.accountcode, periods: line.periods.map((value, index) => index < periodCount ? blankAmountAsZero(value) : "0") })),
   };
 }
@@ -44,6 +54,7 @@ export function GLBudgets({ route }: { route: string }) {
   const tr = useGLText();
   const language = useGLLanguage();
   const refs = useReferences();
+  const dims = useDimensionRegisters();
   const [search, setSearch] = useState(""), [page, setPage] = useState(1), [revision, setRevision] = useState(0);
   const [list, setList] = useState<GLPage<GLBudget>>({ items: [], total: 0, page: 1, limit: LIST_LIMIT, sequence: 0 });
   const [loading, setLoading] = useState(false);
@@ -74,6 +85,8 @@ export function GLBudgets({ route }: { route: string }) {
   const monthFormat = useMemo(() => new Intl.DateTimeFormat(language === "th" ? "th-TH" : "en-GB", { month: "short", year: "2-digit" }), [language]);
   const periodLabel = (index: number) => starts[index] ? monthFormat.format(new Date(`${starts[index]}T00:00:00`)) : tr("gl_budget_period_n", "งวด {0}").replace("{0}", String(index + 1));
   const postingAccounts = useMemo(() => refs.accounts.filter((account) => account.allowposting && account.isactive), [refs.accounts]);
+  // a dimension's box shows while its company switch is on, or when this budget already names a code of it (a switch turned off later never hides saved data)
+  const headerDimensions = visibleDimensions(dims.settings, (def) => (draft?.[def.line] ?? "").trim() !== "");
   const lines = draft?.lines ?? [];
   const lineTotals = lines.map((line) => safeTotal(line.periods));
   const periodTotals = Array.from({ length: BUDGET_PERIODS }, (_, period) => lines.reduce((sum, line) => sum + safeTotal([line.periods[period] ?? ""]), 0n));
@@ -211,8 +224,7 @@ export function GLBudgets({ route }: { route: string }) {
         <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={draft.fiscalyear} onChange={(value) => setHeader({ fiscalyear: value })} /></Field>
         <Field label={tr("gl_status", "สถานะ")}><select className={control} data-field="status" value={draft.status} onChange={(e) => setHeader({ status: e.target.value === "closed" ? "closed" : "open" })}><option value="open">{tr("gl_open", "เปิด")}</option><option value="closed">{tr("gl_closed", "ปิดแล้ว")}</option></select></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} data-field="branchcode" value={draft.branchcode} placeholder={tr("gl_all_branches", "ทุกสาขา")} onChange={(e) => setHeader({ branchcode: e.target.value })} /></Field>
-        <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} data-field="departmentcode" value={draft.departmentcode} placeholder={tr("gl_all_departments", "ทุกแผนก")} onChange={(e) => setHeader({ departmentcode: e.target.value })} /></Field>
-        <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} data-field="projectcode" value={draft.projectcode} placeholder={tr("gl_all_projects", "ทุกโครงการ")} onChange={(e) => setHeader({ projectcode: e.target.value })} /></Field>
+        {headerDimensions.map((def) => <Field key={def.line} label={tr(...def.codeLabel)}><input className={control} data-field={def.line} value={draft[def.line] ?? ""} placeholder={tr(...ALL_CODES_TEXT[def.resource])} onChange={(e) => setHeader({ [def.line]: e.target.value })} /></Field>)}
         <Field label={tr("gl_note", "หมายเหตุ")}><input className={control} data-field="remark" value={draft.remark} onChange={(e) => setHeader({ remark: e.target.value })} /></Field>
       </fieldset>
       <p className="shrink-0 text-[0.9rem] text-muted-foreground">{tr("gl_budget_spread_hint", "ใส่ยอดทั้งปีแล้วกด แบ่งงวด ระบบจะแบ่งเท่ากันทุกงวดของปีบัญชี (เศษสตางค์อยู่งวดสุดท้าย) หรือพิมพ์ยอดรายเดือนเองได้")}</p>

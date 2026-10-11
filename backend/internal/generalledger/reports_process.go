@@ -16,6 +16,10 @@ type ProcessBalance struct {
 	BranchCode     string
 	DepartmentCode string
 	ProjectCode    string
+	AllocateCode   string
+	JobCode        string
+	PartCode       string
+	SideCode       string
 	Balance        string
 }
 
@@ -60,16 +64,13 @@ func (p *Postgres) ProcessBalances(ctx context.Context, scope Scope, fiscalYear,
 	result.FiscalYear = rc.fiscal.Code
 	result.Scale = rc.fiscal.Scale
 	result.AsOf = rc.query.To
-	rows, err := tx.QueryContext(ctx, `SELECT account_code,MAX(account_name),MAX(account_type),branch_code,department_code,project_code,SUM(debit-credit)::text
-      FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$3::date
-      GROUP BY account_code,branch_code,department_code,project_code HAVING SUM(debit-credit)<>0
-      ORDER BY branch_code,department_code,project_code,account_code LIMIT $4`, scope.Company, fiscalYear, to, ProcessBalanceRowLimit+1)
+	rows, err := tx.QueryContext(ctx, processBalanceQuery, scope.Company, fiscalYear, to, ProcessBalanceRowLimit+1)
 	if err != nil {
 		return result, err
 	}
 	for rows.Next() {
 		var balance ProcessBalance
-		if err = rows.Scan(&balance.AccountCode, &balance.AccountName, &balance.AccountType, &balance.BranchCode, &balance.DepartmentCode, &balance.ProjectCode, &balance.Balance); err != nil {
+		if err = rows.Scan(balance.scanTargets()...); err != nil {
 			rows.Close()
 			return result, err
 		}

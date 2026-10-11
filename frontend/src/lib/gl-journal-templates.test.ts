@@ -47,6 +47,18 @@ describe("templateBodyFromJournal (Recur button)", () => {
       ],
     });
   });
+  it("stores the allocation, job, unit and division codes of a line next to department and project, trimmed, and only when filled", () => {
+    const journal = rentJournal({
+      lines: [
+        { ...emptyLine(), accountcode: "5300", description: "ค่าเช่า", departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: " J07 ", partcode: "", sidecode: "S2", debit: "15000.00" },
+        { ...emptyLine(), accountcode: "1100", credit: "15000.00" },
+      ],
+    });
+    expect(templateBodyFromJournal(journal).lines).toEqual([
+      { accountcode: "5300", description: "ค่าเช่า", departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: "J07", sidecode: "S2", cashflow: "" },
+      { accountcode: "1100", description: "", departmentcode: "", projectcode: "", cashflow: "" },
+    ]);
+  });
   it("never stores the document number, dates of the voucher, amounts or invoice figures", () => {
     const stored = JSON.stringify(templateBodyFromJournal(rentJournal({ details: { vats: [purchaseVat()] } })));
     for (const forbidden of ["JV6901-0007", "2026-01-31", "15000", "1050", "IV-001", "debit", "credit", "docno"]) expect(stored).not.toContain(forbidden);
@@ -74,6 +86,19 @@ describe("journalFromTemplate (the '...' picker)", () => {
       { ...emptyLine(), accountcode: "1100" },
     ]);
     expect(filled.lines.every((line) => line.debit === "0" && line.credit === "0")).toBe(true);
+  });
+  it("fills the allocation, job, unit and division codes of the template lines, and leaves them off a line whose template has none", () => {
+    const filled = journalFromTemplate(template({ lines: [{ accountcode: "5300", departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: "J07", partcode: "U3", sidecode: "S2" }, { accountcode: "1100" }] }), base, ["JV"]);
+    expect(filled.lines[0]).toEqual({ ...emptyLine(), accountcode: "5300", departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: "J07", partcode: "U3", sidecode: "S2" });
+    expect(filled.lines[1]).toEqual({ ...emptyLine(), accountcode: "1100" });
+    expect("jobcode" in filled.lines[1]).toBe(false);
+  });
+  it("round-trips all six dimension codes: voucher -> template -> screen", () => {
+    const saved = rentJournal({ lines: [{ ...emptyLine(), accountcode: "5300", description: "ค่าเช่า", departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: "J07", partcode: "U3", sidecode: "S2", debit: "15000.00" }, { ...emptyLine(), accountcode: "1100", credit: "15000.00" }] });
+    const viaTemplate = journalFromTemplate({ ...template(), template: templateBodyFromJournal(saved) }, emptyJournal("JV"), ["JV"]);
+    expect(viaTemplate.lines[0]).toMatchObject({ departmentcode: "D01", projectcode: "P01", allocatecode: "A01", jobcode: "J07", partcode: "U3", sidecode: "S2", debit: "0", credit: "0" });
+    const kept = nextJournalAfterSave(saved, "keep", emptyJournal("JV"));
+    expect(viaTemplate.lines[0]).toEqual(kept.lines[0]);
   });
   it("keeps the document date, fiscal year and branch of the screen (Champ does not load the template's date)", () => {
     const filled = journalFromTemplate(template(), base, ["JV"]);

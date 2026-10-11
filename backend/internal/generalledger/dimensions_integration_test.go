@@ -38,6 +38,20 @@ func (f *pgIntegrityFixture) dimension(kind, code string) Master {
 	return m
 }
 
+// enableDimensions turns on the company switches of the registers (design §3.4); the other switches keep their value.
+func (f *pgIntegrityFixture) enableDimensions(kinds ...string) {
+	f.t.Helper()
+	view, err := f.store.Projection().DimensionSettings(f.ctx, f.scope)
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	input := view.DimensionSettingsInput
+	for _, kind := range kinds {
+		setSwitch(&input, kind)
+	}
+	f.run(Command{Resource: DimensionSettingsKind, Action: "update", ID: dimensionSettingsID, Version: view.Version, DimensionSettings: &input})
+}
+
 // ensureDimension registers a code a fixture journal names (a line may only use active codes of the register).
 func (f *pgIntegrityFixture) ensureDimension(kind, code string) {
 	f.t.Helper()
@@ -59,15 +73,11 @@ func (f *pgIntegrityFixture) createDimension(kind, code, name string) Result {
 	return f.run(Command{Resource: kind, Action: "create", Master: &Master{Kind: kind, Code: code, Name: name, IsActive: true}})
 }
 
-// dimensionJournal is a draft whose first line names the code in the register under test (department or project).
+// dimensionJournal is a draft whose first line names the code in the register under test (any of the six).
 func dimensionJournal(kind, doc, code string) Journal {
 	j := Journal{DocNo: doc, Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "ค่าใช้จ่ายสำนักงานประจำเดือน", Kind: "manual", BranchCode: "B1",
 		Lines: []Line{{AccountCode: "5000", Debit: Amount("100"), Credit: Amount("0")}, {AccountCode: "1000", Debit: Amount("0"), Credit: Amount("100")}}}
-	if kind == DepartmentKind {
-		j.Lines[0].DepartmentCode = code
-	} else {
-		j.Lines[0].ProjectCode = code
-	}
+	*j.Lines[0].lineCodePtr(kind) = code
 	return j
 }
 
@@ -240,11 +250,11 @@ func TestJournalLineDimensionCodesIntegration(t *testing.T) {
 	for _, kind := range []string{DepartmentKind, ProjectKind} {
 		prefix, jsonField := "D", "lines[0].departmentcode"
 		wantNotFound, wantNotAllowed := "journal_line_depart_not_found", "journal_line_depart_not_allowed"
-		setList := func(a *Account, codes []string) { a.DepartCodes = codes }
+		setList := func(a *Account, codes []string) { a.DepartCodes, a.DepartAllCodes = codes, len(codes) == 0 }
 		if kind == ProjectKind {
 			prefix, jsonField = "P", "lines[0].projectcode"
 			wantNotFound, wantNotAllowed = "journal_line_project_not_found", "journal_line_project_not_allowed"
-			setList = func(a *Account, codes []string) { a.ProjectCodes = codes }
+			setList = func(a *Account, codes []string) { a.ProjectCodes, a.ProjectAllCodes = codes, len(codes) == 0 }
 		}
 		code := func(n string) string { return prefix + n }
 		f.createDimension(kind, code("01"), "ฝ่ายบัญชีและการเงิน")
@@ -262,7 +272,7 @@ func TestJournalLineDimensionCodesIntegration(t *testing.T) {
 		inactive := dimensionJournal(kind, doc("I"), code("03"))
 		f.failCode(Command{Resource: "journals", Action: "create", Journal: &inactive}, wantNotFound, jsonField)
 
-		// 2. no list on the account = every active register code
+		// 2. "เลือกทั้งหมด" on the account (the fixture ticks it) = every active register code
 		anyA := dimensionJournal(kind, doc("A"), code("01"))
 		f.run(Command{Resource: "journals", Action: "create", Journal: &anyA})
 		anyB := dimensionJournal(kind, doc("B"), code("02"))
@@ -282,14 +292,16 @@ func TestJournalLineDimensionCodesIntegration(t *testing.T) {
 		draft.Lines[0].DepartmentCode, draft.Lines[0].ProjectCode = "", ""
 		f.run(Command{Resource: "journals", Action: "update", ID: draft.ID, Version: draft.Version, Journal: &draft})
 
-		// 4. emptying the list opens the account to every code again
+		// 4. ticking "เลือกทั้งหมด" again (empty list) opens the account to every active code
 		f.updateAccount("5000", func(a *Account) { setList(a, nil) })
 		again := dimensionJournal(kind, doc("E"), code("02"))
 		f.run(Command{Resource: "journals", Action: "create", Journal: &again})
 	}
 
 	// 5. the flag rule still comes first: a registered code on an account that does not separate is refused as before
-	f.updateAccount("5000", func(a *Account) { a.DepartSeparate, a.ProjectSeparate = false, false })
+	f.updateAccount("5000", func(a *Account) {
+		a.DepartSeparate, a.ProjectSeparate, a.DepartAllCodes, a.ProjectAllCodes = false, false, false, false
+	})
 	flagOff := dimensionJournal(DepartmentKind, "JV-OFF", "D01")
 	if _, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &flagOff}); err == nil || err.Error() != "บรรทัด 1: ผังบัญชี 5000 ไม่ได้กำหนดให้แยกแผนก" {
 		t.Fatalf("flag off with a registered department: %v", err)
@@ -305,7 +317,7 @@ func TestJournalTemplateDimensionCodesIntegration(t *testing.T) {
 	unknown := rentTemplate()
 	unknown.Template.Lines[0].DepartmentCode = "D99"
 	f.failCode(Command{Resource: JournalTemplateKind, Action: "create", Master: unknown}, "journal_line_depart_not_found", "lines[0].departmentcode")
-	f.updateAccount("5000", func(a *Account) { a.ProjectCodes = []string{"P01"} })
+	f.updateAccount("5000", func(a *Account) { a.ProjectCodes, a.ProjectAllCodes = []string{"P01"}, false })
 	f.createDimension(ProjectKind, "P02", "โครงการปรับปรุงคลังสินค้า")
 	outside := rentTemplate()
 	outside.Template.Lines[0].ProjectCode = "P02"
@@ -318,12 +330,12 @@ func TestAccountDimensionCodeListsIntegration(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	for _, kind := range []string{DepartmentKind, ProjectKind} {
 		prefix, listField, wantNeedFlag, wantNotFound := "D", "departcodes", "account_depart_codes_need_flag", "account_depart_code_not_found"
-		setList := func(a *Account, codes []string) { a.DepartCodes = codes }
+		setList := func(a *Account, codes []string) { a.DepartCodes, a.DepartAllCodes = codes, len(codes) == 0 }
 		getList := func(a Account) []string { return a.DepartCodes }
 		setFlag := func(a *Account, on bool) { a.DepartSeparate = on }
 		if kind == ProjectKind {
 			prefix, listField, wantNeedFlag, wantNotFound = "P", "projectcodes", "account_project_codes_need_flag", "account_project_code_not_found"
-			setList = func(a *Account, codes []string) { a.ProjectCodes = codes }
+			setList = func(a *Account, codes []string) { a.ProjectCodes, a.ProjectAllCodes = codes, len(codes) == 0 }
 			getList = func(a Account) []string { return a.ProjectCodes }
 			setFlag = func(a *Account, on bool) { a.ProjectSeparate = on }
 		}

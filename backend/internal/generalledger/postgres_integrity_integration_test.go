@@ -25,12 +25,13 @@ func newPGIntegrityFixture(t *testing.T) *pgIntegrityFixture {
 	pg, db := glpgTestDB(t)
 	f := &pgIntegrityFixture{t: t, ctx: context.Background(), db: db, store: NewPostgresStore(pg), scope: Scope{Holding: "H", Company: "C", Actor: "tester"}, accounts: map[string]Account{}, years: map[string]FiscalYear{}}
 	for _, row := range []struct{ code, kind, normal string }{{"1000", "asset", "debit"}, {"3000", "equity", "credit"}, {"3100", "equity", "credit"}, {"3200", "equity", "credit"}, {"4000", "income", "credit"}, {"5000", "expense", "debit"}} {
-		a := Account{AccountCode: row.code, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: row.code}}, DepartSeparate: true, ProjectSeparate: true}
+		a := Account{AccountCode: row.code, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: row.code}}, DepartSeparate: true, ProjectSeparate: true, DepartAllCodes: true, ProjectAllCodes: true}
 		result := f.run(Command{Resource: "accounts", Action: "create", Account: &a})
 		a.ID = result.ID
 		a.Version = result.Version
 		f.accounts[row.code] = a
 	}
+	f.enableDimensions(DepartmentKind, ProjectKind) // the fixture vouchers name a department and a project on every line
 	for _, code := range []string{"2026", "2027"} {
 		y := FiscalYear{Code: code, StartDate: code + "-01-01", EndDate: code + "-12-31", IsActive: true, Scale: 2, ProfitLossAccount: "3200", RetainedEarningsAccount: "3100"}
 		r := f.run(Command{Resource: "fiscal-years", Action: "create", FiscalYear: &y})
@@ -323,7 +324,7 @@ func TestPostgresLineSeparationCheckedOnSaveOnly(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	j := f.draft("JV1", "B1")
 	a := f.accounts["1000"]
-	a.DepartSeparate = false
+	a.DepartSeparate, a.DepartAllCodes = false, false // the flag off drops its "เลือกทั้งหมด" too (a code list needs the flag)
 	f.run(Command{Resource: "accounts", Action: "update", ID: a.ID, Version: a.Version, Account: &a})
 	j = f.post(j)
 	f.run(Command{Resource: "journals", Action: "reverse", ID: j.ID, Version: j.Version, DocNo: "REV1", Date: "2026-01-11", Reason: "correct"})

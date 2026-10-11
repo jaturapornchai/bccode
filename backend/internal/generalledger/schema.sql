@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS gl_lines (
     company text NOT NULL, journal_id text NOT NULL, line_no integer NOT NULL CHECK (line_no > 0),
     doc_no text NOT NULL, entry_date date NOT NULL, fiscal_year text NOT NULL, book_code text NOT NULL,
     branch_code text NOT NULL, department_code text NOT NULL, project_code text NOT NULL,
+    allocate_code text NOT NULL DEFAULT '', job_code text NOT NULL DEFAULT '', part_code text NOT NULL DEFAULT '', side_code text NOT NULL DEFAULT '',
     kind text NOT NULL, currency text NOT NULL, scale integer NOT NULL CHECK (scale BETWEEN 0 AND 8),
     account_code text NOT NULL, account_name text NOT NULL,
     account_type text NOT NULL CHECK (account_type IN ('asset','liability','equity','income','expense')),
@@ -24,9 +25,15 @@ CREATE TABLE IF NOT EXISTS gl_lines (
     debit numeric(38,8) NOT NULL CHECK (debit >= 0), credit numeric(38,8) NOT NULL CHECK (credit >= 0),
     PRIMARY KEY (company,journal_id,line_no), CHECK ((debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0))
 );
+-- Champ BCTransSub line dimensions 3-6 (SQLSERVER_Script.sql:9430-9475); tables made before the four extra registers get them here.
+ALTER TABLE gl_lines ADD COLUMN IF NOT EXISTS allocate_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_lines ADD COLUMN IF NOT EXISTS job_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_lines ADD COLUMN IF NOT EXISTS part_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_lines ADD COLUMN IF NOT EXISTS side_code text NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS gl_lines_period_idx ON gl_lines(company,fiscal_year,entry_date,account_code);
 CREATE INDEX IF NOT EXISTS gl_lines_account_idx ON gl_lines(company,fiscal_year,account_code,entry_date,journal_id,line_no);
 CREATE INDEX IF NOT EXISTS gl_lines_dimension_idx ON gl_lines(company,fiscal_year,branch_code,department_code,project_code,entry_date);
+CREATE INDEX IF NOT EXISTS gl_lines_dimension2_idx ON gl_lines(company,fiscal_year,allocate_code,job_code,part_code,side_code,entry_date);
 
 -- PostgreSQL audit snapshots
 -- cannot be amended or removed by the normal application connection.

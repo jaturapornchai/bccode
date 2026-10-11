@@ -334,6 +334,8 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 		return s.mutateVatAdjust(ctx, tx, scope, cmd, now)
 	case "budgets":
 		return s.mutateBudget(ctx, tx, scope, cmd, now)
+	case DimensionSettingsKind:
+		return s.mutateDimensionSettings(ctx, tx, scope, cmd, now)
 	default:
 		return s.mutateMaster(ctx, tx, scope, cmd, now)
 	}
@@ -476,7 +478,7 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 				return nil, err
 			}
 		}
-		if isDimensionKind(kind) {
+		if IsDimensionKind(kind) {
 			if err := guardDimensionDelete(ctx, tx, scope.Company, kind, old); err != nil {
 				return nil, err
 			}
@@ -529,7 +531,7 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 				return nil, err
 			}
 		}
-		if isDimensionKind(kind) {
+		if IsDimensionKind(kind) {
 			if err := guardDimensionUpdate(ctx, tx, scope.Company, kind, old, next); err != nil {
 				return nil, err
 			}
@@ -597,7 +599,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 				return nil, err
 			}
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &j, true, true); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true, true, nil); err != nil {
 			return nil, err
 		}
 		if err := checkJournalTextLimits(j, nil); err != nil {
@@ -696,7 +698,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		case next.Kind != old.Kind:
 			return nil, errJournalKindImmutable
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &next, false, true); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &next, false, true, old.Lines); err != nil {
 			return nil, err
 		}
 		if err := checkJournalTextLimits(next, &old); err != nil {
@@ -723,7 +725,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if old.Status != "draft" {
 			return nil, fmt.Errorf("รายการนี้ผ่านบัญชีแล้ว")
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &old, false, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &old, false, false, nil); err != nil {
 			return nil, err
 		}
 		old.Status = "posted"
@@ -778,6 +780,10 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 				Credit:         l.Debit,
 				DepartmentCode: l.DepartmentCode,
 				ProjectCode:    l.ProjectCode,
+				AllocateCode:   l.AllocateCode,
+				JobCode:        l.JobCode,
+				PartCode:       l.PartCode,
+				SideCode:       l.SideCode,
 				CashFlow:       l.CashFlow,
 			}
 		}
@@ -807,7 +813,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		revDoc.PostedBy = scope.Actor
 
 		// The reversal stays in the original's book even if that book was deactivated since.
-		if err := s.validateJournalLines(ctx, tx, scope, &revDoc, false, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &revDoc, false, false, nil); err != nil {
 			return nil, err
 		}
 		revData, err := json.Marshal(revDoc)
@@ -839,7 +845,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 // validateJournalLines checks a voucher before it is stored; requireActiveBook is true for new
 // vouchers only (an existing voucher stays editable/postable after its book is deactivated).
 // checkSeparate: ตรวจเงื่อนไขแยกแผนก/โครงการของบัญชี เฉพาะบรรทัดที่ผู้ใช้บันทึก (สร้าง/แก้ฉบับร่าง)
-func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal, requireActiveBook, checkSeparate bool) error {
+func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal, requireActiveBook, checkSeparate bool, oldLines []Line) error {
 	if err := validateJournalSource(*j); err != nil {
 		return err
 	}
@@ -857,12 +863,8 @@ func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, sc
 	if err = j.Validate(year, accounts); err != nil {
 		return err
 	}
-	if checkSeparate {
-		dims, err := loadLineDimensions(ctx, tx, scope.Company, j.Lines)
-		if err != nil {
-			return err
-		}
-		if err = checkLineSeparation(j.Lines, accounts, dims); err != nil {
+	if checkSeparate && lineNamesDimension(j.Lines) {
+		if err = checkJournalDimensions(ctx, tx, scope.Company, j.Lines, accounts, oldLines); err != nil {
 			return err
 		}
 	}

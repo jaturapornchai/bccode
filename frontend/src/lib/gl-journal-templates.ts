@@ -1,6 +1,6 @@
 import { emptyLine, type GLJournal, type GLJournalTemplate, type GLJournalTemplateBody, type GLJournalTemplateLine, type GLLine } from "./general-ledger";
 import type { GLJournalDetails } from "./gl-journal-details";
-import { setTaxBoxType } from "./gl-journal-entry";
+import { extraDimensionCodes, setTaxBoxType } from "./gl-journal-entry";
 
 // Helpers of the journal entry screen (Champ CGLFrmJournal, docs/kms/champ/09-gl.md 2.6 and 2.16): daily-entry templates
 // (Champ "recurring": OnRecur saves a named pattern, OnSelRecure fills the screen from one) and the debit/credit jump
@@ -36,12 +36,12 @@ export function templateLinesFromJournal(journal: GLJournal): GLJournalTemplateL
     .slice(0, JOURNAL_TEMPLATE_MAX_LINES)
     .map((line) => ({
       accountcode: line.accountcode.trim(), description: (line.description ?? "").trim(),
-      departmentcode: (line.departmentcode ?? "").trim(), projectcode: (line.projectcode ?? "").trim(), cashflow: line.cashflow ?? "",
+      departmentcode: (line.departmentcode ?? "").trim(), projectcode: (line.projectcode ?? "").trim(), ...extraDimensionCodes(line), cashflow: line.cashflow ?? "",
     }));
 }
 
-/** What the Recur button stores: book, reference, description and tax type of the header plus the account/detail/dimension of
- *  every line. Never the document number, date, debit/credit amounts or invoice figures. */
+/** What the Recur button stores: book, reference, description and tax type of the header plus the account/detail/dimension codes
+ *  (department, project, allocation, job, unit, division) of every line. Never the document number, date, debit/credit amounts or invoice figures. */
 export function templateBodyFromJournal(journal: GLJournal): GLJournalTemplateBody {
   const taxtype = templateTaxType(journal.details);
   return {
@@ -52,7 +52,7 @@ export function templateBodyFromJournal(journal: GLJournal): GLJournalTemplateBo
 
 /**
  * Fill the screen from a template (Champ OnSelRecure + OnLoadData with m_bLoadRecurring, glfrmjournal.cpp:988-1090):
- * book, reference, reference date, description, tax type and the lines (account, detail, department, project, cash flow) come
+ * book, reference, reference date, description, tax type and the lines (account, detail, the six dimension codes, cash flow) come
  * from the template; the document number stays empty (the backend numbers it), amounts are 0, the tax box has the tax type
  * but no invoice number or amount. The document date, fiscal year and branch stay those of `base` — pass the new draft on
  * the screen or a blank one, never a saved voucher. A template book that is no longer usable keeps the base book.
@@ -61,7 +61,7 @@ export function journalFromTemplate(template: GLJournalTemplate, base: GLJournal
   const body = template.template;
   const lines: GLLine[] = body.lines.map((line) => ({
     ...emptyLine(), accountcode: line.accountcode, description: line.description ?? "",
-    departmentcode: line.departmentcode ?? "", projectcode: line.projectcode ?? "", cashflow: line.cashflow ?? "",
+    departmentcode: line.departmentcode ?? "", projectcode: line.projectcode ?? "", ...extraDimensionCodes(line), cashflow: line.cashflow ?? "",
   }));
   while (lines.length < 2) lines.push(emptyLine());
   return {

@@ -4,16 +4,16 @@ import { useState, type ReactNode } from "react";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { accountTypeLabels, fillText, normalizeDimensionCodes, reportCodeList, type GLAccount, type GLJournalBook, type GLPage, type GLReport, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { DIMENSIONS, accountTypeLabels, dimensionEnabled, fillText, normalizeDimensionCodes, reportCodeList, type GLAccount, type GLDimensionLineField, type GLDimensionResource, type GLJournalBook, type GLPage, type GLReport, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { Field, Notice, actionClass, control, useGLLanguage, useGLText } from "./gl-common";
 import { DimensionCodeMultiSelect, useDimensionRegisters } from "./gl-dimension-select";
 import { TemplateModal as Modal } from "./gl-journal-templates";
 import { GLBudgetsPrint, GLChartOfAccountsPrint, GLJournalBooksPrint, budgetPrintColumnCount, printCompanyName, printOrientation, type ChartNameMode, type useGLPrint } from "./gl-print";
-import { emptyReportFilters, fetchReport, type ReportFilters } from "./gl-reports";
+import { DIMENSION_SWITCH_OFF_HINT, dimensionSwitchOffNote, emptyReportFilters, fetchReport, type ReportFilters } from "./gl-reports";
 
 // "เงื่อนไขการพิมพ์" ของรายงานข้อมูลหลัก 3 รายการ ที่ Champ ถามก่อนพิมพ์ (docs/kms/champ/09-gl.md §5.1-5.2):
-// 5520 ผังบัญชี (ช่วงรหัสบัญชี · ช่วงหมวด · แสดงชื่อบัญชี) · 5531 สมุดรายวัน (ช่วงรหัสสมุด) · 5525 งบประมาณ (ช่วงรหัสงบ · ช่วงบัญชี · สาขา แผนก โครงการ)
+// 5520 ผังบัญชี (ช่วงรหัสบัญชี · ช่วงหมวด · แสดงชื่อบัญชี) · 5531 สมุดรายวัน (ช่วงรหัสสมุด) · 5525 งบประมาณ (ช่วงรหัสงบ · ช่วงบัญชี · สาขา · มิติวิเคราะห์ทั้ง 6: แผนก โครงการ การจัดสรร งาน หน่วยงาน ฝ่าย)
 // ช่วงรหัสแบบ Champ: ใส่ช่อง "จาก" อย่างเดียว = เฉพาะรหัสนั้น, "จาก"+"ถึง" = ช่วง (GLRepChartOfAccountDlg.cpp:152-166, GLRepBudgetDlg.cpp:244-251)
 
 type Print = ReturnType<typeof useGLPrint>["print"];
@@ -193,8 +193,10 @@ export function BookPrintDialog({ print, onClose }: { print: Print; onClose: () 
 
 // ---- 5525 budget detail -----------------------------------------------------------------------------------------------------------
 
-export type BudgetPrintConditions = { budgetfrom: string; budgetto: string; accountfrom: string; accountto: string; branchcode: string; departments: string[]; projects: string[] };
-export const DEFAULT_BUDGET_PRINT: BudgetPrintConditions = { budgetfrom: "", budgetto: "", accountfrom: "", accountto: "", branchcode: "", departments: [], projects: [] };
+/** Field of BudgetPrintConditions that keeps the picked codes of each analysis dimension (departments / projects keep their original names). */
+export const BUDGET_PRINT_FIELDS = { departments: "departments", projects: "projects", "allocate-codes": "allocates", "job-codes": "jobs", "part-codes": "parts", "side-codes": "sides" } as const satisfies Record<GLDimensionResource, string>;
+export type BudgetPrintConditions = { budgetfrom: string; budgetto: string; accountfrom: string; accountto: string; branchcode: string } & Record<(typeof BUDGET_PRINT_FIELDS)[GLDimensionResource], string[]>;
+export const DEFAULT_BUDGET_PRINT: BudgetPrintConditions = { budgetfrom: "", budgetto: "", accountfrom: "", accountto: "", branchcode: "", departments: [], projects: [], allocates: [], jobs: [], parts: [], sides: [] };
 
 export function budgetPrintReversed(c: BudgetPrintConditions): boolean {
   return codeRangeReversed(c.budgetfrom, c.budgetto) || codeRangeReversed(c.accountfrom, c.accountto);
@@ -208,17 +210,18 @@ export function budgetPrintFilters(c: BudgetPrintConditions): ReportFilters {
     budgetcode, budgetcodeto: budgetcode ? c.budgetto.trim() : "",
     accountfrom, accountto: accountfrom ? c.accountto.trim() || accountfrom : "",
     branchcode: c.branchcode.trim(),
-    departmentcode: normalizeDimensionCodes(c.departments).join(","),
-    projectcode: normalizeDimensionCodes(c.projects).join(","),
+    ...(Object.fromEntries(DIMENSIONS.map((def) => [def.line, normalizeDimensionCodes(c[BUDGET_PRINT_FIELDS[def.resource]]).join(",")])) as Record<GLDimensionLineField, string>),
   };
 }
 
 export function budgetPrintConditionLines(c: BudgetPrintConditions, tr: GLTextFn): string[] {
   const lines = [...codeRangeLines(tr("gl_print_budget_code_noun", "รหัสงบประมาณ"), c.budgetfrom, c.budgetto, tr), ...codeRangeLines(tr("gl_account_code", "รหัสบัญชี"), c.accountfrom, c.accountto, tr)];
-  const branch = c.branchcode.trim(), departments = normalizeDimensionCodes(c.departments), projects = normalizeDimensionCodes(c.projects);
+  const branch = c.branchcode.trim();
   if (branch) lines.push(`${tr("gl_branch_code", "รหัสสาขา")} ${branch}`);
-  if (departments.length) lines.push(`${tr("gl_department_code", "รหัสแผนก")} ${departments.join(", ")}`);
-  if (projects.length) lines.push(`${tr("gl_project_code", "รหัสโครงการ")} ${projects.join(", ")}`);
+  for (const def of DIMENSIONS) {
+    const codes = normalizeDimensionCodes(c[BUDGET_PRINT_FIELDS[def.resource]]);
+    if (codes.length) lines.push(`${tr(...def.codeLabel)} ${codes.join(", ")}`);
+  }
   return lines;
 }
 
@@ -237,6 +240,7 @@ export async function budgetPrintReport(filters: ReportFilters, changedMessage: 
 export function BudgetPrintDialog({ print, onClose }: { print: Print; onClose: () => void }) {
   const tr = useGLText(), language = useGLLanguage();
   const dims = useDimensionRegisters();
+  const switchOffNote = dimensionSwitchOffNote(dims.settings, tr);
   const [c, setC] = useState<BudgetPrintConditions>(DEFAULT_BUDGET_PRINT), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const patch = (next: Partial<BudgetPrintConditions>) => { setC((value) => ({ ...value, ...next })); setError(""); };
   async function run() {
@@ -265,8 +269,13 @@ export function BudgetPrintDialog({ print, onClose }: { print: Print; onClose: (
       <Field label={tr("gl_print_to_account_code", "ถึงรหัสบัญชี")}><input className={control} data-field="accountto" disabled={!c.accountfrom.trim()} value={c.accountto} onChange={(event) => patch({ accountto: event.target.value })} onKeyDown={submitOnEnter} /></Field>
       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} data-field="branchcode" value={c.branchcode} placeholder={tr("gl_all_branches", "ทุกสาขา")} onChange={(event) => patch({ branchcode: event.target.value })} onKeyDown={submitOnEnter} /></Field>
       <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
-        <DimensionCodeMultiSelect report resource="departments" value={reportCodeList(c.departments.join(","))} register={dims.departments} disabled={busy} onChange={(departments) => patch({ departments })} />
-        <DimensionCodeMultiSelect report resource="projects" value={reportCodeList(c.projects.join(","))} register={dims.projects} disabled={busy} onChange={(projects) => patch({ projects })} />
+        {DIMENSIONS.map((def) => {
+          const enabled = dimensionEnabled(dims.settings, def);
+          return <div key={def.resource} className="min-w-0" title={enabled ? undefined : tr(...DIMENSION_SWITCH_OFF_HINT)}>
+            <DimensionCodeMultiSelect report resource={def.resource} value={reportCodeList(c[BUDGET_PRINT_FIELDS[def.resource]].join(","))} register={dims.registers[def.resource]} disabled={busy || !enabled} onChange={(codes) => patch({ [BUDGET_PRINT_FIELDS[def.resource]]: codes })} />
+          </div>;
+        })}
+        {switchOffNote && <p className="text-[0.9rem] leading-normal text-muted-foreground sm:col-span-2">{switchOffNote}</p>}
       </div>
     </PrintDialogShell>
   );

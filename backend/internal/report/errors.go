@@ -65,8 +65,9 @@ var failures = map[string]struct {
 var engineFields = map[string]string{
 	"from": "date_from", "to": "date_to", "fiscalyear": "fiscal_year", "accountfrom": "account_from", "accountto": "account_to",
 	"docnofrom": "doc_no_from", "docnoto": "doc_no_to", "budgetcode": "budget_from", "budgetcodeto": "budget_to",
-	"poststatus": "post_status", "departmentcode": "departments", "projectcode": "projects", "bookcode": "books",
-	"branchcode": "branch", "orderby": "sort",
+	"poststatus": "post_status", "departmentcode": "departments", "projectcode": "projects",
+	"allocatecode": "allocates", "jobcode": "jobs", "partcode": "parts", "sidecode": "sides",
+	"bookcode": "books", "branchcode": "branch", "orderby": "sort",
 }
 
 // fromEngine classifies an error of a report source. User errors of the GL engine keep their gl_err_<code> text

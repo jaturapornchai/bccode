@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Eye, FileText, Maximize2, Pencil, Plus, Prin
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { accountDimensionCodes, accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, lineDimensionsAfterAccountChange, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine, type GLPage } from "@/lib/general-ledger";
+import { accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, lineDimensionsAfterAccountChange, localDate, normalizeJournalLines, validateJournal, type GLDimensionDef, type GLJournal, type GLJournalTemplate, type GLLine, type GLPage } from "@/lib/general-ledger";
 import { adjacentJournal, countJournalEntries, pickPostBatch, postBatchDate, postBatchLookupPath, type GLPostBatchInfo } from "@/lib/gl-journal-voucher";
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
@@ -20,7 +20,7 @@ import { GLVoucherPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges, type GLDetailVat } from "@/lib/gl-journal-details";
 import { GLJournalReviewPanel } from "./gl-journal-review";
 import { ChampField, ChampGroupBox, ChampKey, ChampSpacer, ChampTaxBox } from "./gl-journal-boxes";
-import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
+import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalDimensionColumns, journalFunctionKey, lineDimensionCell, withoutDisabledDimensions, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
 import { getAuthSession } from "@/lib/client-auth-session";
 import { journalFromTemplate, journalJumpKey, jumpRowIndex, type JournalJumpSide } from "@/lib/gl-journal-templates";
 import { JournalTemplateTools } from "./gl-journal-templates";
@@ -208,10 +208,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const postBatchView = postBatch?.batchno === postBatchNo ? postBatch : null;
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
   const accountNames = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, accountName(account)])), [refs.accounts]);
-  // Champ OnCheckSeparate: แผนก/โครงการใส่ได้เฉพาะบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" — ช่องที่มีค่าอยู่แล้วยังแก้/ล้างได้
+  // Champ OnCheckSeparate: รหัสมิติ (แผนก โครงการ การจัดสรร งาน หน่วยงาน ฝ่าย) ใส่ได้เฉพาะบัญชีที่ตั้ง "แยก…" และบริษัทเปิดใช้มิตินั้น (lineDimensionCell)
   const accountsByCode = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, account])), [refs.accounts]);
-  const departLocked = (line: { accountcode: string; departmentcode?: string }) => !accountsByCode.get(line.accountcode)?.departseparate && !line.departmentcode;
-  const projectLocked = (line: { accountcode: string; projectcode?: string }) => !accountsByCode.get(line.accountcode)?.projectseparate && !line.projectcode;
+  // คอลัมน์มิติของตารางบรรทัด: บริษัทเปิดใช้ หรือใบนี้มีรหัสของมิตินั้นอยู่แล้ว (สวิตช์ที่ปิดภายหลังไม่ซ่อนข้อมูลเดิม)
+  const dimensionColumns = useMemo(() => journalDimensionColumns(dims.settings, journal?.lines), [dims.settings, journal?.lines]);
   const entryCount = journal ? countJournalEntries(journal.lines) : 0;
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const smartGuard = useMemo(() => {
@@ -290,18 +290,24 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isEditing]);
 
+  // มิติที่บริษัทยังไม่เปิดใช้ถูกเอารหัสออกจากข้อมูลที่วาง/เติมจากแม่แบบ — บอกผู้ใช้ว่าเปิดได้ที่ไหน
+  const droppedDimensionsNote = (dropped: readonly GLDimensionDef[]) => dropped.length === 0 ? "" : ` ${tr("gl_dim_columns_dropped", "ไม่ได้ใส่รหัส{0} เพราะบริษัทยังไม่เปิดใช้ — เปิดได้ที่เมนู “กำหนดค่าเริ่มต้นบริษัท”").replace("{0}", dropped.map((def) => tr(def.label[0], def.label[1])).join("/"))}`;
+
   const applyPastedLines = (clipboardText: string) => {
     if (!journal || !clipboardText.trim()) return;
-    const { lines: parsed, issues } = parseClipboardJournalLines(clipboardText);
+    const { lines: pastedLines, issues } = parseClipboardJournalLines(clipboardText);
     if (issues.length > 0) {
       setMessage("");
       setError(tr("gl_paste_rejected", "ยังไม่ได้วางข้อมูล — แก้ใน Excel แล้ววางใหม่: {0}").replace("{0}", issues.slice(0, 3).map((issue) => pasteIssueText(issue, tr)).join(" · ")));
       return;
     }
-    if (parsed.length === 0) {
+    if (pastedLines.length === 0) {
       setError(tr("gl_paste_no_rows", "ไม่พบแถวข้อมูลที่วางได้ — คัดลอกคอลัมน์ รหัสบัญชี คำอธิบาย เดบิต เครดิต จาก Excel"));
       return;
     }
+
+    // บริษัทที่ยังไม่เปิดมิติ: ไม่ใส่รหัสมิตินั้นที่วางมา (ค่าใหม่ backend ไม่รับ และช่องที่ล็อกทำให้ผู้ใช้ลบเองไม่ได้)
+    const { lines: parsed, dropped } = dims.ready ? withoutDisabledDimensions(pastedLines, dims.settings) : { lines: pastedLines, dropped: [] };
 
     const isEmptyJournal = journal.lines.every(
       (l) => !l.accountcode && !l.description && (!l.debit || l.debit === "0") && (!l.credit || l.credit === "0")
@@ -313,7 +319,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     }
     patch({ lines: combined });
     setError("");
-    setMessage(tr("gl_paste_rows_added", "วางข้อมูลจาก Excel แล้ว {0} บรรทัด — ตรวจบัญชีและยอดก่อนบันทึก").replace("{0}", String(parsed.length)));
+    setMessage(tr("gl_paste_rows_added", "วางข้อมูลจาก Excel แล้ว {0} บรรทัด — ตรวจบัญชีและยอดก่อนบันทึก").replace("{0}", String(parsed.length)) + droppedDimensionsNote(dropped));
   };
 
   const handlePasteClick = async () => {
@@ -394,14 +400,16 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     const blank = emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace)));
     const base: GLJournal = journal && !journal.id ? { ...blank, date: journal.date, fiscalyear: journal.fiscalyear, branchcode: journal.branchcode } : blank;
-    setJournal(journalFromTemplate(template, base, usableBooks.map((book) => book.code)));
+    const filled = journalFromTemplate(template, base, usableBooks.map((book) => book.code));
+    const { lines: templateLines, dropped } = dims.ready ? withoutDisabledDimensions(filled.lines, dims.settings) : { lines: filled.lines, dropped: [] };
+    setJournal({ ...filled, lines: templateLines });
     setOriginal(JSON.stringify(blank));
     setIsEditing(true);
     setDetailsEditing(false);
     setError("");
     setReason("");
     setReverseDocno(""); setReverseDate(localDate());
-    setMessage(tr("gl_journal_template_applied", "เติมรูปแบบ “{0}” แล้ว — ใส่ยอดเดบิต/เครดิตและเลขที่ใบกำกับ ตรวจสอบ แล้วบันทึก").replace("{0}", template.name));
+    setMessage(tr("gl_journal_template_applied", "เติมรูปแบบ “{0}” แล้ว — ใส่ยอดเดบิต/เครดิตและเลขที่ใบกำกับ ตรวจสอบ แล้วบันทึก").replace("{0}", template.name) + droppedDimensionsNote(dropped));
     requestAnimationFrame(() => headerRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]):not([type=\"hidden\"]), select:not([disabled]), button:not([disabled])")?.focus());
   }
 
@@ -908,15 +916,14 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   {/* กรอบภาษีแสดงอย่างเดียว (แก้ภาษีของใบที่ผ่านรายการแล้วผ่านตารางภาษี) — อยู่นอก fieldset ให้ปุ่มตารางภาษีกดได้ */}
                   <ChampTaxBox details={journal.details} scale={year?.scale ?? 2} disabled onOpenTaxTable={() => openDetailsSection("vats")} />
                   <div className="overflow-x-auto rounded-xl border border-border">
-                    <table className="w-full min-w-[900px] text-left text-[0.95rem]">
+                    <table className="w-full text-left text-[0.95rem]" style={{ minWidth: 720 + dimensionColumns.length * 90 }}>
                       <thead className="bg-muted">
                         <tr>
                           <th className="w-10 p-2 text-center">#</th>
                           <th className="p-2">{tr("gl_account_code", "รหัสบัญชี")}</th>
                           <th className="p-2">{tr("gl_account_name", "ชื่อบัญชี")}</th>
                           <th className="p-2">{tr("gl_extra_detail", "รายละเอียดเพิ่มเติม")}</th>
-                          <th className="p-2">{tr("gl_department", "แผนก")}</th>
-                          <th className="p-2">{tr("gl_project", "โครงการ")}</th>
+                          {dimensionColumns.map((def) => <th key={def.line} className="p-2">{tr(def.label[0], def.label[1])}</th>)}
                           <th className="p-2 text-right">{tr("gl_debit", "เดบิต")}</th>
                           <th className="p-2 text-right">{tr("gl_credit", "เครดิต")}</th>
                         </tr>
@@ -928,8 +935,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <td className="p-2 font-mono font-semibold text-primary whitespace-nowrap">{line.accountcode}</td>
                             <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{accountNames.get(line.accountcode) ?? ""}</td>
                             <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{line.description || "—"}</td>
-                            <td className="p-2">{line.departmentcode || "—"}</td>
-                            <td className="p-2">{line.projectcode || "—"}</td>
+                            {dimensionColumns.map((def) => <td key={def.line} className="p-2">{line[def.line] || "—"}</td>)}
                             <td className="min-w-32 p-2 text-right font-mono tabular-nums whitespace-nowrap">
                               {line.debit ? formatAmount(line.debit, year?.scale) : "—"}
                             </td>
@@ -1188,16 +1194,15 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         }
                       }}
                     >
-                      {/* คอลัมน์ตาม Champ: รหัสบัญชี | ชื่อบัญชี | รายละเอียดเพิ่มเติม | แผนก | (โครงการ — มีเฉพาะ BC) | เดบิต | เครดิต */}
-                      <table className="w-full min-w-[1040px] text-left text-[0.95rem]">
+                      {/* คอลัมน์ตาม Champ: รหัสบัญชี | ชื่อบัญชี | รายละเอียดเพิ่มเติม | มิติ (แผนก โครงการ การจัดสรร งาน หน่วยงาน ฝ่าย — เฉพาะที่บริษัทเปิดใช้หรือใบนี้มีรหัสอยู่) | เดบิต | เครดิต */}
+                      <table className="w-full text-left text-[0.95rem]" style={{ minWidth: 688 + dimensionColumns.length * 176 }}>
                         <thead className="bg-muted">
                           <tr>
                             <th className="w-10 p-2 text-center">#</th>
                             <th className="p-2">{tr("gl_account_code", "รหัสบัญชี")}</th>
                             <th className="p-2">{tr("gl_account_name", "ชื่อบัญชี")}</th>
                             <th className="p-2">{tr("gl_extra_detail", "รายละเอียดเพิ่มเติม")}</th>
-                            <th className="p-2">{tr("gl_department", "แผนก")}</th>
-                            <th className="p-2">{tr("gl_project", "โครงการ")}</th>
+                            {dimensionColumns.map((def) => <th key={def.line} className="p-2">{tr(def.label[0], def.label[1])}</th>)}
                             <th className="p-2">{tr("gl_debit", "เดบิต")}</th>
                             <th className="p-2">{tr("gl_credit", "เครดิต")}</th>
                             <th className="p-2"><span className="sr-only">{tr("gl_manage", "จัดการ")}</span></th>
@@ -1214,12 +1219,14 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                               <td className="min-w-40 p-2">
                                 <input className={control} aria-label={tr("gl_line_extra_detail", "รายละเอียดเพิ่มเติมบรรทัด {0}").replace("{0}", String(index + 1))} value={line.description} onChange={(e) => patchLine(index, { description: e.target.value })} />
                               </td>
-                              <td className="min-w-44 p-2">
-                                <DimensionSelect label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} register={accountsByCode.get(line.accountcode)?.departseparate ? dims.departments : []} allowed={accountDimensionCodes(accountsByCode.get(line.accountcode), "departments")} disabled={busy || departLocked(line)} title={departLocked(line) ? tr("gl_line_not_depart_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกแผนก (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(departmentcode) => patchLine(index, { departmentcode })} />
-                              </td>
-                              <td className="min-w-44 p-2">
-                                <DimensionSelect label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} register={accountsByCode.get(line.accountcode)?.projectseparate ? dims.projects : []} allowed={accountDimensionCodes(accountsByCode.get(line.accountcode), "projects")} disabled={busy || projectLocked(line)} title={projectLocked(line) ? tr("gl_line_not_project_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกโครงการ (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(projectcode) => patchLine(index, { projectcode })} />
-                              </td>
+                              {dimensionColumns.map((def) => {
+                                const cell = lineDimensionCell(def, dims.settings, dims.registers, accountsByCode.get(line.accountcode), line);
+                                return (
+                                  <td key={def.line} className="min-w-44 p-2">
+                                    <DimensionSelect label={tr(def.lineLabel[0], def.lineLabel[1]).replace("{0}", String(index + 1))} value={line[def.line] ?? ""} register={cell.register} allowed={cell.allowed} disabled={busy || cell.locked} title={cell.hint ? tr(cell.hint[0], cell.hint[1]) : undefined} onChange={(code) => patchLine(index, { [def.line]: code })} />
+                                  </td>
+                                );
+                              })}
                               <td data-line-cell="debit" className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />
                               </td>

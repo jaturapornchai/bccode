@@ -124,6 +124,32 @@ describe("clipboard-journal-parser", () => {
       expect(lines).toEqual([line("11210", "ปรับปรุงรหัสลูกค้า credit note", "0", "2000.00")]);
     });
 
+    it("reads the six dimension columns in the order of the journal grid: department, project, allocation, job, unit, division", () => {
+      const excel =
+        "รหัสบัญชี\tคำอธิบาย\tเดบิต\tเครดิต\tแผนก\tโครงการ\tการจัดสรร\tงาน\tหน่วยงาน\tฝ่าย\n" +
+        "51200\tค่าแรงช่างก่อสร้างอาคาร A\t48,000.00\t\tD01\tP01\tA01\tJ07\tU3\tS2\n" +
+        "11110\tจ่ายเงินสด\t\t48,000.00\t\t\t\t\t\t\n";
+      const { lines, issues } = parseClipboardJournalLines(excel);
+      expect(issues).toEqual([]);
+      expect(lines).toEqual([
+        { ...line("51200", "ค่าแรงช่างก่อสร้างอาคาร A", "48000.00", "0", "D01", "P01"), allocatecode: "A01", jobcode: "J07", partcode: "U3", sidecode: "S2" },
+        line("11110", "จ่ายเงินสด", "0", "48000.00"),
+      ]);
+    });
+
+    it("puts the allocation / job / unit / division keys on a line only when a cell is filled, and fills the gaps with nothing", () => {
+      const { lines } = parseClipboardJournalLines("51200\tค่าแรง\t1,000.00\t\tD01\tP01\t\tJ07\n11110\tเงินสด\t\t1,000.00\tD01");
+      expect(lines[0]).toEqual({ ...line("51200", "ค่าแรง", "1000.00", "0", "D01", "P01"), jobcode: "J07" });
+      expect("allocatecode" in lines[0] || "partcode" in lines[0] || "sidecode" in lines[0]).toBe(false);
+      expect(lines[1]).toEqual(line("11110", "เงินสด", "0", "1000.00", "D01", ""));
+    });
+
+    it("ignores columns after the sixth dimension and leaves 2- and 3-column pastes without dimensions", () => {
+      const { lines } = parseClipboardJournalLines("51200\tค่าแรง\t1,000.00\t\tD01\tP01\tA01\tJ07\tU3\tS2\tเกินมา\n11110\t-1,000.00");
+      expect(Object.keys(lines[0]).sort()).toEqual(["accountcode", "allocatecode", "cashflow", "credit", "debit", "departmentcode", "description", "jobcode", "partcode", "projectcode", "sidecode"]);
+      expect(lines[1]).toEqual(line("11110", "", "0", "1000.00"));
+    });
+
     it("returns nothing for empty text or blank rows", () => {
       expect(parseClipboardJournalLines("")).toEqual({ lines: [], issues: [] });
       expect(parseClipboardJournalLines("   \n\t\t\t\n")).toEqual({ lines: [], issues: [] });

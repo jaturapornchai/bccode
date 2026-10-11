@@ -54,6 +54,9 @@ func TestGLUserErrorCodesHaveEnglishRows(t *testing.T) {
 			t.Fatalf("scanner missed %s — pattern out of date", code)
 		}
 	}
+	for _, code := range gl.DimensionErrorCodes() { // built per register, so the source scan above cannot see them
+		seen[code] = true
+	}
 	for code := range seen {
 		key := "gl_err_" + code
 		if text := language.Text(key, "en"); text == key || text == "" {

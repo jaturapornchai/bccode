@@ -29,6 +29,10 @@ export const REPORT_ROUTES: Readonly<Record<string, string>> = {
   "/report/journal-books": "gl-journal-books-report",
   "/report/departments": "gl-department-report",
   "/report/projects": "gl-project-report",
+  "/report/allocates": "gl-allocate-report",
+  "/report/jobs": "gl-job-report",
+  "/report/parts": "gl-part-report",
+  "/report/sides": "gl-side-report",
   "/report/chart-of-accounts": "gl-chart-of-accounts-report",
 };
 
@@ -44,7 +48,7 @@ export function isReportRegistryRoute(route: string): boolean {
 // ---- contract (GET /report/v1/registry, POST /report/v1/run) ----
 
 export type ReportParamType = "date" | "code" | "codes" | "enum" | "bool" | "year";
-export type ReportLookup = "account" | "branch" | "book" | "department" | "project" | "budget" | "fiscal_year" | "";
+export type ReportLookup = "account" | "branch" | "book" | "department" | "project" | "allocate" | "job" | "part" | "side" | "budget" | "fiscal_year" | "";
 export type ReportOption = { value: string; label: string };
 export type ReportParam = {
   key: string;

@@ -1,0 +1,2 @@
+# Preserve CRLF for Revenue Department golden test files (RD format specification requires CRLF)
+backend/internal/rdfile/testdata/*.golden text eol=crlf

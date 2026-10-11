@@ -90,7 +90,7 @@ func TestRegistryListsPermittedMenusOnly(t *testing.T) {
 	c = newContext(http.MethodGet, "/report/v1/registry?module=gl", "", "", member)
 	_ = handler("*").Registry(c)
 	data = c.body.(map[string]interface{})["data"].(registryResponse)
-	if !data.CanPrint || !data.CanExport || len(data.Reports) != 14 {
+	if !data.CanPrint || !data.CanExport || len(data.Reports) != 18 {
 		t.Fatalf("owner registry = %d reports print %v export %v", len(data.Reports), data.CanPrint, data.CanExport)
 	}
 }

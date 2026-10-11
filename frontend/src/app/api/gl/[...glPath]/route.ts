@@ -29,7 +29,7 @@ export async function GET(request: Request, context: Context) {
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
-    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "budgetcodeto", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", "bydepartment", "byproject", "dimtotals", "templates", "notes", "mode", "amount", "rate", "docdatefrom", "docdateto", "invdatefrom", "invdateto", "partnerfrom", "partnerto", "codefrom", "codeto", "purpose"];
+    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "allocatecode", "jobcode", "partcode", "sidecode", "bookcode", "budgetcode", "budgetcodeto", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", "bydepartment", "byproject", "byallocate", "byjob", "bypart", "byside", "dimtotals", "templates", "notes", "mode", "amount", "rate", "docdatefrom", "docdateto", "invdatefrom", "invdateto", "partnerfrom", "partnerto", "codefrom", "codeto", "purpose"];
     new URL(request.url).searchParams.forEach((value, key) => { if (allowed.includes(key)) query.set(key, value); });
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/gl/v2/${glPath.map(encodeURIComponent).join("/")}?${query}`, { method: "GET" });
   } catch { return bad("การเชื่อมต่อระบบไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"); }
@@ -43,6 +43,8 @@ export async function POST(request: Request, context: Context) {
   if (!isRecord(body) || Array.isArray(body) || typeof body.requestid !== "string" || !/^[0-9a-f-]{36}$/i.test(body.requestid)) return bad("กรุณาระบุหมายเลขคำขอที่ถูกต้อง");
   if (![...GL_RESOURCES, "processes", GL_BANK_BOOK_RESOURCE].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references", "load-standard", "change-account-number"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "spread" && body.resource !== "budgets") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  // The company switches are one record per company (id "default"): only update is a valid command (backend dimension_settings.go).
+  if (body.resource === "dimension-settings" && (body.action !== "update" || body.id !== "default")) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // สมุดเงินฝากรับเฉพาะ สร้าง/แก้ไข/ลบ/เปลี่ยนเลขที่บัญชี และ "เปลี่ยนเลขที่บัญชี" ใช้ได้กับสมุดเงินฝากเท่านั้น
   if (body.resource === GL_BANK_BOOK_RESOURCE && !GL_BANK_BOOK_ACTIONS.includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "change-account-number" && body.resource !== GL_BANK_BOOK_RESOURCE) return bad("ประเภทการทำรายการไม่ถูกต้อง");
@@ -61,7 +63,7 @@ export async function POST(request: Request, context: Context) {
   if (hasNumericAmount(body)) return bad("จำนวนเงินต้องส่งเป็นข้อความทศนิยม");
   // Scope is resolved from the authenticated backend session. Never forward a caller's company/holding override.
   const payload: Record<string, unknown> = {};
-  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch", "vatadjust", "bankaccount", "newaccountnumber"]) {
+  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch", "vatadjust", "bankaccount", "newaccountnumber", "dimensionsettings"]) {
     if (!(key in body)) continue;
     if (isRecord(body[key])) {
       const record = { ...body[key] };

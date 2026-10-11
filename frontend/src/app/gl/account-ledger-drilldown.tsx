@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { BookOpen, ExternalLink, RefreshCw, X, FileText, ArrowRight, Printer, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { formatAmount, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLReport, journalBookName, findJournalBook } from "@/lib/general-ledger";
+import { DIMENSIONS, formatAmount, rowsHoldDimension, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLReport, journalBookName, findJournalBook } from "@/lib/general-ledger";
 import { formatAppDate } from "@/lib/date-time";
 import { actionClass, control, downloadText, useGLLanguage, useGLText } from "./gl-common";
 import { fetchReport, JournalDrillDownModal, emptyReportFilters, type ReportFilters } from "./gl-reports";
@@ -254,6 +254,8 @@ export function AccountLedgerModal({
   // แถวยอดยกมา/ยอดยกไป/ยอดรวมของรายงานแยกประเภท (Champ 5534) ไม่ใช่รายการ — หน้าต่างนี้แสดงยอดยกมาด้านบนอยู่แล้ว
   const rows = (report?.rows ?? []).filter((row) => !row.rowtype || row.rowtype === "line");
   const thName = (account.names || []).find((n) => n.code === "th")?.name ?? account.accountcode;
+  // แผนก/โครงการ แสดงเสมอ; การจัดสรร/งาน/หน่วยงาน/ฝ่าย แสดงเมื่อรายการบัญชีที่ backend ส่งมามีรหัสของมิตินั้น
+  const extraDimensions = DIMENSIONS.filter((def) => def.resource !== "departments" && def.resource !== "projects" && rowsHoldDimension(rows, def));
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -349,6 +351,7 @@ export function AccountLedgerModal({
                   <th className="py-2 px-2 w-16 text-center">{tr("gl_branch_code", "สาขา")}</th>
                   <th className="py-2 px-2 w-16 text-center">{tr("gl_department", "แผนก")}</th>
                   <th className="py-2 px-2 w-16 text-center">{tr("gl_project", "โครงการ")}</th>
+                  {extraDimensions.map((def) => <th key={def.line} className="py-2 px-2 w-16 text-center">{tr(...def.label)}</th>)}
                   <th className="py-2 px-2 w-28 text-right">{tr("gl_debit", "เดบิต")}</th>
                   <th className="py-2 px-2 w-28 text-right">{tr("gl_credit", "เครดิต")}</th>
                   <th className="py-2 pr-2.5 pl-2 w-28 text-right">{tr("gl_balance", "ยอดคงเหลือ")}</th>
@@ -396,6 +399,7 @@ export function AccountLedgerModal({
                       <td className="py-1.5 px-2 text-center text-muted-foreground">
                         {row.projectcode || "-"}
                       </td>
+                      {extraDimensions.map((def) => <td key={def.line} className="py-1.5 px-2 text-center text-muted-foreground">{row[def.line] || "-"}</td>)}
                       <td className="py-1.5 px-2 text-right font-medium text-foreground">
                         {row.debit && row.debit !== "0.00" ? formatAmount(row.debit) : "-"}
                       </td>

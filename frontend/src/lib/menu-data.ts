@@ -92,7 +92,7 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "gl-bank-unmatched": ["รายงาน Bank Statement", "กระทบยอดธนาคาร"],
   "gl-account-mapping": ["รูปแบบการเชื่อมโยงบัญชีอัตโนมัติ", "Account Mapping"],
   "gl-budget": ["กำหนดงบประมาณประจำปี", "Budgeting"],
-  "gl-dimensions": ["กำหนดรหัสแผนก", "กำหนดรหัสโครงการ", "รหัสแผนก", "รหัสโครงการ", "Department", "Project"],
+  "gl-dimensions": ["กำหนดรหัสแผนก", "กำหนดรหัสโครงการ", "กำหนดรหัสการจัดสรร", "กำหนดรหัสงาน", "กำหนดรหัสหน่วยงาน", "กำหนดรหัสฝ่าย", "รหัสแผนก", "รหัสโครงการ", "รหัสการจัดสรร", "รหัสงาน", "รหัสหน่วยงาน", "รหัสฝ่าย", "Department", "Project", "Allocate", "Job", "Unit", "Division"],
   "gl-opening-balance": ["บันทึกข้อมูลรายวันยกมา", "ยอดยกมาทางบัญชี"],
   // "ยกเลิกเอกสารที่ผ่านรายการแล้ว" เป็นเมนูแยก gl-unpost ตาม Champ 5501 (2026-10-09); ชื่อนี้ยังค้นหาเจอที่ gl-post ด้วย (แท็บกลับรายการในจอผ่านรายการ)
   "gl-post": ["ผ่านรายการบัญชี", "posting", "ผ่านรายการและยกเลิก", "ยกเลิกเอกสารที่ผ่านรายการแล้ว", "ยกเลิกการผ่านรายการบัญชี", "unpost", "กลับรายการ"],
@@ -629,7 +629,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("gl-account-mapping", "กำหนดรูปแบบการเชื่อม", "Automatic Account Mapping", "/gl/account-mapping", "finance"),
           tx("gl-product-account-groups", "กำหนดกลุ่มบัญชีสินค้า", "Product Account Groups", "/gl/product-account-groups", "finance"),
           tx("gl-fiscal-years", "ปีบัญชีและบัญชีปิดปี", "Fiscal Year and Closing Accounts", "/gl/fiscal-years", "finance", "gl_fiscal_year_closing_acct"),
-          tx("gl-dimensions", "กำหนดรหัสต่างๆ (แผนก/โครงการ)", "Code Setup (Departments / Projects)", "/gl/dimensions", "finance"),
+          tx("gl-dimensions", "กำหนดรหัสต่างๆ", "Code Setup", "/gl/dimensions", "finance", "gl_dimensions"),
         ],
       },
       {
@@ -661,6 +661,10 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("gl-journal-books-report", "รายงานรายละเอียดสมุดบัญชี", "Journal Book Detail Report", "/report/journal-books", "report"),
           tx("gl-department-report", "รายงานรายละเอียดแผนก", "Department Detail Report", "/report/departments", "report"),
           tx("gl-project-report", "รายงานรายละเอียดโครงการ", "Project Detail Report", "/report/projects", "report"),
+          tx("gl-allocate-report", "รายงานรายละเอียดการจัดสรร", "Allocation Detail Report", "/report/allocates", "report"),
+          tx("gl-job-report", "รายงานรายละเอียดงาน", "Job Detail Report", "/report/jobs", "report"),
+          tx("gl-part-report", "รายงานรายละเอียดหน่วยงาน", "Unit Detail Report", "/report/parts", "report"),
+          tx("gl-side-report", "รายงานรายละเอียดฝ่าย", "Division Detail Report", "/report/sides", "report"),
           tx("gl-budget-detail", "รายงานรายละเอียดงบประมาณ", "Budget Detail Report", "/report/budget-detail", "report"),
           tx("gl-chart-of-accounts-report", "รายงานรายละเอียดผังบัญชี", "Chart of Accounts Detail Report", "/report/chart-of-accounts", "report"),
           tx("gl-daily-report", "รายงานข้อมูลรายวัน", "Journal Entries Report", "/report/gljournal", "report"),

@@ -92,7 +92,7 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 	return scope, err
 }
 
-var resourceScreens = map[string]string{gl.BankAccountKind: bookBankScreen, "journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.DepartmentKind: dimensionsScreen, gl.ProjectKind: dimensionsScreen, gl.JournalTemplateKind: "gl-journals", gl.PostBatchKind: postingScreen, gl.VatAdjustKind: vatAdjustScreen}
+var resourceScreens = map[string]string{gl.BankAccountKind: bookBankScreen, "journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.DepartmentKind: dimensionsScreen, gl.ProjectKind: dimensionsScreen, gl.AllocateKind: dimensionsScreen, gl.JobKind: dimensionsScreen, gl.PartKind: dimensionsScreen, gl.SideKind: dimensionsScreen, gl.DimensionSettingsKind: dimensionSettingsScreen, gl.JournalTemplateKind: "gl-journals", gl.PostBatchKind: postingScreen, gl.VatAdjustKind: vatAdjustScreen}
 var reportScreens = map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report", "budgetdetail": "gl-budget", "statement": "financial-statement-designer"}
 
 func allowed(p map[string]bool, screen, action string) bool {
@@ -136,8 +136,11 @@ const (
 	journalsScreen = "gl-journals"
 	openingScreen  = "gl-opening-balance"
 	postingScreen  = "gl-post"
-	// departments and projects share one two-tab screen (Champ keeps both in the generic code-setup form)
+	// the six analysis registers (department, project, allocate, job, part, side) share one screen with a tab each (Champ keeps them in the generic code-setup form)
 	dimensionsScreen = "gl-dimensions"
+	// the company switches "ใช้ผังบัญชีแบบแยก…" sit on Champ's company-defaults screen (Option 2, items 8-14). The menu has no grantable id for it,
+	// so only a holding OWNER/ADMIN (permission "*") can change them; every ledger user can read them (ledgerLookup).
+	dimensionSettingsScreen = "company-defaults"
 )
 
 func journalScreen(kind string) string {
@@ -157,7 +160,7 @@ func canListJournals(p map[string]bool, kind, status string) bool {
 
 // Reference masters every ledger user needs to fill a voucher (account, year and book pickers).
 func ledgerLookup(resource string) bool {
-	return resource == "accounts" || resource == "fiscal-years" || resource == "journal-books" || resource == gl.DepartmentKind || resource == gl.ProjectKind
+	return resource == "accounts" || resource == "fiscal-years" || resource == "journal-books" || resource == gl.DimensionSettingsKind || gl.IsDimensionKind(resource)
 }
 
 func response(request microservice.IContext, data interface{}) error {
@@ -530,6 +533,9 @@ func (h *Http) list(request microservice.IContext) error {
 	if resource == "period-profit" {
 		return h.periodProfit(ctx, request, scope)
 	}
+	if resource == gl.DimensionSettingsKind {
+		return h.dimensionSettings(ctx, request, scope)
+	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status"), DateFrom: request.QueryParam("from"), DateTo: request.QueryParam("to"), CodeFrom: request.QueryParam("codefrom"), CodeTo: request.QueryParam("codeto")}
 	permitted := allowed(scope.Permissions, screen, "")
@@ -637,7 +643,7 @@ func (h *Http) report(request microservice.IContext) error {
 	if err != nil {
 		return failure(request, err)
 	}
-	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), AccountFrom: request.QueryParam("accountfrom"), AccountTo: request.QueryParam("accountto"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), BudgetCodeTo: request.QueryParam("budgetcodeto"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), HideOpening: queryFlag(request.QueryParam("hideopening")), HideZero: queryFlag(request.QueryParam("hidezero")), ControlTotals: queryFlag(request.QueryParam("controltotals")), Summary: queryFlag(request.QueryParam("summary")), Gross: queryFlag(request.QueryParam("gross")), DayTotals: queryFlag(request.QueryParam("daytotals")), DocNoFrom: request.QueryParam("docnofrom"), DocNoTo: request.QueryParam("docnoto"), OrderBy: request.QueryParam("orderby"), ByDepartment: queryFlag(request.QueryParam("bydepartment")), ByProject: queryFlag(request.QueryParam("byproject")), DimTotals: queryFlag(request.QueryParam("dimtotals")), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
+	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), AccountFrom: request.QueryParam("accountfrom"), AccountTo: request.QueryParam("accountto"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), BudgetCodeTo: request.QueryParam("budgetcodeto"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), AllocateCode: request.QueryParam("allocatecode"), JobCode: request.QueryParam("jobcode"), PartCode: request.QueryParam("partcode"), SideCode: request.QueryParam("sidecode"), BookCode: request.QueryParam("bookcode"), HideOpening: queryFlag(request.QueryParam("hideopening")), HideZero: queryFlag(request.QueryParam("hidezero")), ControlTotals: queryFlag(request.QueryParam("controltotals")), Summary: queryFlag(request.QueryParam("summary")), Gross: queryFlag(request.QueryParam("gross")), DayTotals: queryFlag(request.QueryParam("daytotals")), DocNoFrom: request.QueryParam("docnofrom"), DocNoTo: request.QueryParam("docnoto"), OrderBy: request.QueryParam("orderby"), ByDepartment: queryFlag(request.QueryParam("bydepartment")), ByProject: queryFlag(request.QueryParam("byproject")), ByAllocate: queryFlag(request.QueryParam("byallocate")), ByJob: queryFlag(request.QueryParam("byjob")), ByPart: queryFlag(request.QueryParam("bypart")), BySide: queryFlag(request.QueryParam("byside")), DimTotals: queryFlag(request.QueryParam("dimtotals")), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
 	if name == statementSetReport {
 		return h.statementSet(ctx, request, scope.Scope, q, version)
 	}
@@ -778,6 +784,26 @@ func (h *Http) vatCalc(ctx context.Context, request microservice.IContext, scope
 
 // periodProfit - GET /gl/v2/period-profit?fiscalyear=: the read-only "กำไร(ขาดทุน)สุทธิ" / "กำไร(ขาดทุน)สะสม"
 // columns of the period screen (Champ 5511), computed from posted lines (generalledger/period_profit.go).
+// dimensionSettings answers GET /gl/v2/dimension-settings with the company's seven switches as one object (not a list): the journal,
+// chart-of-accounts and report screens read it to hide, lock or disable the dimension controls. Any ledger user may read it.
+func (h *Http) dimensionSettings(ctx context.Context, request microservice.IContext, scope requestScope) error {
+	if !anyLedger(scope.Permissions) {
+		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")
+	}
+	version, err := h.startRead(ctx, scope.Scope, request)
+	if err != nil {
+		return failure(request, err)
+	}
+	data, err := h.pg.DimensionSettings(ctx, scope.Scope)
+	if err != nil {
+		return failure(request, err)
+	}
+	if err = h.endRead(ctx, scope.Scope, version); err != nil {
+		return failure(request, err)
+	}
+	return response(request, data)
+}
+
 func (h *Http) periodProfit(ctx context.Context, request microservice.IContext, scope requestScope) error {
 	if !allowed(scope.Permissions, resourceScreens["periods"], "") {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")

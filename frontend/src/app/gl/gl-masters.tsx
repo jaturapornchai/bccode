@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Tr
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, accountEntriesText, accountGroupPayload, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, normalizeDimensionCodes, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, accountEntriesText, accountGroupPayload, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, normalizeDimensionCodes, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, DIMENSIONS, dimensionEnabled, accountWithDimensionFlag, accountWithDimensionAll, accountWithDimensionCodes, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -125,12 +125,20 @@ export function accountSavePayload(account: GLAccount, hasChildren: boolean): GL
   const acc = { ...account, parentaccountcode: account.parentaccountcode && account.parentaccountcode.trim() !== "" ? account.parentaccountcode.trim() : null };
   if (hasChildren) acc.allowposting = false;
   acc.iscash = Boolean(acc.iscash) && accountCashAllowed(acc, hasChildren);
-  acc.departseparate = Boolean(account.departseparate);
-  acc.projectseparate = Boolean(account.projectseparate);
-  const departcodes = acc.departseparate ? normalizeDimensionCodes(account.departcodes) : [];
-  const projectcodes = acc.projectseparate ? normalizeDimensionCodes(account.projectcodes) : [];
-  if (departcodes.length > 0) acc.departcodes = departcodes; else delete acc.departcodes;
-  if (projectcodes.length > 0) acc.projectcodes = projectcodes; else delete acc.projectcodes;
+  for (const def of DIMENSIONS) {
+    const isSeparate = Boolean(account[def.flag]);
+    acc[def.flag] = isSeparate;
+    if (isSeparate) {
+      const isAll = Boolean(account[def.all]);
+      acc[def.all] = isAll;
+      const codes = isAll ? [] : normalizeDimensionCodes(account[def.list]);
+      if (codes.length > 0) acc[def.list] = codes;
+      else delete acc[def.list];
+    } else {
+      acc[def.all] = false;
+      delete acc[def.list];
+    }
+  }
   return acc;
 }
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
@@ -158,10 +166,11 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     acc.isactive = acc.isactive ?? true;
     acc.allowposting = acc.allowposting ?? true;
     acc.iscash = acc.iscash ?? false;
-    acc.departseparate = Boolean(acc.departseparate);
-    acc.projectseparate = Boolean(acc.projectseparate);
-    acc.departcodes = normalizeDimensionCodes(acc.departcodes);
-    acc.projectcodes = normalizeDimensionCodes(acc.projectcodes);
+    for (const def of DIMENSIONS) {
+      acc[def.flag] = Boolean(acc[def.flag]);
+      acc[def.all] = Boolean(acc[def.all]);
+      acc[def.list] = normalizeDimensionCodes(acc[def.list]);
+    }
   }
   return base as GLRecord;
 }
@@ -502,6 +511,16 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
       iscash: false,
       departseparate: Boolean(parentAcc.departseparate),
       projectseparate: Boolean(parentAcc.projectseparate),
+      allocateseparate: Boolean(parentAcc.allocateseparate),
+      jobseparate: Boolean(parentAcc.jobseparate),
+      partseparate: Boolean(parentAcc.partseparate),
+      sideseparate: Boolean(parentAcc.sideseparate),
+      departallcodes: Boolean(parentAcc.departallcodes),
+      projectallcodes: Boolean(parentAcc.projectallcodes),
+      allocateallcodes: Boolean(parentAcc.allocateallcodes),
+      joballcodes: Boolean(parentAcc.joballcodes),
+      partallcodes: Boolean(parentAcc.partallcodes),
+      sideallcodes: Boolean(parentAcc.sideallcodes),
     });
   }
 
@@ -1403,24 +1422,50 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             <span className="text-xs text-muted-foreground font-medium shrink-0">
               {tr("gl_dim_separate", "เงื่อนไข:")}
             </span>
-            <Check
-              className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
-              label={tr("gl_depart_separate", "แยกแผนก")}
-              checked={Boolean(value.departseparate)}
-              onChange={(departseparate) => set(departseparate ? { departseparate } : { departseparate, departcodes: [] })}
-            />
-            <Check
-              className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
-              label={tr("gl_project_separate", "แยกโครงการ")}
-              checked={Boolean(value.projectseparate)}
-              onChange={(projectseparate) => set(projectseparate ? { projectseparate } : { projectseparate, projectcodes: [] })}
-            />
+            {DIMENSIONS.map((def) => {
+              const enabled = dimensionEnabled(dims.settings, def);
+              const checked = Boolean(value[def.flag]);
+              return (
+                <div key={def.resource} title={!enabled ? tr("gl_dim_switch_disabled_hint", "สวิตช์ของบริษัทปิดอยู่ กำหนดได้ที่ค่าเริ่มต้นบริษัท") : undefined}>
+                  <Check
+                    className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+                    label={tr(def.separateLabel[0], def.separateLabel[1])}
+                    checked={checked}
+                    disabled={!enabled}
+                    onChange={(on) => set(accountWithDimensionFlag(value, def, on))}
+                  />
+                </div>
+              );
+            })}
           </div>
-          {(value.departseparate || value.projectseparate) && (
+          {DIMENSIONS.some((def) => Boolean(value[def.flag])) && (
             <div className="grid gap-3 border-t border-border/40 pt-2 sm:grid-cols-2">
               {dims.error && <div className="sm:col-span-2"><Notice error text={dims.error} /></div>}
-              {value.departseparate && <DimensionCodeMultiSelect resource="departments" value={value.departcodes ?? []} register={dims.departments} onChange={(departcodes) => set({ departcodes })} />}
-              {value.projectseparate && <DimensionCodeMultiSelect resource="projects" value={value.projectcodes ?? []} register={dims.projects} onChange={(projectcodes) => set({ projectcodes })} />}
+              {DIMENSIONS.filter((def) => Boolean(value[def.flag])).map((def) => {
+                const isAll = Boolean(value[def.all]);
+                return (
+                  <div key={def.resource} className="flex flex-col gap-1.5 p-2.5 rounded-xl border border-border/60 bg-muted/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-foreground">{tr(def.label[0], def.label[1])}</span>
+                      <Check
+                        className="px-2 py-0.5 text-xs rounded-md gap-1"
+                        label={tr(def.allLabel[0], def.allLabel[1])}
+                        checked={isAll}
+                        onChange={(all) => set(accountWithDimensionAll(value, def, all))}
+                      />
+                    </div>
+                    {!isAll && (
+                      <DimensionCodeMultiSelect
+                        resource={def.resource}
+                        value={value[def.list] ?? []}
+                        register={dims.registers[def.resource] ?? []}
+                        emptyText={tr("gl_dim_no_codes_allowed", "ไม่อนุญาตรหัสใด (ระบุรหัสที่อนุญาต หรือติ๊กเลือกทั้งหมด)")}
+                        onChange={(codes) => set(accountWithDimensionCodes(value, def, codes))}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

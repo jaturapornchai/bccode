@@ -89,7 +89,8 @@ describe("menu language labels", () => {
     // +8 รายการหัว "หน้าต่าง" และ "ช่วยเหลือ" ของ Champ ที่ BC ยังไม่มีจอ (2026-10-10)
     // +5 จอกำหนดรหัสธนาคาร/สาขา/บริการ/ประเภทบัญชี/สถานะเช็คเพิ่มเติม ใต้ "กำหนดรหัสต่างๆ" (CB-1, 2026-10-11)
     // +8 รายงาน Champ ที่เปิดจอรายงานกลาง: ข้อมูลหลัก 5 + รายงานรายวันแบบสรุป + งบทดลอง 2 + รายละเอียดงบประมาณ (2026-10-11)
-    expect(items).toHaveLength(251);
+    // +4 รายงานทะเบียนมิติการจัดสรร/งาน/หน่วยงาน/ฝ่าย (2026-10-11)
+    expect(items).toHaveLength(255);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) {

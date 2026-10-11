@@ -1,4 +1,5 @@
-import type { GLLine } from "./general-ledger";
+import { DIMENSIONS, type GLDimensionLineField, type GLLine } from "./general-ledger";
+import { extraDimensionCodes } from "./gl-journal-entry";
 
 /** A pasted cell that cannot become a journal amount — the whole paste is rejected so nothing changes silently. */
 export type ClipboardJournalIssue = {
@@ -115,7 +116,9 @@ function splitRow(row: string): string[] {
 /**
  * Parses tab-separated (or CSV) clipboard text into journal lines. Cells are trimmed, rows are not,
  * so an empty last cell (debit filled, credit blank) keeps its column. Layouts by column count:
- * - 4+ columns: [Account] [Description] [Debit] [Credit] [Department] [Project]
+ * - 4+ columns: [Account] [Description] [Debit] [Credit] then the dimension codes in the order of the journal grid (DIMENSIONS):
+ *               [Department] [Project] [Allocation] [Job] [Unit] [Division] — the columns are positional, not read from a header;
+ *               the last four are only put on the line when filled
  * - 3 columns:  [Account] [Debit] [Credit] when the 2nd cell is blank or a number,
  *               otherwise [Account] [Description] [Signed amount]
  * - 2 columns:  [Account] [Signed amount]
@@ -145,8 +148,7 @@ export function parseClipboardJournalLines(clipboardText: string): ClipboardJour
     let description = "";
     let debit = "0";
     let credit = "0";
-    let departmentcode = "";
-    let projectcode = "";
+    let dimensions: Partial<Record<GLDimensionLineField, string>> = {};
 
     const signed = (cell: string) => {
       const amount = parseClipboardAmount(cell);
@@ -181,11 +183,10 @@ export function parseClipboardJournalLines(clipboardText: string): ClipboardJour
       description = cells[1];
       debit = sided(cells[2], "debit");
       credit = sided(cells[3], "credit");
-      departmentcode = cells[4] ?? "";
-      projectcode = cells[5] ?? "";
+      dimensions = Object.fromEntries(DIMENSIONS.map((def, index) => [def.line, cells[4 + index] ?? ""]));
     }
 
-    lines.push({ accountcode, description, debit, credit, departmentcode, projectcode, cashflow: "" });
+    lines.push({ accountcode, description, debit, credit, departmentcode: dimensions.departmentcode ?? "", projectcode: dimensions.projectcode ?? "", ...extraDimensionCodes(dimensions), cashflow: "" });
   });
 
   return { lines, issues };

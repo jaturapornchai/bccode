@@ -250,8 +250,8 @@ func TestRegistryGolden(t *testing.T) {
 func TestViewsFilterByModuleAndPermission(t *testing.T) {
 	r := testRegistry()
 	all := r.Views("gl", "th", func(string) bool { return true })
-	if len(all) != 14 {
-		t.Fatalf("gl views = %d, want 14", len(all))
+	if len(all) != 18 {
+		t.Fatalf("gl views = %d, want 18", len(all))
 	}
 	if len(r.Views("ap", "th", func(string) bool { return true })) != 0 {
 		t.Fatal("another module must list nothing")

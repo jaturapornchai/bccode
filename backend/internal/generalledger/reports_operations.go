@@ -7,11 +7,11 @@ import (
 
 func (r reportContext) dailyCheck(ctx context.Context) (Report, error) {
 	cte := `WITH journals AS (SELECT id,code,payload FROM gl_records WHERE company=$1 AND kind='journals' AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND payload->>'fiscalyear'=$2 AND (payload->>'date')::date BETWEEN $3::date AND $4::date AND ($6='' OR payload->>'branchcode'=$6) AND (cardinality($9::text[])=0 OR payload->>'bookcode'=ANY($9::text[]))), sums AS (
-      SELECT j.id,j.code,j.payload,SUM((l->>'debit')::numeric) AS debit,SUM((l->>'credit')::numeric) AS credit FROM journals j CROSS JOIN LATERAL jsonb_array_elements(j.payload->'lines') l WHERE ($5='' OR l->>'accountcode'=$5)` + accountRangeFilter("(l->>'accountcode')") + ` AND (cardinality($7::text[])=0 OR l->>'departmentcode'=ANY($7::text[])) AND (cardinality($8::text[])=0 OR l->>'projectcode'=ANY($8::text[])) GROUP BY j.id,j.code,j.payload
+      SELECT j.id,j.code,j.payload,SUM((l->>'debit')::numeric) AS debit,SUM((l->>'credit')::numeric) AS credit FROM journals j CROSS JOIN LATERAL jsonb_array_elements(j.payload->'lines') l WHERE ($5='' OR l->>'accountcode'=$5)` + accountRangeFilter("(l->>'accountcode')") + r.dimensionConditions(jsonLineKey("l")) + ` GROUP BY j.id,j.code,j.payload
     ), result AS (SELECT id,code AS docno,payload->>'date' AS date,payload->>'bookcode' AS bookcode,payload->>'status' AS status,payload->>'description' AS description,debit::text,credit::text,(debit-credit)::text AS difference,(CASE WHEN debit<>credit THEN 'ยอดไม่สมดุล' WHEN payload->>'status'='draft' THEN 'ยังไม่ผ่านรายการ' WHEN payload->>'status'='reversed' THEN 'กลับบัญชีแล้ว ต้นฉบับยังอยู่ในบัญชี' WHEN payload->>'status'='void' THEN 'ยกเลิกร่าง' ELSE 'ผ่านรายการแล้ว' END) AS checkresult FROM sums)`
 	result, err := r.run(ctx, cte, "date,docno,id", []ReportColumn{textColumn("id", "รหัสรายการ"), textColumn("date", "วันที่"), textColumn("docno", "เลขที่เอกสาร"), textColumn("bookcode", "สมุดรายวัน"), textColumn("description", "รายละเอียด"), textColumn("status", "สถานะ"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("difference", "ผลต่าง"), textColumn("checkresult", "ผลตรวจ")}, []string{"debit", "credit", "difference"})
-	if r.query.AccountCode != "" || r.query.AccountFrom != "" || r.query.AccountTo != "" || len(r.departments) > 0 || len(r.projects) > 0 {
-		result.Warnings = append(result.Warnings, "ยอดที่กรองตามบัญชี แผนก หรือโครงการเป็นเพียงบางบรรทัดของเอกสาร ผลต่างอาจไม่เป็นศูนย์")
+	if r.query.AccountCode != "" || r.query.AccountFrom != "" || r.query.AccountTo != "" || r.hasDimensionFilter() {
+		result.Warnings = append(result.Warnings, "ยอดที่กรองตามบัญชีหรือมิติวิเคราะห์ (แผนก โครงการ ฯลฯ) เป็นเพียงบางบรรทัดของเอกสาร ผลต่างอาจไม่เป็นศูนย์")
 	}
 	return result, err
 }

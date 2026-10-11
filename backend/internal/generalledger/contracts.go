@@ -51,7 +51,13 @@ type ReportQuery struct {
 	BranchCode     string
 	DepartmentCode string
 	ProjectCode    string
-	BookCode       string
+	// AllocateCode / JobCode / PartCode / SideCode - ตัวกรองทะเบียนมิติที่เหลือ (Champ GLRepTrialBalanceDlg.cpp:160-190); คั่นจุลภาค = หลายรหัส
+	// ใช้ได้เมื่อบริษัทเปิดสวิตช์ของมิตินั้น (หน้าจอแสดงตัวกรองแต่ disable เมื่อปิด) — backend ไม่บังคับ เพราะข้อมูลเก่ายังอ่านได้
+	AllocateCode string
+	JobCode      string
+	PartCode     string
+	SideCode     string
+	BookCode     string
 	BudgetCode     string
 	BudgetCodeTo   string // budgetdetail: ถึงรหัสงบประมาณ — ว่าง = เฉพาะรหัสใน BudgetCode (Champ 5525 GLRepBudgetDlg.cpp:244-251)
 	Template       string // statement: รหัสรูปแบบงบการเงิน
@@ -70,6 +76,10 @@ type ReportQuery struct {
 	// DimTotals = แถวรวมของแต่ละบัญชีที่ตั้งแยกแผนก (มีผลเมื่อ ByDepartment เท่านั้น เหมือน Champ m_iSumDepart)
 	ByDepartment bool
 	ByProject    bool
+	ByAllocate   bool
+	ByJob        bool
+	ByPart       bool
+	BySide       bool
 	DimTotals    bool
 	// PostStatus = Champ "สถานะ" combo of 5532/5533/5534/5535/5507 (GLRepTransDlg.cpp:82-88,206-226; GLRepGL2Dlg.cpp:216-222,425-436):
 	// "" | "posted" = posted+reversed journals (gl_lines), "unposted" = draft journals, "all" = both

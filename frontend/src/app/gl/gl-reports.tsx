@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, FileText, ExternalLink, X, CheckCircle2, AlertTriangle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLDimension, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLDimension, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates, DIMENSIONS, dimensionEnabled, type GLDimensionDef, type GLDimensionResource, type GLDimensionSettingsInput } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate } from "@/lib/date-time";
 import { glAllRecords, glRequest } from "@/lib/general-ledger-api";
@@ -18,11 +18,11 @@ import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompany
 import { KeyHint, ReportFilterSummary, ReportFilterToggle, useReportShortcuts } from "./report-filter-bar";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; budgetcodeto: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; bydepartment: string; byproject: string; dimtotals: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", budgetcodeto: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", bydepartment: "", byproject: "", dimtotals: "" };
-// ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง; fetchReport ยังใช้กับเจาะบัญชี งวด/ปิดบัญชี และพิมพ์จากจอข้อมูลหลัก
-// แยกแผนก / แยกโครงการ / มียอดรวม (Champ 5506/5499/5535): หนึ่งแถวต่อบัญชี × รหัสมิติ — แยกประเภทใช้เฉพาะแบบสรุป
-const BREAKDOWN_KEYS: readonly (keyof ReportFilters)[] = ["bydepartment", "byproject", "dimtotals"];
+export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; allocatecode: string; jobcode: string; partcode: string; sidecode: string; bookcode: string; budgetcode: string; budgetcodeto: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; bydepartment: string; byproject: string; byallocate: string; byjob: string; bypart: string; byside: string; dimtotals: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", allocatecode: "", jobcode: "", partcode: "", sidecode: "", bookcode: "", budgetcode: "", budgetcodeto: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", bydepartment: "", byproject: "", byallocate: "", byjob: "", bypart: "", byside: "", dimtotals: "" };
+// ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
+// แยกแผนก / โครงการ / การจัดสรร / งาน / หน่วยงาน / ฝ่าย + มียอดรวม (Champ 5506/5499/5535; GLRepTrialBalanceDlg.cpp:687-715): หนึ่งแถวต่อบัญชี × รหัสมิติ — แยกประเภทใช้เฉพาะแบบสรุป
+const BREAKDOWN_KEYS: readonly (keyof ReportFilters)[] = [...DIMENSIONS.map((def) => def.by), "dimtotals"];
 const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>> = {
   ledger: ["summary", "hideopening", "controltotals", "daytotals", ...BREAKDOWN_KEYS],
   trialbalance: ["hidezero", "controltotals", "gross", ...BREAKDOWN_KEYS], // gross = Champ 5507 (trial balance 2): kept for the legacy endpoint; the menu now opens trial-balance-2 from the central registry
@@ -47,6 +47,28 @@ export function reportQuery(name: string, filters: ReportFilters): Record<string
     query[key] = value;
   }
   return query;
+}
+/** ข้อความเมื่อสวิตช์ "ใช้ผังบัญชีแบบแยก…" ของมิติยังปิดอยู่ (ตัวกรองแสดงแต่กดไม่ได้) */
+export const DIMENSION_SWITCH_OFF_HINT: GLLabel = ["gl_dim_switch_off_hint", "ยังไม่เปิดใช้ — เปิดได้ที่เมนู “กำหนดค่าเริ่มต้นบริษัท”"];
+/** One line for the filters left disabled: "{dimension names}: ยังไม่เปิดใช้ …"; empty when every switch is on. */
+export function dimensionSwitchOffNote(settings: Partial<GLDimensionSettingsInput> | undefined, tr: GLTextFn): string {
+  const off = DIMENSIONS.filter((def) => !dimensionEnabled(settings, def));
+  return off.length ? `${off.map((def) => tr(...def.label)).join(", ")}: ${tr(...DIMENSION_SWITCH_OFF_HINT)}` : "";
+}
+/** Dimension whose company switch is off is neither filtered nor split on: its codes and "แยก…" flag are blanked before the query is built and before the filters are remembered for printing. */
+export function clearDisabledDimensions(filters: ReportFilters, settings: Partial<GLDimensionSettingsInput> | undefined): ReportFilters {
+  const cleared: ReportFilters = { ...filters };
+  for (const def of DIMENSIONS) if (!dimensionEnabled(settings, def)) { cleared[def.line] = ""; cleared[def.by] = ""; }
+  if (cleared.bydepartment !== "true") cleared.dimtotals = "";
+  return cleared;
+}
+// ป้ายช่องติ๊ก "แยก…" ของรายงานตามนิยามมิติ (def.separateLabel)
+export function reportBreakdownLabel(def: GLDimensionDef, tr: GLTextFn): string {
+  return tr(...def.separateLabel);
+}
+/** "เงื่อนไขการพิมพ์" lines of the six dimension filters in Champ's order (GLRepTrialBalanceDlg.cpp:160-190); a dimension without picked codes prints nothing. */
+export function reportDimensionConditionLines(filters: ReportFilters, tr: GLTextFn): string[] {
+  return DIMENSIONS.map((def) => filters[def.line] ? `${tr(...def.codeLabel)} ${reportCodeList(filters[def.line]).join(", ")}` : "");
 }
 // purpose marks a whole-report pull for print / export: the backend checks report:print / report:export (Champ สิทธิ์เฉพาะ)
 export async function fetchReport(name: string, filters: ReportFilters, page = 1, limit = 50, snapshot?: number, companywide = false, purpose?: "print" | "export") {
@@ -559,8 +581,7 @@ function reportPrintMeta(filters: ReportFilters, asOf: boolean, tr: GLTextFn, la
       range && filters.accountfrom ? `${tr("gl_account_from", "จากรหัสบัญชี")} ${filters.accountfrom}` : "",
       range && filters.accountto ? `${tr("gl_account_to", "ถึงรหัสบัญชี")} ${filters.accountto}` : "",
       filters.branchcode ? `${tr("gl_branch_code", "รหัสสาขา")} ${filters.branchcode}` : "",
-      filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${reportCodeList(filters.departmentcode).join(", ")}` : "",
-      filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${reportCodeList(filters.projectcode).join(", ")}` : "",
+      ...reportDimensionConditionLines(filters, tr),
     ],
     printedBy: printUserName(),
     printedAt: printedAtText(language),
@@ -586,6 +607,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const reportPrint = useGLPrint();
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
   const yearPeriodList = yearPeriods(periods, filters.fiscalyear);
+  const switchOffNote = dimensionSwitchOffNote(dims.settings, tr);
   // the journal-book filter is picked like departments/projects: the company's books shaped as register entries (reports read closed books too)
   const bookRegister = useMemo<GLDimension[]>(() => (refs.books ?? []).map((book) => ({ ...book, name: journalBookName(book, book.code, language), isactive: true })), [refs.books, language]);
   const byPeriod = !asOf && !byDocDate && yearPeriodList.length > 0;
@@ -614,7 +636,8 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   }
   const periodSelect = (label: string, value: string, onChange: (code: string) => void) => <Combobox aria-label={label} value={value} onChange={(picked: string | number) => onChange(String(picked))}>{yearPeriodList.map((period) => <option key={period.code} value={period.code}>{period.code}{period.name ? ` · ${period.name}` : ""}</option>)}</Combobox>;
 
-  async function load(nextPage = 1, selected = filters) {
+  async function load(nextPage = 1, requested = filters) {
+    const selected = clearDisabledDimensions(requested, dims.settings);
     if (!(asOf ? selected.to : selected.fiscalyear) || busy) return;
     if (selected.from && selected.to && selected.from > selected.to) { setError(tr("gl_start_date_not_after_end", "วันเริ่มต้นต้องไม่เกินวันสิ้นสุด")); return; }
     if (selected.accountfrom && selected.accountto && selected.accountfrom > selected.accountto) { setError(tr("gl_err_report_account_range_invalid", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")); return; }
@@ -718,8 +741,13 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_account_from", "จากรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_from", "จากรหัสบัญชี")} value={filters.accountfrom} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountfrom: value }))} /></Field>
         <Field label={tr("gl_account_to", "ถึงรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_to", "ถึงรหัสบัญชี")} value={filters.accountto} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountto: value }))} /></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
-        <DimensionCodeMultiSelect report resource="departments" value={reportCodeList(filters.departmentcode)} register={dims.departments} onChange={(codes) => set("departmentcode", normalizeDimensionCodes(codes).join(","))} />
-        <DimensionCodeMultiSelect report resource="projects" value={reportCodeList(filters.projectcode)} register={dims.projects} onChange={(codes) => set("projectcode", normalizeDimensionCodes(codes).join(","))} />
+        {DIMENSIONS.map((def) => {
+          const enabled = dimensionEnabled(dims.settings, def);
+          return <div key={def.resource} className="min-w-0" title={enabled ? undefined : tr(...DIMENSION_SWITCH_OFF_HINT)}>
+            <DimensionCodeMultiSelect report resource={def.resource} value={reportCodeList(filters[def.line])} register={dims.registers[def.resource]} disabled={!enabled} onChange={(codes) => set(def.line, normalizeDimensionCodes(codes).join(","))} />
+          </div>;
+        })}
+        {switchOffNote && <p className="text-[0.9rem] leading-normal text-muted-foreground sm:col-span-2 xl:col-span-4">{switchOffNote}</p>}
         <DimensionCodeMultiSelect report resource="books" value={reportCodeList(filters.bookcode)} register={bookRegister} onChange={(codes) => set("bookcode", normalizeDimensionCodes(codes).join(","))} />
         </>}
         <div className="flex flex-wrap items-end gap-2">

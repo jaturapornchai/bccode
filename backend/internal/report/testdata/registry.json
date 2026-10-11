@@ -21,6 +21,34 @@
     "status": "ready"
   },
   {
+    "menu_id": "gl-allocate-report",
+    "champ_menu_id": "5539",
+    "route": "/report/allocates",
+    "code": "gl_allocate_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-job-report",
+    "champ_menu_id": "5540",
+    "route": "/report/jobs",
+    "code": "gl_job_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-part-report",
+    "champ_menu_id": "5541",
+    "route": "/report/parts",
+    "code": "gl_part_list",
+    "status": "ready"
+  },
+  {
+    "menu_id": "gl-side-report",
+    "champ_menu_id": "5542",
+    "route": "/report/sides",
+    "code": "gl_side_list",
+    "status": "ready"
+  },
+  {
     "menu_id": "gl-budget-detail",
     "champ_menu_id": "5525",
     "route": "/report/budget-detail",

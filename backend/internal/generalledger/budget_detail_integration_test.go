@@ -12,6 +12,9 @@ import (
 func TestBudgetDetailReportIntegration(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	create := func(b Budget) { f.run(Command{Resource: "budgets", Action: "create", Budget: &b}) }
+	f.ensureDimension(DepartmentKind, "D1")
+	f.ensureDimension(DepartmentKind, "D2")
+	f.ensureDimension(ProjectKind, "P1")
 	create(Budget{Code: "BG-B", Name: "งบขายและบริหาร", FiscalYear: "2026", BranchCode: "B1", DepartmentCode: "D2",
 		Lines: []BudgetLine{{AccountCode: "4000", Periods: budgetMonths("0.10")}}})
 	create(Budget{Code: "BG-A", Name: "งบสำนักงาน", FiscalYear: "2026", BranchCode: "B1", DepartmentCode: "D1", ProjectCode: "P1",

@@ -1,5 +1,5 @@
 import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
-import { withKnownSuggestKeys, type GLAccountReference, type GLCommand, type GLPage, type GLRecord, type GLResource, type GLStatementSuggestions, type GLStatementTemplate } from "./general-ledger";
+import { DIMENSION_SETTINGS_OFF, dimensionSettingsPayload, withKnownSuggestKeys, type GLAccountReference, type GLCommand, type GLDimensionSettings, type GLPage, type GLRecord, type GLResource, type GLStatementSuggestions, type GLStatementTemplate } from "./general-ledger";
 import { extractMessage, getString, isRecord } from "./workspace-api";
 import { normalizeLanguage } from "./i18n";
 
@@ -147,6 +147,15 @@ export async function glRequest<T>(path: string, init?: RequestInit): Promise<T>
 }
 export function glCommand(command: Omit<GLCommand, "requestid">, requestid: string) {
   return glRequest<{ id: string; version: number; projectionpending?: boolean; createdjournals?: number; createdperiods?: number; createdaccounts?: number; batchno?: string; postedjournals?: number; adjustedjournals?: number }>("command", { method: "POST", body: JSON.stringify({ ...command, requestid }) });
+}
+/** Company switches "ใช้ผังบัญชีแบบแยก…" (backend dimension_settings.go): every switch off and version 0 until the first save. Any ledger user may read. */
+export async function glDimensionSettings(signal?: AbortSignal): Promise<GLDimensionSettings> {
+  const data = await glRequest<Partial<GLDimensionSettings> | null>("dimension-settings", { signal });
+  return { ...DIMENSION_SETTINGS_OFF, ...(data ?? {}) };
+}
+/** Saves the seven switches (needs the company-defaults permission); send the version read with them, 0 for the first save. */
+export function glSaveDimensionSettings(settings: GLDimensionSettings) {
+  return glCommand({ resource: "dimension-settings", id: "default", action: "update", version: settings.version, dimensionsettings: dimensionSettingsPayload(settings) }, crypto.randomUUID());
 }
 /** บัญชีที่แนะนำให้บรรทัดของแม่แบบงบ + บัญชีหัวข้อ/รหัสที่ต้องแก้ (backend statement_suggestions.go): คำสั่งคำนวณอย่างเดียว ไม่บันทึกอะไร
  *  สิทธิ์อ่านจอออกแบบงบก็พอ — ส่งแม่แบบที่กำลังแก้ (ยังไม่บันทึกก็ได้); id = แม่แบบที่บันทึกแล้ว (backend ไม่นับเป็น "แม่แบบงบอื่น") */

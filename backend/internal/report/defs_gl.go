@@ -18,6 +18,10 @@ var (
 	pBranch      = Param{Key: "branch", Type: ParamCode, LabelKey: "report_param_branch", Lookup: "branch"}
 	pDepartments = Param{Key: "departments", Type: ParamCodes, LabelKey: "report_param_departments", Lookup: "department"}
 	pProjects    = Param{Key: "projects", Type: ParamCodes, LabelKey: "report_param_projects", Lookup: "project"}
+	pAllocates   = Param{Key: "allocates", Type: ParamCodes, LabelKey: "report_param_allocates", Lookup: "allocate"}
+	pJobs        = Param{Key: "jobs", Type: ParamCodes, LabelKey: "report_param_jobs", Lookup: "job"}
+	pParts       = Param{Key: "parts", Type: ParamCodes, LabelKey: "report_param_parts", Lookup: "part"}
+	pSides       = Param{Key: "sides", Type: ParamCodes, LabelKey: "report_param_sides", Lookup: "side"}
 	pBooks       = Param{Key: "books", Type: ParamCodes, LabelKey: "report_param_books", Lookup: "book"}
 	pDocNoFrom   = Param{Key: "doc_no_from", Type: ParamCode, LabelKey: "report_param_doc_no_from"}
 	pDocNoTo     = Param{Key: "doc_no_to", Type: ParamCode, LabelKey: "report_param_doc_no_to"}
@@ -32,6 +36,10 @@ var (
 	pControlTotals = boolParam("control_totals", "report_param_control_totals", "true")
 	pByDepartment  = boolParam("by_department", "report_param_by_department", "false")
 	pByProject     = boolParam("by_project", "report_param_by_project", "false")
+	pByAllocate    = boolParam("by_allocate", "report_param_by_allocate", "false")
+	pByJob         = boolParam("by_job", "report_param_by_job", "false")
+	pByPart        = boolParam("by_part", "report_param_by_part", "false")
+	pBySide        = boolParam("by_side", "report_param_by_side", "false")
 	pDimTotals     = boolParam("dim_totals", "report_param_dim_totals", "false")
 )
 
@@ -50,7 +58,14 @@ func pageAmount(key, labelKey string) TotalKey {
 	return TotalKey{Key: key, LabelKey: labelKey, Page: true}
 }
 
-var dimensionColumns = []Column{col("departmentcode", "report_col_department"), col("projectcode", "report_col_project")}
+var dimensionColumns = []Column{
+	col("departmentcode", "report_col_department"),
+	col("projectcode", "report_col_project"),
+	col("allocatecode", "report_col_allocate"),
+	col("jobcode", "report_col_job"),
+	col("partcode", "report_col_part"),
+	col("sidecode", "report_col_side"),
+}
 
 // GLDefinitions returns the wave-1 GL definitions on one engine and one holding database connector
 func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []*Definition {
@@ -63,7 +78,7 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 			{MenuID: "gl-daily-summary-report", ChampMenuID: "5533", NameKey: "gl_daily_summary_report", Route: "/report/gljournal-summary", Preset: map[string]string{"summary": "true"}, Omit: []string{"day_totals"},
 				Labels: map[string]string{"date": "report_col_doc_date"}},
 		},
-		Params: []Param{pDateFrom, pDateTo, pDocNoFrom, pDocNoTo, pBooks, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, postStatusParam("all"),
+		Params: []Param{pDateFrom, pDateTo, pDocNoFrom, pDocNoTo, pBooks, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides, postStatusParam("all"),
 			boolParam("day_totals", "report_param_day_totals", "false"), boolParam("summary", "report_param_summary", "false")},
 		Columns: append([]Column{
 			dateCol("date", "report_col_date"), col("bookcode", "report_col_book"), col("docno", "report_col_doc_no"),
@@ -81,15 +96,15 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 		Source: glSource{engine: engine, name: "ledger"},
 		Variants: []Variant{
 			{MenuID: "general-ledger", ChampMenuID: "5534", NameKey: "general_ledger", Route: "/report/ledger", Preset: map[string]string{"summary": "false"},
-				Omit: []string{"control_totals", "by_department", "by_project", "dim_totals"}, Landscape: true},
+				Omit: []string{"control_totals", "by_department", "by_project", "by_allocate", "by_job", "by_part", "by_side", "dim_totals"}, Landscape: true},
 			{MenuID: "general-ledger-summary", ChampMenuID: "5535", NameKey: "general_ledger_summary", Route: "/report/ledger-summary", Preset: map[string]string{"summary": "true"},
 				Omit: []string{"date_from", "hide_opening", "day_totals"},
 				// account columns named like the trial balance (Champ 5535 GLRepGLSumView)
 				Labels: map[string]string{"accountcode": "report_col_account_code", "accountname": "report_col_item"}},
 		},
-		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBooks, pBranch, pDepartments, pProjects, postStatusParam("all"),
+		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBooks, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides, postStatusParam("all"),
 			boolParam("hide_opening", "report_param_hide_opening", "false"), boolParam("day_totals", "report_param_day_totals", "false"),
-			pControlTotals, pByDepartment, pByProject, pDimTotals, boolParam("summary", "report_param_summary", "false")},
+			pControlTotals, pByDepartment, pByProject, pByAllocate, pByJob, pByPart, pBySide, pDimTotals, boolParam("summary", "report_param_summary", "false")},
 		Columns: append([]Column{
 			col("accountcode", "report_col_account_chart"), col("accountname", "report_col_account_chart_name"), dateCol("date", "report_col_date"),
 			col("bookcode", "report_col_book"), col("docno", "report_col_doc_no"), col("description", "report_col_description"),
@@ -106,8 +121,8 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 			{MenuID: "trial-balance", ChampMenuID: "5506", NameKey: "trial_balance", Route: "/report/trialbalance", Preset: map[string]string{"gross": "false", "post_status": "posted"}, Landscape: true},
 			{MenuID: "trial-balance-2", ChampMenuID: "5507", NameKey: "trial_balance_2", Route: "/report/trialbalance-2", Preset: map[string]string{"gross": "true"}},
 		},
-		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, postStatusParam("posted"),
-			pHideZero, pControlTotals, pByDepartment, pByProject, pDimTotals, boolParam("gross", "report_param_gross", "false")},
+		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides, postStatusParam("posted"),
+			pHideZero, pControlTotals, pByDepartment, pByProject, pByAllocate, pByJob, pByPart, pBySide, pDimTotals, boolParam("gross", "report_param_gross", "false")},
 		Columns: append([]Column{
 			col("accountcode", "report_col_account_code"), col("accountname", "report_col_item"),
 			amountCol("openingdebit", "report_col_debit", "report_col_group_opening"), amountCol("openingcredit", "report_col_credit", "report_col_group_opening"),
@@ -125,7 +140,7 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 		Variants: []Variant{
 			{MenuID: "working-paper", ChampMenuID: "5499", NameKey: "working_paper", Route: "/gl/workingpaper", Landscape: true},
 		},
-		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pHideZero, pControlTotals, pByDepartment, pByProject, pDimTotals},
+		Params: []Param{pDateFrom, pDateTo, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides, pHideZero, pControlTotals, pByDepartment, pByProject, pByAllocate, pByJob, pByPart, pBySide, pDimTotals},
 		Columns: append([]Column{
 			col("accountcode", "report_col_account_code"), col("accountname", "report_col_item"),
 			amountCol("endingdebit", "report_col_debit", "report_col_group_trial_balance"), amountCol("endingcredit", "report_col_credit", "report_col_group_trial_balance"),
@@ -140,7 +155,9 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 	budgetColumns := []Column{
 		col("accountcode", "report_col_account_code"), col("accountname", "report_col_account_chart_name"), col("budgetcode", "report_col_code"),
 		col("budgetname", "report_col_name_details"), col("branchcode", "report_col_branch"), col("departmentcode", "report_col_department"),
-		col("projectcode", "report_col_project"), dateCol("startdate", "report_col_start_date"), dateCol("enddate", "report_col_end_date"),
+		col("projectcode", "report_col_project"), col("allocatecode", "report_col_allocate"), col("jobcode", "report_col_job"),
+		col("partcode", "report_col_part"), col("sidecode", "report_col_side"),
+		dateCol("startdate", "report_col_start_date"), dateCol("enddate", "report_col_end_date"),
 		amountCol("budgetamount", "report_col_amount", ""), amountCol("actualamount", "report_col_budget_actual", ""),
 		amountCol("variance", "report_col_variance", ""), amountCol("amount", "report_col_amount", ""),
 	}
@@ -150,7 +167,7 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 		Variants: []Variant{
 			{MenuID: "budget-comparison-report", ChampMenuID: "5530", NameKey: "budget_comparison_report", Route: "/report/budgetcomparison", Landscape: true},
 		},
-		Params:  []Param{pDateFrom, pDateTo, {Key: "budget_code", Type: ParamCode, LabelKey: "report_param_budget_code", Lookup: "budget"}, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects},
+		Params:  []Param{pDateFrom, pDateTo, {Key: "budget_code", Type: ParamCode, LabelKey: "report_param_budget_code", Lookup: "budget"}, pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides},
 		Columns: budgetColumns,
 		Totals:  []TotalKey{pageAmount("budgetamount", "report_col_amount"), pageAmount("actualamount", "report_col_budget_actual"), pageAmount("variance", "report_col_variance")},
 	}
@@ -161,7 +178,7 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 			{MenuID: "gl-budget-detail", ChampMenuID: "5525", NameKey: "gl_budget_detail", Route: "/report/budget-detail", Landscape: true},
 		},
 		Params: []Param{pFiscalYear, {Key: "budget_from", Type: ParamCode, LabelKey: "report_param_budget_from", Lookup: "budget"}, {Key: "budget_to", Type: ParamCode, LabelKey: "report_param_budget_to", Lookup: "budget"},
-			pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects},
+			pAccountFrom, pAccountTo, pBranch, pDepartments, pProjects, pAllocates, pJobs, pParts, pSides},
 		Columns: budgetColumns,
 		Totals:  []TotalKey{pageAmount("amount", "report_col_amount"), {Key: "linecount", LabelKey: "report_total_line_count", Int: true}},
 	}
@@ -178,6 +195,14 @@ func GLDefinitions(engine GLEngine, db func(holding string) (*sql.DB, error)) []
 			[]Column{col("code", "report_col_department_code"), col("name", "report_col_name_details")}, db),
 		masterDefinition("gl_project_list", "gl-project-report", "5521", "gl_project_report", "/report/projects", "projects", "project",
 			[]Column{col("code", "report_col_project_code"), col("name", "report_col_name_details")}, db),
+		masterDefinition("gl_allocate_list", "gl-allocate-report", "5539", "gl_allocate_report", "/report/allocates", "allocate-codes", "allocate",
+			[]Column{col("code", "report_col_allocate_code"), col("name", "report_col_name_details")}, db),
+		masterDefinition("gl_job_list", "gl-job-report", "5540", "gl_job_report", "/report/jobs", "job-codes", "job",
+			[]Column{col("code", "report_col_job_code"), col("name", "report_col_name_details")}, db),
+		masterDefinition("gl_part_list", "gl-part-report", "5541", "gl_part_report", "/report/parts", "part-codes", "part",
+			[]Column{col("code", "report_col_part_code"), col("name", "report_col_name_details")}, db),
+		masterDefinition("gl_side_list", "gl-side-report", "5542", "gl_side_report", "/report/sides", "side-codes", "side",
+			[]Column{col("code", "report_col_side_code"), col("name", "report_col_name_details")}, db),
 		budgetDetail,
 		chartDefinition(db),
 		journal, ledger, budgetComparison, trialBalance, workingPaper, statement,

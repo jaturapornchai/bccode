@@ -81,7 +81,7 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 		code, kind, normal string
 		cash               bool
 	}{{"1000", "asset", "debit", true}, {"1100", "asset", "debit", false}, {"2000", "liability", "credit", false}, {"3000", "equity", "credit", false}, {"4000", "income", "credit", false}, {"5000", "expense", "debit", false}} {
-		a := Account{Identity: glpgIdentity("account-"+row.code, company, 1), AccountCode: row.code, Names: []Name{{Code: "th", Name: "บัญชี " + row.code}}, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, IsCash: row.cash, DepartSeparate: true, ProjectSeparate: true}
+		a := Account{Identity: glpgIdentity("account-"+row.code, company, 1), AccountCode: row.code, Names: []Name{{Code: "th", Name: "บัญชี " + row.code}}, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, IsCash: row.cash, DepartSeparate: true, ProjectSeparate: true, DepartAllCodes: true, ProjectAllCodes: true}
 		changes = append(changes, glpgChange(t, "accounts", a.ID, a.AccountCode, a))
 	}
 	f := FiscalYear{Identity: glpgIdentity("year-2026", company, 1), Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Scale: 2, RetainedEarningsAccount: "3000"}
@@ -93,6 +93,9 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 	department := Master{Identity: glpgIdentity("department-D1", company, 1), Kind: DepartmentKind, Code: "D1", Name: "ฝ่ายขายและการตลาด", IsActive: true}
 	project := Master{Identity: glpgIdentity("project-P1", company, 1), Kind: ProjectKind, Code: "P1", Name: "โครงการขยายสาขาภาคเหนือ", IsActive: true}
 	changes = append(changes, glpgChange(t, DepartmentKind, department.ID, department.Code, department), glpgChange(t, ProjectKind, project.ID, project.Code, project))
+	// the company switches of both registers are on (a line only names a code of a register whose switch is on, design §3.4)
+	switches := DimensionSettings{Identity: glpgIdentity(dimensionSettingsID, company, 1), DimensionSettingsInput: DimensionSettingsInput{DepartSeparate: true, ProjectSeparate: true}}
+	changes = append(changes, glpgChange(t, DimensionSettingsKind, switches.ID, switches.ID, switches))
 	if err := p.Project(context.Background(), glpgEvent(company, 1, changes...)); err != nil {
 		t.Fatal(err)
 	}

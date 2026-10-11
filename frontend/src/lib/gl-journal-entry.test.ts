@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { emptyJournal, emptyLine, type GLJournal, type GLLine } from "./general-ledger";
+import { DIMENSIONS, dimensionDef, dimensionOptions, emptyJournal, emptyLine, type GLAccount, type GLDimension, type GLDimensionSettingsInput, type GLJournal, type GLLine } from "./general-ledger";
 import type { GLDetailVat } from "./gl-journal-details";
 import {
-  JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts,
-  newVatRow, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget,
+  EXTRA_DIMENSIONS, JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, extraDimensionCodes, isBlankVatRow, journalDimensionColumns, journalFunctionKey, journalSaveOptionStorageKey, lineDimensionCell, linesHaveAmounts,
+  newVatRow, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, withoutDisabledDimensions,
 } from "./gl-journal-entry";
 
 const vat = (patch: Partial<GLDetailVat> = {}): GLDetailVat => ({
@@ -56,6 +56,13 @@ describe("nextJournalAfterSave", () => {
     expect([kept.tax_type, kept.tax_invoice_date, kept.vat_rate, kept.remark, kept.claim_status]).toEqual([1, "2026-09-10", "7", "ซื้อปูนซีเมนต์ปอร์ตแลนด์", 1]);
     expect([kept.tax_invoice_no, kept.base_amount, kept.vat_amount, kept.partner_name]).toEqual(["", "0", undefined, ""]);
     expect(isBlankVatRow(kept)).toBe(true);
+  });
+
+  it("'keep' also keeps the allocation, job, unit and division codes of a line, and adds no empty key when a line has none", () => {
+    const withExtra: GLJournal = { ...saved, lines: [{ ...line("11310", "10000.00", "0"), allocatecode: "A01", jobcode: " J07 ", partcode: "U1", sidecode: "S2" }, line("21110", "0", "10000.00")] };
+    const [first, second] = nextJournalAfterSave(withExtra, "keep", blank).lines;
+    expect([first.allocatecode, first.jobcode, first.partcode, first.sidecode]).toEqual(["A01", "J07", "U1", "S2"]);
+    expect(Object.keys(second).sort()).toEqual(Object.keys({ ...emptyLine() }).sort());
   });
 
   it("'keep' does not carry a multi-invoice tax table or the other detail sections", () => {
@@ -196,5 +203,105 @@ describe("journalFunctionKey", () => {
     expect(journalFunctionKey({ key: "F3", altKey: true })).toBeNull();
     expect(journalFunctionKey({ key: "F3", metaKey: true })).toBeNull();
     expect(journalFunctionKey({ key: "F2", defaultPrevented: true })).toBeNull();
+  });
+});
+
+describe("analysis dimensions of a journal line (แผนก โครงการ การจัดสรร งาน หน่วยงาน ฝ่าย)", () => {
+  const off = {} as Partial<GLDimensionSettingsInput>;
+  const on = (...flags: (keyof GLDimensionSettingsInput)[]) => Object.fromEntries(flags.map((flag) => [flag, true])) as Partial<GLDimensionSettingsInput>;
+  const emptyRegisters = { departments: [], projects: [], "allocate-codes": [], "job-codes": [], "part-codes": [], "side-codes": [] };
+  const jobs: GLDimension[] = [{ code: "J01", name: "งานก่อสร้างอาคาร A", isactive: true }, { code: "J02", name: "งานปรับปรุงโกดัง", isactive: true }];
+  const registers = { ...emptyRegisters, "job-codes": jobs };
+  const account = (patch: Partial<GLAccount> = {}) => ({ accountcode: "51200", ...patch }) as GLAccount;
+  const job = dimensionDef("job-codes");
+
+  it("the extra dimensions are the four after department and project, in Champ order", () => {
+    expect(EXTRA_DIMENSIONS.map((def) => def.line)).toEqual(["allocatecode", "jobcode", "partcode", "sidecode"]);
+    expect(DIMENSIONS.map((def) => def.line)).toEqual(["departmentcode", "projectcode", "allocatecode", "jobcode", "partcode", "sidecode"]);
+  });
+
+  it("extraDimensionCodes keeps only filled, trimmed codes of the four extra dimensions", () => {
+    expect(extraDimensionCodes({ departmentcode: "D01", projectcode: "P01" })).toEqual({});
+    expect(extraDimensionCodes({ allocatecode: "", jobcode: " J01 ", partcode: undefined, sidecode: "  " })).toEqual({ jobcode: "J01" });
+  });
+
+  describe("journalDimensionColumns", () => {
+    const lines = [{ departmentcode: "", allocatecode: "" }, { departmentcode: "", allocatecode: undefined }];
+    it("shows no column when every switch is off and the voucher holds no code", () => {
+      expect(journalDimensionColumns(off, lines)).toEqual([]);
+      expect(journalDimensionColumns(undefined, undefined)).toEqual([]);
+    });
+    it("shows the columns of the switched-on dimensions in Champ order, whatever the order of the switches", () => {
+      expect(journalDimensionColumns(on("sideseparate", "projectseparate", "jobseparate"), lines).map((def) => def.line)).toEqual(["projectcode", "jobcode", "sidecode"]);
+      expect(journalDimensionColumns(on("departseparate", "projectseparate", "allocateseparate", "jobseparate", "partseparate", "sideseparate"), []).map((def) => def.label[1])).toEqual(["แผนก", "โครงการ", "การจัดสรร", "งาน", "หน่วยงาน", "ฝ่าย"]);
+    });
+    it("keeps the column of a dimension that was switched off later while the voucher still holds a code of it", () => {
+      expect(journalDimensionColumns(off, [{ allocatecode: "A01" }, { departmentcode: "D01" }]).map((def) => def.line)).toEqual(["departmentcode", "allocatecode"]);
+      expect(journalDimensionColumns(on("jobseparate"), [{ allocatecode: "A01" }]).map((def) => def.line)).toEqual(["allocatecode", "jobcode"]);
+    });
+    it("a blank code does not hold the column", () => {
+      expect(journalDimensionColumns(off, [{ jobcode: "   " }])).toEqual([]);
+    });
+  });
+
+  describe("lineDimensionCell", () => {
+    it("company switch off: the cell is locked; without a code it points to the company defaults, with a code the saved code is shown and kept", () => {
+      const empty = lineDimensionCell(job, off, registers, account({ jobseparate: true, joballcodes: true }), {});
+      expect(empty).toMatchObject({ locked: true, hint: ["gl_dim_switch_off_hint", expect.any(String)], register: [], allowed: null });
+      const held = lineDimensionCell(job, off, registers, account({ jobseparate: true }), { jobcode: " J01 " });
+      expect(held).toMatchObject({ locked: true, hint: ["gl_dim_value_kept", expect.any(String)], allowed: null });
+      expect(held.register).toEqual([{ code: "J01", name: "", isactive: true }]);
+      // the held code is offered as a plain code, not flagged "not in the allowed list"
+      expect(dimensionOptions(held.register, held.allowed, "J01")).toEqual([{ code: "J01", name: "", isactive: true }]);
+    });
+    it("company switch on, account not separated by it: locked with the account hint of that dimension while the line has no code", () => {
+      const keys = DIMENSIONS.map((def) => lineDimensionCell(def, on(def.flag), emptyRegisters, account(), {}).hint?.[0]);
+      expect(keys).toEqual(["gl_line_not_depart_separate", "gl_line_not_project_separate", "gl_line_not_allocate_separate", "gl_line_not_job_separate", "gl_line_not_part_separate", "gl_line_not_side_separate"]);
+      expect(lineDimensionCell(job, on("jobseparate"), registers, account({ jobseparate: false }), {})).toMatchObject({ locked: true, allowed: [] });
+      expect(lineDimensionCell(job, on("jobseparate"), registers, undefined, {}).locked).toBe(true);
+    });
+    it("company switch on, account not separated but the line already holds a code: still editable so it can be changed or cleared", () => {
+      const cell = lineDimensionCell(job, on("jobseparate"), registers, account({ jobseparate: false }), { jobcode: "J01" });
+      expect(cell).toMatchObject({ locked: false, hint: null, allowed: [] });
+    });
+    it("company switch on, account separated: editable; select-all = every code, a list = only those, neither = none (Champ)", () => {
+      const switches = on("jobseparate");
+      expect(lineDimensionCell(job, switches, registers, account({ jobseparate: true, joballcodes: true }), {})).toMatchObject({ locked: false, allowed: null, register: jobs });
+      expect(lineDimensionCell(job, switches, registers, account({ jobseparate: true, jobcodes: ["J02"] }), {})).toMatchObject({ locked: false, allowed: ["J02"] });
+      expect(lineDimensionCell(job, switches, registers, account({ jobseparate: true }), {})).toMatchObject({ locked: false, allowed: [] });
+    });
+    it("each dimension reads its own register, flag and list", () => {
+      const all = on("departseparate", "projectseparate", "allocateseparate", "jobseparate", "partseparate", "sideseparate");
+      const side = dimensionDef("side-codes");
+      const sideRegister: GLDimension[] = [{ code: "S1", name: "ฝ่ายขาย", isactive: true }];
+      const cell = lineDimensionCell(side, all, { ...emptyRegisters, "side-codes": sideRegister }, account({ sideseparate: true, sidecodes: ["S1"], jobseparate: true }), {});
+      expect(cell).toMatchObject({ locked: false, allowed: ["S1"], register: sideRegister });
+    });
+  });
+
+  describe("withoutDisabledDimensions", () => {
+    const pasted = [
+      { accountcode: "51200", departmentcode: "D01", projectcode: "", allocatecode: "A01", jobcode: "J01" },
+      { accountcode: "11110", departmentcode: "", projectcode: "P01" },
+    ];
+    it("clears the codes of dimensions the company has not switched on and names them in Champ order", () => {
+      const result = withoutDisabledDimensions(pasted, on("projectseparate", "jobseparate"));
+      expect(result.dropped.map((def) => def.line)).toEqual(["departmentcode", "allocatecode"]);
+      expect(result.lines).toEqual([
+        { accountcode: "51200", departmentcode: "", projectcode: "", allocatecode: "", jobcode: "J01" },
+        { accountcode: "11110", departmentcode: "", projectcode: "P01" },
+      ]);
+    });
+    it("leaves the lines as they are when every code belongs to a switched-on dimension", () => {
+      const result = withoutDisabledDimensions(pasted, on("departseparate", "projectseparate", "allocateseparate", "jobseparate"));
+      expect(result.dropped).toEqual([]);
+      expect(result.lines).toEqual(pasted);
+    });
+    it("does not mutate the lines it was given and adds no key to a line that never had one", () => {
+      const original = JSON.stringify(pasted);
+      const result = withoutDisabledDimensions(pasted, off);
+      expect(JSON.stringify(pasted)).toBe(original);
+      expect(Object.keys(result.lines[1]).sort()).toEqual(["accountcode", "departmentcode", "projectcode"]);
+    });
   });
 });

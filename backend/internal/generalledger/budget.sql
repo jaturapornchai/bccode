@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS gl_budgets (
   branch_code text NOT NULL DEFAULT '',
   department_code text NOT NULL DEFAULT '',
   project_code text NOT NULL DEFAULT '',
+  allocate_code text NOT NULL DEFAULT '',
+  job_code text NOT NULL DEFAULT '',
+  part_code text NOT NULL DEFAULT '',
+  side_code text NOT NULL DEFAULT '',
   status text NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed')),
   remark text NOT NULL DEFAULT '',
   version bigint NOT NULL DEFAULT 1 CHECK (version >= 1),
@@ -20,6 +24,11 @@ CREATE TABLE IF NOT EXISTS gl_budgets (
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (company, code)
 );
+-- Champ BCGLBudget carries all seven dimensions (SQLSERVER_Script.sql:9207-9230); tables made before the four extra registers get them here.
+ALTER TABLE gl_budgets ADD COLUMN IF NOT EXISTS allocate_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_budgets ADD COLUMN IF NOT EXISTS job_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_budgets ADD COLUMN IF NOT EXISTS part_code text NOT NULL DEFAULT '';
+ALTER TABLE gl_budgets ADD COLUMN IF NOT EXISTS side_code text NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_gl_budgets_fiscal_year ON gl_budgets(company, fiscal_year);
 
 CREATE TABLE IF NOT EXISTS gl_budget_lines (

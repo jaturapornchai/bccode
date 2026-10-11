@@ -50,14 +50,30 @@ type Account struct {
 	IsActive          bool   `json:"isactive" bson:"isactive"`
 	IsCash            bool   `json:"iscash" bson:"iscash"`
 	Level             int    `json:"level" bson:"level"`
-	// DepartSeparate/ProjectSeparate - เงื่อนไข "แยกแผนก"/"แยกโครงการ" ของ Champ (BCChartOfAccount.DepartSeparate/ProjectSeparate):
-	// บรรทัดรายวันของบัญชีนี้ระบุแผนก/โครงการได้เฉพาะเมื่อเปิดไว้ (CGLFrmJournal::OnCheckSeparate) — ไม่ใช่ "บังคับต้องใส่"
-	DepartSeparate  bool `json:"departseparate,omitempty" bson:"departseparate,omitempty"`
-	ProjectSeparate bool `json:"projectseparate,omitempty" bson:"projectseparate,omitempty"`
-	// DepartCodes/ProjectCodes - รหัสแผนก/โครงการที่บัญชีนี้ใช้ได้ (Champ BCAccSeparate.SeparateCode; ว่าง = ใช้ได้ทุกรหัสในทะเบียน
-	// ต่างจาก Champ ที่เปิดแยกแต่ไม่มีแถว = ห้ามทุกรหัส) ตั้งได้เฉพาะเมื่อเปิดตัวแยกคู่กัน
-	DepartCodes  []string `json:"departcodes,omitempty" bson:"departcodes,omitempty"`
-	ProjectCodes []string `json:"projectcodes,omitempty" bson:"projectcodes,omitempty"`
+	// <k>Separate - เงื่อนไข "แยก…" ของ Champ (BCChartOfAccount.DepartSeparate/ProjectSeparate/AllocateSeparate/JobSeparate/
+	// PartSeparate/SideSeparate, SQLSERVER_Script.sql:9069-9075): บรรทัดรายวันของบัญชีนี้ระบุรหัสของมิตินั้นได้เฉพาะเมื่อเปิดไว้
+	// (CGLFrmJournal::OnCheckSeparate) — ไม่ใช่ "บังคับต้องใส่"
+	DepartSeparate   bool `json:"departseparate,omitempty" bson:"departseparate,omitempty"`
+	ProjectSeparate  bool `json:"projectseparate,omitempty" bson:"projectseparate,omitempty"`
+	AllocateSeparate bool `json:"allocateseparate,omitempty" bson:"allocateseparate,omitempty"`
+	JobSeparate      bool `json:"jobseparate,omitempty" bson:"jobseparate,omitempty"`
+	PartSeparate     bool `json:"partseparate,omitempty" bson:"partseparate,omitempty"`
+	SideSeparate     bool `json:"sideseparate,omitempty" bson:"sideseparate,omitempty"`
+	// <k>Codes - รหัสของมิติที่บัญชีนี้ใช้ได้ (Champ BCAccSeparate.SeparateCode, SQLSERVER_Script.sql:9563-9576); ตั้งได้เฉพาะเมื่อเปิดตัวแยกคู่กัน
+	// <k>AllCodes - ช่อง "เลือกทั้งหมด" (Champ แถว SeparateCode='_ALL', GLFrmChartofAccountPage1.cpp:721-755) = ใช้ได้ทุกรหัสในทะเบียน
+	// ธงเปิด + ไม่ติ๊กเลือกทั้งหมด + รายการว่าง = ไม่อนุญาตรหัสใดเลย (Champ glfrmjournal.cpp:2815-2923; design gl-dimensions.md §3.5 ข้อ 5)
+	DepartCodes      []string `json:"departcodes,omitempty" bson:"departcodes,omitempty"`
+	ProjectCodes     []string `json:"projectcodes,omitempty" bson:"projectcodes,omitempty"`
+	AllocateCodes    []string `json:"allocatecodes,omitempty" bson:"allocatecodes,omitempty"`
+	JobCodes         []string `json:"jobcodes,omitempty" bson:"jobcodes,omitempty"`
+	PartCodes        []string `json:"partcodes,omitempty" bson:"partcodes,omitempty"`
+	SideCodes        []string `json:"sidecodes,omitempty" bson:"sidecodes,omitempty"`
+	DepartAllCodes   bool     `json:"departallcodes,omitempty" bson:"departallcodes,omitempty"`
+	ProjectAllCodes  bool     `json:"projectallcodes,omitempty" bson:"projectallcodes,omitempty"`
+	AllocateAllCodes bool     `json:"allocateallcodes,omitempty" bson:"allocateallcodes,omitempty"`
+	JobAllCodes      bool     `json:"joballcodes,omitempty" bson:"joballcodes,omitempty"`
+	PartAllCodes     bool     `json:"partallcodes,omitempty" bson:"partallcodes,omitempty"`
+	SideAllCodes     bool     `json:"sideallcodes,omitempty" bson:"sideallcodes,omitempty"`
 }
 
 func (Account) CollectionName() string { return "chart_of_accounts" }
@@ -123,6 +139,7 @@ type Master struct {
 	DocFormat      string                `json:"docformat,omitempty" bson:"docformat,omitempty"` // journal-books: running number format (journal_docno.go), empty = DefaultJournalDocFormat
 	TitleName      string                `json:"titlename,omitempty" bson:"titlename,omitempty"` // journal-books: heading printed on the voucher (Champ BCGLBook.TitleName)
 	IsActive       bool                  `json:"isactive" bson:"isactive"`
+	UserGroup      string                `json:"usergroup,omitempty" bson:"usergroup,omitempty"` // analysis-dimension registers: Champ UserGroup column, display only (dimensions.go)
 	AccountCode    string                `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
 	FiscalYear     string                `json:"fiscalyear,omitempty" bson:"fiscalyear,omitempty"`
 	StartDate      string                `json:"startdate,omitempty" bson:"startdate,omitempty"`
@@ -212,6 +229,11 @@ var MasterCollections = map[string]string{
 	"journal-books":       "gl_journal_books",
 	DepartmentKind:        "gl_departments",
 	ProjectKind:           "gl_projects",
+	AllocateKind:          "gl_allocate_codes",
+	JobKind:               "gl_job_codes",
+	PartKind:              "gl_part_codes",
+	SideKind:              "gl_side_codes",
+	DimensionSettingsKind: "gl_dimension_settings",
 	JournalTemplateKind:   "gl_journal_templates",
 }
 
@@ -232,7 +254,13 @@ type Line struct {
 	Credit         Amount `json:"credit" bson:"credit"`
 	DepartmentCode string `json:"departmentcode" bson:"departmentcode"`
 	ProjectCode    string `json:"projectcode" bson:"projectcode"`
-	CashFlow       string `json:"cashflow" bson:"cashflow"`
+	// AllocateCode / JobCode / PartCode / SideCode - มิติวิเคราะห์ที่เหลือของ Champ (BCTransSub.AllocateCode/JobCode/PartCode/SideCode,
+	// SQLSERVER_Script.sql:9430-9475); ว่าง = ไม่ระบุ
+	AllocateCode string `json:"allocatecode" bson:"allocatecode"`
+	JobCode      string `json:"jobcode" bson:"jobcode"`
+	PartCode     string `json:"partcode" bson:"partcode"`
+	SideCode     string `json:"sidecode" bson:"sidecode"`
+	CashFlow     string `json:"cashflow" bson:"cashflow"`
 }
 
 type Journal struct {
@@ -270,19 +298,21 @@ type Command struct {
 	postBatchNo string
 	// fromModule is set only by ExecuteSourceTx: the command comes from the module that owns the voucher's document.
 	fromModule bool
-	Resource   string      `json:"resource"`
-	ID         string      `json:"id"`
-	Action     string      `json:"action"`
-	RequestID  string      `json:"requestid"`
-	Version    int64       `json:"version"`
-	Reason     string      `json:"reason"`
-	Date       string      `json:"date"`
-	DocNo      string      `json:"docno"`
-	Account    *Account    `json:"account,omitempty"`
-	FiscalYear *FiscalYear `json:"fiscalyear,omitempty"`
-	Master     *Master     `json:"master,omitempty"`
-	Journal    *Journal    `json:"journal,omitempty"`
-	Budget     *Budget     `json:"budget,omitempty"`
+	Resource    string      `json:"resource"`
+	ID          string      `json:"id"`
+	Action      string      `json:"action"`
+	RequestID   string      `json:"requestid"`
+	Version     int64       `json:"version"`
+	Reason      string      `json:"reason"`
+	Date        string      `json:"date"`
+	DocNo       string      `json:"docno"`
+	Account     *Account    `json:"account,omitempty"`
+	FiscalYear  *FiscalYear `json:"fiscalyear,omitempty"`
+	Master      *Master     `json:"master,omitempty"`
+	Journal     *Journal    `json:"journal,omitempty"`
+	Budget      *Budget     `json:"budget,omitempty"`
+	// DimensionSettings: the company switches "ใช้ผังบัญชีแบบแยก…" (resource dimension-settings, dimension_settings.go).
+	DimensionSettings *DimensionSettingsInput `json:"dimensionsettings,omitempty"`
 	// PostBatch: filters of the posting screen (action "check") or the journals to post (create).
 	PostBatch *PostBatchInput `json:"postbatch,omitempty"`
 	// VatAdjust: the purchase VAT rows to change at once (resource "vat-adjustments", vat_adjust.go).
@@ -387,11 +417,11 @@ func (a Account) Validate() error {
 	if a.Level < 0 || a.Level > 12 {
 		return fmt.Errorf("ระดับบัญชีต้องอยู่ระหว่าง 1 ถึง 12")
 	}
-	if len(a.DepartCodes) > 0 && !a.DepartSeparate {
-		return fieldError("account_depart_codes_need_flag", "departcodes", "กำหนดแผนกที่ใช้ได้ต้องเปิด “แยกแผนก” ของบัญชีนี้ก่อน หรือล้างรายการแผนกที่เลือกไว้")
-	}
-	if len(a.ProjectCodes) > 0 && !a.ProjectSeparate {
-		return fieldError("account_project_codes_need_flag", "projectcodes", "กำหนดโครงการที่ใช้ได้ต้องเปิด “แยกโครงการ” ของบัญชีนี้ก่อน หรือล้างรายการโครงการที่เลือกไว้")
+	for _, d := range dimensionRegistry {
+		dim := a.accountDimension(d.kind)
+		if (len(*dim.codes) > 0 || *dim.all) && !*dim.separate {
+			return accountDimensionCodesNeedFlag(d.kind)
+		}
 	}
 	for _, n := range a.Names {
 		if utf8.RuneCountInString(n.Name) > accountNameMaxRunes {
@@ -515,32 +545,51 @@ func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
 	return nil
 }
 
-// checkLineSeparation - Champ CGLFrmJournal::OnCheckSeparate (glfrmjournal.cpp:639-686): บรรทัดที่ใส่แผนก/โครงการ
-// ต้องเป็นบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" ไว้ ไม่งั้นแจ้ง "ผังบัญชี … ไม่ได้กำหนดให้แยก…" (Chart_Of_Account + NOT_SEPARATE)
-// แล้วรหัสต้องมีและเปิดใช้งานในทะเบียน (dims) และถ้าบัญชีกำหนดรายการรหัสที่ใช้ได้ไว้ รหัสต้องอยู่ในรายการนั้น
-// (OnCheckComboData glfrmjournal.cpp:2913-2917; รายการว่าง = ทุกรหัส)
-// ตรวจเฉพาะตอนผู้ใช้บันทึกบรรทัด (Champ ตรวจตอนบันทึกใบใหม่) ไม่ตรวจตอนผ่านรายการ/กลับรายการ เพื่อไม่ให้การแก้ผังบัญชีทีหลังล็อกเอกสารเดิม
-func checkLineSeparation(lines []Line, accounts map[string]Account, dims dimensionRegisters) error {
+// checkLineSeparation - Champ CGLFrmJournal::OnCheckSeparate (glfrmjournal.cpp:639-686) for every dimension of the registry.
+// Per line and per register, a blank code passes (the dimension is optional, as in Champ). A named code must pass, in order:
+//  2. the company switch is on — or the code is one the journal already had (old): editing a voucher with the switch off keeps
+//     the stored value (Champ glfrmjournal.cpp:890-903 does not write a hidden column) but a NEW code is refused (journal_line_<k>_disabled);
+//  3. the account has the "แยก…" flag (journal_line_<k>_not_separate, Champ "Chart_Of_Account <code> NOT_SEPARATE");
+//  4. the code is in the register and active (journal_line_<k>_not_found);
+//  5. the account accepts it: "เลือกทั้งหมด", or the code is in its list — an empty list accepts none (journal_line_<k>_not_allowed;
+//     Champ OnCheckComboData glfrmjournal.cpp:2815-2923).
+//
+// When the switch is off an unchanged old value skips 3-5: the data is already stored and the column is hidden, so there is nothing to fix.
+// Checked only when the user saves lines (create / edit); post, reverse, year-end and ERP posting never re-check (Champ posting
+// does not check dimensions, GLFrmPostTrans.cpp:722-800) so a voucher stays postable after a switch / flag / list changes.
+func checkLineSeparation(lines []Line, accounts map[string]Account, dims dimensionRegisters, settings DimensionSettings, old []Line) error {
 	for index, line := range lines {
 		account := accounts[line.AccountCode]
-		if code := strings.TrimSpace(line.DepartmentCode); code != "" {
-			if !account.DepartSeparate {
-				return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกแผนก", index+1, line.AccountCode)
+		for _, d := range dimensionRegistry {
+			code := strings.TrimSpace(line.dimensionCode(d.kind))
+			if code == "" {
+				continue
 			}
-			if err := dims.checkLineCode(DepartmentKind, index, line.AccountCode, code, account.DepartCodes); err != nil {
-				return err
+			if !settings.enabled(d.kind) {
+				if !lineHasDimensionCode(old, d.kind, code) {
+					return lineDimensionDisabled(d.kind, index, code)
+				}
+				continue
 			}
-		}
-		if code := strings.TrimSpace(line.ProjectCode); code != "" {
-			if !account.ProjectSeparate {
-				return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกโครงการ", index+1, line.AccountCode)
+			if !*account.accountDimension(d.kind).separate {
+				return lineDimensionNotSeparate(d.kind, index, line.AccountCode)
 			}
-			if err := dims.checkLineCode(ProjectKind, index, line.AccountCode, code, account.ProjectCodes); err != nil {
+			if err := dims.checkLineCode(d.kind, index, account, code); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+// lineHasDimensionCode: some line of the stored voucher already named this code in this register.
+func lineHasDimensionCode(lines []Line, kind, code string) bool {
+	for _, line := range lines {
+		if strings.TrimSpace(line.dimensionCode(kind)) == code {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(values []string, value string) bool {
@@ -561,8 +610,13 @@ func normalizeCommandCodes(cmd *Command) {
 		a := *cmd.Account
 		a.AccountCode = NormalizeCode(a.AccountCode)
 		a.ParentAccountCode = NormalizeCode(a.ParentAccountCode)
-		a.DepartCodes = normalizeCodeList(a.DepartCodes)
-		a.ProjectCodes = normalizeCodeList(a.ProjectCodes)
+		for _, d := range dimensionRegistry {
+			dim := a.accountDimension(d.kind)
+			*dim.codes = normalizeCodeList(*dim.codes)
+			if *dim.all {
+				*dim.codes = nil // "เลือกทั้งหมด" already covers every code: keep one meaning, not a list beside it
+			}
+		}
 		cmd.Account = &a
 	}
 	if cmd.FiscalYear != nil {
@@ -614,8 +668,9 @@ func normalizeCommandCodes(cmd *Command) {
 		j.Lines = append([]Line(nil), j.Lines...)
 		for i := range j.Lines {
 			j.Lines[i].AccountCode = NormalizeCode(j.Lines[i].AccountCode)
-			j.Lines[i].DepartmentCode = NormalizeCode(j.Lines[i].DepartmentCode)
-			j.Lines[i].ProjectCode = NormalizeCode(j.Lines[i].ProjectCode)
+			for _, d := range dimensionRegistry {
+				*j.Lines[i].lineCodePtr(d.kind) = NormalizeCode(j.Lines[i].dimensionCode(d.kind))
+			}
 		}
 		cmd.Journal = &j
 	}

@@ -12,8 +12,8 @@ func TestChampParityMasterCollections(t *testing.T) {
 // "แยกแผนก"/"แยกโครงการ" ticked; an empty dimension is always fine (the flag does not make it mandatory).
 func TestCheckLineSeparationLikeChamp(t *testing.T) {
 	accounts := map[string]Account{
-		"5100": {AccountCode: "5100", DepartSeparate: true},
-		"5200": {AccountCode: "5200", ProjectSeparate: true},
+		"5100": {AccountCode: "5100", DepartSeparate: true, DepartAllCodes: true},
+		"5200": {AccountCode: "5200", ProjectSeparate: true, ProjectAllCodes: true},
 		"1100": {AccountCode: "1100"},
 	}
 	ok := []Line{
@@ -22,7 +22,7 @@ func TestCheckLineSeparationLikeChamp(t *testing.T) {
 		{AccountCode: "1100"},
 		{AccountCode: "5100"},
 	}
-	if err := checkLineSeparation(ok, accounts, testDimensions()); err != nil {
+	if err := checkLineSeparation(ok, accounts, testDimensions(), allSwitchesOn(), nil); err != nil {
 		t.Fatalf("allowed lines rejected: %v", err)
 	}
 	cases := []struct {
@@ -33,7 +33,7 @@ func TestCheckLineSeparationLikeChamp(t *testing.T) {
 		{Line{AccountCode: "5100", ProjectCode: "P01"}, "บรรทัด 2: ผังบัญชี 5100 ไม่ได้กำหนดให้แยกโครงการ"},
 	}
 	for _, c := range cases {
-		err := checkLineSeparation([]Line{{AccountCode: "1100"}, c.line}, accounts, testDimensions())
+		err := checkLineSeparation([]Line{{AccountCode: "1100"}, c.line}, accounts, testDimensions(), allSwitchesOn(), nil)
 		if err == nil || err.Error() != c.want {
 			t.Fatalf("got %v, want %q", err, c.want)
 		}
@@ -51,7 +51,7 @@ func testDimensions() dimensionRegisters {
 // codes, in that list; BC keeps an empty list as "every code" (Champ treats flag-on-without-row as nothing allowed).
 func TestCheckLineSeparationRegisterAndAllowedList(t *testing.T) {
 	accounts := map[string]Account{
-		"5100": {AccountCode: "5100", DepartSeparate: true, ProjectSeparate: true},
+		"5100": {AccountCode: "5100", DepartSeparate: true, ProjectSeparate: true, DepartAllCodes: true, ProjectAllCodes: true},
 		"5300": {AccountCode: "5300", DepartSeparate: true, ProjectSeparate: true, DepartCodes: []string{"ACC"}, ProjectCodes: []string{"P01"}},
 	}
 	ok := []Line{
@@ -59,7 +59,7 @@ func TestCheckLineSeparationRegisterAndAllowedList(t *testing.T) {
 		{AccountCode: "5300", DepartmentCode: "ACC", ProjectCode: "P01"},
 		{AccountCode: "5300"},
 	}
-	if err := checkLineSeparation(ok, accounts, testDimensions()); err != nil {
+	if err := checkLineSeparation(ok, accounts, testDimensions(), allSwitchesOn(), nil); err != nil {
 		t.Fatalf("allowed lines rejected: %v", err)
 	}
 	cases := []struct {
@@ -74,7 +74,7 @@ func TestCheckLineSeparationRegisterAndAllowedList(t *testing.T) {
 		{Line{AccountCode: "5300", ProjectCode: "P02"}, "journal_line_project_not_allowed", "บรรทัด 1: บัญชี 5300 กำหนดโครงการที่ใช้ได้ไว้ ไม่รวมโครงการ “P02” — เลือกโครงการที่บัญชีนี้อนุญาต หรือแก้รายการที่ผังบัญชี"},
 	}
 	for _, c := range cases {
-		err := checkLineSeparation([]Line{c.line}, accounts, testDimensions())
+		err := checkLineSeparation([]Line{c.line}, accounts, testDimensions(), allSwitchesOn(), nil)
 		user, isUser := AsUserError(err)
 		if !isUser || user.Code != c.code || user.Message != c.want {
 			t.Fatalf("got %v, want %s %q", err, c.code, c.want)

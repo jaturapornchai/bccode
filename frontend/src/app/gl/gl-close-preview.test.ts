@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { glRequest } from "@/lib/general-ledger-api";
 import type { GLClosePreview } from "@/lib/general-ledger";
-import { ClosePreviewTable, fetchClosePreview, isZeroAmount } from "./gl-close-preview";
+import { ClosePreviewTable, closePreviewExtraDimensions, fetchClosePreview, isZeroAmount } from "./gl-close-preview";
 
 vi.mock("@/lib/general-ledger-api", () => ({ glRequest: vi.fn() }));
 
@@ -54,6 +54,30 @@ describe("closing entries preview (Champ 5504)", () => {
     expect(html).not.toContain("0.00");
     expect(html).not.toContain('role="alert"');
     expect(html.match(/data-close-line="transfer"/g)).toHaveLength(1);
+  });
+
+  it("keeps department and project as the only dimension columns when no closing line carries an allocation, job, unit or division code", () => {
+    expect(closePreviewExtraDimensions(sample.branches[0].lines)).toEqual([]);
+    const html = renderToStaticMarkup(createElement(ClosePreviewTable, { preview: sample }));
+    expect(html.match(/<th(?=[ >])/g)).toHaveLength(6);
+    expect(html).toContain('colSpan="6"');
+    expect(html).toContain('colSpan="4"');
+  });
+
+  it("adds a column only for the extra dimensions a closing line carries, in the order of the journal grid, and widens the transfer and total rows", () => {
+    const [first, second] = sample.branches[0].lines;
+    const preview: GLClosePreview = { ...sample, branches: [{ ...sample.branches[0], lines: [{ ...first, sidecode: "S2" }, { ...second, jobcode: "J07", sidecode: "S2" }] }] };
+    expect(closePreviewExtraDimensions(preview.branches[0].lines).map((def) => def.line)).toEqual(["jobcode", "sidecode"]);
+    const html = renderToStaticMarkup(createElement(ClosePreviewTable, { preview }));
+    expect(html.match(/<th(?=[ >])/g)).toHaveLength(8);
+    expect(html.indexOf("<th>งาน</th>")).toBeGreaterThan(html.indexOf("<th>โครงการ</th>"));
+    expect(html.indexOf("<th>ฝ่าย</th>")).toBeGreaterThan(html.indexOf("<th>งาน</th>"));
+    expect(html).not.toContain("การจัดสรร");
+    expect(html).not.toContain("หน่วยงาน");
+    expect(html).toContain(">J07<");
+    expect(html.match(/>S2</g)).toHaveLength(2);
+    expect(html).toContain('colSpan="8"');
+    expect(html).toContain('colSpan="6"');
   });
 
   it("warns and states the mismatch instead of hiding them", () => {

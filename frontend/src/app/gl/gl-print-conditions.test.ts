@@ -122,7 +122,7 @@ describe("budget detail print conditions (Champ 5525)", () => {
   });
   it("lists every given condition on the printed report", () => {
     expect(budgetPrintConditionLines(DEFAULT_BUDGET_PRINT, tr)).toEqual([]);
-    expect(budgetPrintConditionLines({ budgetfrom: "BG-1", budgetto: "BG-3", accountfrom: "5100", accountto: "", branchcode: "00001", departments: ["D1", "D2"], projects: ["P1"] }, tr))
+    expect(budgetPrintConditionLines({ ...DEFAULT_BUDGET_PRINT, budgetfrom: "BG-1", budgetto: "BG-3", accountfrom: "5100", accountto: "", branchcode: "00001", departments: ["D1", "D2"], projects: ["P1"] }, tr))
       .toEqual(["จากรหัสงบประมาณ BG-1 ถึง BG-3", "จากรหัสบัญชี เท่ากับ 5100", "รหัสสาขา 00001", "รหัสแผนก D1, D2", "รหัสโครงการ P1"]);
   });
   it("reads every page of the report at one snapshot and aborts when the data changes between pages", async () => {

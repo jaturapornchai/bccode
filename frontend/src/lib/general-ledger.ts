@@ -8,15 +8,32 @@ export type GLAccount = GLIdentity & {
   parentaccountcode: string | null; normalbalance: "debit" | "credit";
   allowposting: boolean; isactive: boolean; iscash: boolean;
   level?: number;
+  /** "แยก…" flags (Champ BCChartOfAccount.<k>Separate): a line of this account may name a code of that register. */
   departseparate?: boolean;
   projectseparate?: boolean;
-  /** Codes the account may use per register (Champ BCAccSeparate.SeparateCode); empty or absent = every code. Only with the matching flag on. */
+  allocateseparate?: boolean;
+  jobseparate?: boolean;
+  partseparate?: boolean;
+  sideseparate?: boolean;
+  /** Codes the account may use per register (Champ BCAccSeparate.SeparateCode). Only with the matching flag on; flag on + no list + no
+   *  "เลือกทั้งหมด" (<k>allcodes) = no code is allowed (Champ). */
   departcodes?: string[];
   projectcodes?: string[];
+  allocatecodes?: string[];
+  jobcodes?: string[];
+  partcodes?: string[];
+  sidecodes?: string[];
+  /** "เลือกทั้งหมด" (Champ BCAccSeparate row SeparateCode = '_ALL'): every active code of the register is allowed; the list is then empty. */
+  departallcodes?: boolean;
+  projectallcodes?: boolean;
+  allocateallcodes?: boolean;
+  joballcodes?: boolean;
+  partallcodes?: boolean;
+  sideallcodes?: boolean;
 };
 /** งบประมาณรายเดือน (resource "budgets", ADR 2026-09-25-gl-monthly-budget): เงินเป็นข้อความทศนิยม 12 งวดต่อบัญชี */
 export type GLBudgetLine = { accountcode: string; accountname?: string; periods: string[]; total?: string };
-export type GLBudget = GLIdentity & { code: string; name: string; fiscalyear: string; branchcode: string; departmentcode: string; projectcode: string; status: "open" | "closed"; remark: string; lines?: GLBudgetLine[]; total?: string };
+export type GLBudget = GLIdentity & { code: string; name: string; fiscalyear: string; branchcode: string; departmentcode: string; projectcode: string; allocatecode?: string; jobcode?: string; partcode?: string; sidecode?: string; status: "open" | "closed"; remark: string; lines?: GLBudgetLine[]; total?: string };
 export const BUDGET_PERIODS = 12;
 /** วันเริ่มของแต่ละงวดในปีบัญชี: งวด 1 = วันเริ่มปี งวดถัดไป = วันที่ 1 ของเดือนถัดไป ตัดงวดที่เริ่มหลังวันสิ้นปี (ตรงกับ fiscalPeriodStarts ใน backend budgets.go) */
 export function budgetPeriodStarts(year: Pick<GLFiscalYear, "startdate" | "enddate"> | undefined): string[] {
@@ -68,6 +85,8 @@ export type GLMaster = GLIdentity & {
 export type GLLine = {
   accountcode: string; accountname?: string; description: string; debit: string; credit: string;
   departmentcode: string; projectcode: string; cashflow: string;
+  /** The other four analysis dimensions of a line (design gl-dimensions.md §3.1); absent = empty. */
+  allocatecode?: string; jobcode?: string; partcode?: string; sidecode?: string;
 };
 export type GLJournal = GLIdentity & {
   details?: GLJournalDetails;
@@ -87,7 +106,7 @@ export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: 
   titlename?: string };
 /** Saved journal entry format (Champ recurring entry): a pattern, not a voucher — no document number, date, amount or invoice number (backend journal_templates.go).
  *  taxtype: 1 = purchase VAT, 2 = sales VAT (same as tax_type of an invoice in the journal details); absent = no tax. */
-export type GLJournalTemplateLine = { accountcode: string; description?: string; departmentcode?: string; projectcode?: string; cashflow?: string };
+export type GLJournalTemplateLine = { accountcode: string; description?: string; departmentcode?: string; projectcode?: string; allocatecode?: string; jobcode?: string; partcode?: string; sidecode?: string; cashflow?: string };
 export type GLJournalTemplateBody = { bookcode?: string; reference?: string; refdate?: string; description?: string; taxtype?: 1 | 2; lines: GLJournalTemplateLine[] };
 export type GLJournalTemplateInput = { name: string; isactive: boolean; template: GLJournalTemplateBody };
 export type GLJournalTemplate = GLIdentity & GLJournalTemplateInput & { code: string };
@@ -116,7 +135,7 @@ export type GLReport = {
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
 export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "journal-templates", "post-batches", "vat-adjustments", "departments", "projects"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "journal-templates", "post-batches", "vat-adjustments", "departments", "projects", "allocate-codes", "job-codes", "part-codes", "side-codes", "dimension-settings"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 /** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark + ผู้ตรวจสอบ 1/2 (ไม่บังคับ) + ผู้อนุมัติ (บังคับ) */
 export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string; check1?: string; check2?: string; approver?: string };
@@ -126,7 +145,7 @@ export type GLPostCheckRow = { id: string; version: number; docno: string; date:
 export type GLAccountReference = { kind: string; count: number };
 export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };
 /** Closing-entries preview (backend close_preview.go, processes action "close-preview", nothing saved): the vouchers the real close would create as drafts, one per branch. Amounts are decimal strings at the year scale; transfer = the lines moving net profit (loss) to retained earnings; balanced = total debit equals total credit. */
-export type GLClosePreviewLine = { accountcode: string; accountname: string; departmentcode: string; projectcode: string; debit: string; credit: string; transfer: boolean };
+export type GLClosePreviewLine = { accountcode: string; accountname: string; departmentcode: string; projectcode: string; allocatecode?: string; jobcode?: string; partcode?: string; sidecode?: string; debit: string; credit: string; transfer: boolean };
 export type GLClosePreviewBranch = { branchcode: string; docno: string; netprofit: string; totaldebit: string; totalcredit: string; lines: GLClosePreviewLine[] };
 export type GLClosePreview = { fiscalyear: string; date: string; scale: number; pendingdrafts: boolean; netprofit: string; totaldebit: string; totalcredit: string; balanced: boolean; branches: GLClosePreviewBranch[] };
 /** Adjust purchase VAT (Champ 5498, backend vat_adjust.go) filter: "from" alone matches that value exactly, from-to is a range; at least one document-date or tax-invoice-date bound is required. */
@@ -144,6 +163,8 @@ export type GLCommand = {
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
   postbatch?: GLPostBatchInput;
   vatadjust?: GLVatAdjustInput;
+  /** resource "dimension-settings", id "default", action "update": the seven company switches (version 0 = first save). */
+  dimensionsettings?: GLDimensionSettingsInput;
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
@@ -172,19 +193,104 @@ export const JOURNAL_BOOK_CODE_MAX = 15;
 export const JOURNAL_BOOK_NAME_MAX = 100;
 export const JOURNAL_DOC_FORMAT_DEFAULT = "@YYMM-####";
 export const JOURNAL_DOC_FORMAT_MAX = 20;
-/** Department and project registers share one screen and one record shape (Champ BCDepartment / BCProject: code + name; limits are enforced by the backend, dimensions.go). */
-export const DIMENSION_RESOURCES = ["departments", "projects"] as const;
+/** The six analysis dimensions of a journal line share one screen and one record shape (Champ BCDepartment / BCProject / BCAllocate / BCJob / BCPart / BCSide:
+ *  code + name + usergroup; limits are enforced by the backend, dimensions.go). Order = Champ's journal grid: แผนก, โครงการ, การจัดสรร, งาน, หน่วยงาน, ฝ่าย. */
+export const DIMENSION_RESOURCES = ["departments", "projects", "allocate-codes", "job-codes", "part-codes", "side-codes"] as const;
 export type GLDimensionResource = (typeof DIMENSION_RESOURCES)[number];
-export type GLDimension = GLIdentity & { code: string; name: string; isactive: boolean };
+export type GLDimension = GLIdentity & { code: string; name: string; isactive: boolean; usergroup?: string };
+export type GLDimensionLineField = "departmentcode" | "projectcode" | "allocatecode" | "jobcode" | "partcode" | "sidecode";
+export type GLDimensionFlagField = "departseparate" | "projectseparate" | "allocateseparate" | "jobseparate" | "partseparate" | "sideseparate";
+export type GLDimensionListField = "departcodes" | "projectcodes" | "allocatecodes" | "jobcodes" | "partcodes" | "sidecodes";
+export type GLDimensionAllField = "departallcodes" | "projectallcodes" | "allocateallcodes" | "joballcodes" | "partallcodes" | "sideallcodes";
+export type GLDimensionByField = "bydepartment" | "byproject" | "byallocate" | "byjob" | "bypart" | "byside";
+export type GLDimensionDef = {
+  resource: GLDimensionResource;
+  /** code field of a journal line, template line, budget row and report filter */
+  line: GLDimensionLineField;
+  /** account flag and company switch ("แยก…") */
+  flag: GLDimensionFlagField;
+  list: GLDimensionListField;
+  all: GLDimensionAllField;
+  /** report group-by query flag */
+  by: GLDimensionByField;
+  /** [languages.tsv key, Thai] register name = column header (design OD-6) */
+  label: GLLabel;
+  /** "{name}บรรทัด {0}" — aria-label of the cell on journal line {0} */
+  lineLabel: GLLabel;
+  /** "รหัส{name}" */
+  codeLabel: GLLabel;
+  /** "แยก{name}" — account flag / company switch caption in the chart of accounts */
+  separateLabel: GLLabel;
+  /** "เลือกทั้งหมด" box of the account's allowed codes */
+  allLabel: GLLabel;
+  /** "รายงานรายละเอียด{name}" */
+  reportTitle: GLLabel;
+  codeMax: number;
+  nameMax: number;
+};
+/** Mirror of backend dimensionRegistry (dimensions.go) — widths included. */
+export const DIMENSIONS: readonly GLDimensionDef[] = [
+  { resource: "departments", line: "departmentcode", flag: "departseparate", list: "departcodes", all: "departallcodes", by: "bydepartment", label: ["gl_department", "แผนก"], lineLabel: ["gl_line_department", "แผนกบรรทัด {0}"], codeLabel: ["gl_department_code", "รหัสแผนก"], separateLabel: ["gl_depart_separate", "แยกแผนก"], allLabel: ["gl_depart_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_department_report_title", "รายงานรายละเอียดแผนก"], codeMax: 10, nameMax: 50 },
+  { resource: "projects", line: "projectcode", flag: "projectseparate", list: "projectcodes", all: "projectallcodes", by: "byproject", label: ["gl_project", "โครงการ"], lineLabel: ["gl_line_project", "โครงการบรรทัด {0}"], codeLabel: ["gl_project_code", "รหัสโครงการ"], separateLabel: ["gl_project_separate", "แยกโครงการ"], allLabel: ["gl_project_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_project_report_title", "รายงานรายละเอียดโครงการ"], codeMax: 10, nameMax: 50 },
+  { resource: "allocate-codes", line: "allocatecode", flag: "allocateseparate", list: "allocatecodes", all: "allocateallcodes", by: "byallocate", label: ["gl_allocate", "การจัดสรร"], lineLabel: ["gl_line_allocate", "การจัดสรรบรรทัด {0}"], codeLabel: ["gl_allocate_code", "รหัสการจัดสรร"], separateLabel: ["gl_allocate_separate", "แยกการจัดสรร"], allLabel: ["gl_allocate_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_allocate_report_title", "รายงานรายละเอียดการจัดสรร"], codeMax: 10, nameMax: 50 },
+  { resource: "job-codes", line: "jobcode", flag: "jobseparate", list: "jobcodes", all: "joballcodes", by: "byjob", label: ["gl_job", "งาน"], lineLabel: ["gl_line_job", "งานบรรทัด {0}"], codeLabel: ["gl_job_code", "รหัสงาน"], separateLabel: ["gl_job_separate", "แยกงาน"], allLabel: ["gl_job_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_job_report_title", "รายงานรายละเอียดงาน"], codeMax: 15, nameMax: 255 },
+  { resource: "part-codes", line: "partcode", flag: "partseparate", list: "partcodes", all: "partallcodes", by: "bypart", label: ["gl_part", "หน่วยงาน"], lineLabel: ["gl_line_part", "หน่วยงานบรรทัด {0}"], codeLabel: ["gl_part_code", "รหัสหน่วยงาน"], separateLabel: ["gl_part_separate", "แยกหน่วยงาน"], allLabel: ["gl_part_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_part_report_title", "รายงานรายละเอียดหน่วยงาน"], codeMax: 10, nameMax: 255 },
+  { resource: "side-codes", line: "sidecode", flag: "sideseparate", list: "sidecodes", all: "sideallcodes", by: "byside", label: ["gl_side", "ฝ่าย"], lineLabel: ["gl_line_side", "ฝ่ายบรรทัด {0}"], codeLabel: ["gl_side_code", "รหัสฝ่าย"], separateLabel: ["gl_side_separate", "แยกฝ่าย"], allLabel: ["gl_side_all_codes", "เลือกทั้งหมด"], reportTitle: ["gl_side_report_title", "รายงานรายละเอียดฝ่าย"], codeMax: 10, nameMax: 255 },
+];
+/** Order of the type combo of the code-setup screen (Champ myfrmbasemaster.cpp:219-248: การจัดสรร, โครงการ, งาน, แผนก, ฝ่าย, หน่วยงาน). */
+export const DIMENSION_SETUP_ORDER: readonly GLDimensionResource[] = ["allocate-codes", "projects", "job-codes", "departments", "side-codes", "part-codes"];
 export function isDimensionResource(resource: string): resource is GLDimensionResource { return (DIMENSION_RESOURCES as readonly string[]).includes(resource); }
+export function dimensionDef(resource: GLDimensionResource): GLDimensionDef { return DIMENSIONS.find((def) => def.resource === resource)!; }
+/** The seven company switches "ใช้ผังบัญชีแบบแยก…" (Champ XSeparate, backend dimension_settings.go); branch is stored but has no effect (design OD-2). */
+export type GLDimensionSettingsInput = Record<GLDimensionFlagField | "branchseparate", boolean>;
+export type GLDimensionSettings = GLDimensionSettingsInput & { version: number };
+/** Every switch off, nothing saved yet — also what the screens assume until the settings are read. */
+export const DIMENSION_SETTINGS_OFF: GLDimensionSettings = { departseparate: false, projectseparate: false, allocateseparate: false, jobseparate: false, partseparate: false, sideseparate: false, branchseparate: false, version: 0 };
+export function dimensionSettingsPayload(settings: GLDimensionSettingsInput): GLDimensionSettingsInput {
+  return { departseparate: !!settings.departseparate, projectseparate: !!settings.projectseparate, allocateseparate: !!settings.allocateseparate, jobseparate: !!settings.jobseparate, partseparate: !!settings.partseparate, sideseparate: !!settings.sideseparate, branchseparate: !!settings.branchseparate };
+}
+export function dimensionEnabled(settings: Partial<GLDimensionSettingsInput> | undefined, def: GLDimensionDef): boolean { return settings?.[def.flag] === true; }
+/** Dimensions a journal-like grid shows: the company switch is on, or something already holds a code of it (a switch turned off later never hides saved data). */
+export function visibleDimensions(settings: Partial<GLDimensionSettingsInput> | undefined, held: (def: GLDimensionDef) => boolean = () => false): GLDimensionDef[] {
+  return DIMENSIONS.filter((def) => dimensionEnabled(settings, def) || held(def));
+}
+/** True when any of the rows names a code of the dimension. */
+export function rowsHoldDimension(rows: readonly Partial<Record<GLDimensionLineField, string>>[] | undefined, def: GLDimensionDef): boolean {
+  return (rows ?? []).some((row) => (row[def.line] ?? "").trim() !== "");
+}
 /** Active, not deleted register entries ordered by code (the journal and the account pickers offer nothing else; a report also takes closed codes). */
 export function activeDimensions(list: GLDimension[], includeInactive = false): GLDimension[] {
   return list.filter((item) => (includeInactive || item.isactive) && !item.isdeleted).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
 }
-/** The allowed-code list an account keeps for a register; empty = every code. */
-export function accountDimensionCodes(account: Pick<GLAccount, "departcodes" | "projectcodes"> | undefined, resource: GLDimensionResource): string[] {
-  const list = resource === "departments" ? account?.departcodes : account?.projectcodes;
+/** The allowed-code list an account keeps for a register (empty with "เลือกทั้งหมด" or when nothing is allowed — see accountAllowedCodes). */
+export function accountDimensionCodes(account: Partial<Pick<GLAccount, GLDimensionListField>> | undefined, resource: GLDimensionResource): string[] {
+  const list = account?.[dimensionDef(resource).list];
   return Array.isArray(list) ? list : [];
+}
+/** Codes a line of this account may name for a register: null = every active code ("เลือกทั้งหมด"), a list = only those (empty = none; Champ treats an
+ *  empty list without "_ALL" as nothing allowed, design R9). Flag off = none (the line cell is locked). */
+export function accountAllowedCodes(account: (Partial<Pick<GLAccount, GLDimensionFlagField | GLDimensionListField | GLDimensionAllField>>) | undefined, def: GLDimensionDef): string[] | null {
+  if (!account?.[def.flag]) return [];
+  if (account[def.all]) return null;
+  return accountDimensionCodes(account, def.resource);
+}
+function withAccountField(account: GLAccount, patch: Partial<Record<GLDimensionFlagField | GLDimensionListField | GLDimensionAllField, boolean | string[]>>): GLAccount {
+  return { ...account, ...patch } as GLAccount;
+}
+/** The flag box of the chart of accounts (Champ GLChartOfAccPage1DetailDlg.cpp:134-278): on with nothing chosen ticks "เลือกทั้งหมด" (existing accounts keep working);
+ *  off drops "เลือกทั้งหมด" and the list too — the backend refuses a list or "เลือกทั้งหมด" without the flag. */
+export function accountWithDimensionFlag(account: GLAccount, def: GLDimensionDef, on: boolean): GLAccount {
+  if (!on) return withAccountField(account, { [def.flag]: false, [def.all]: false, [def.list]: [] });
+  const hasList = accountDimensionCodes(account, def.resource).length > 0;
+  return withAccountField(account, { [def.flag]: true, [def.all]: !hasList });
+}
+/** "เลือกทั้งหมด" ticked clears the list; unticked leaves an empty list = nothing allowed until codes are chosen. */
+export function accountWithDimensionAll(account: GLAccount, def: GLDimensionDef, all: boolean): GLAccount {
+  return withAccountField(account, all ? { [def.all]: true, [def.list]: [] } : { [def.all]: false });
+}
+/** Choosing codes switches "เลือกทั้งหมด" off (the two are exclusive). */
+export function accountWithDimensionCodes(account: GLAccount, def: GLDimensionDef, codes: readonly string[]): GLAccount {
+  return withAccountField(account, { [def.list]: normalizeDimensionCodes([...codes]), [def.all]: false });
 }
 /** Trimmed, unique, sorted codes — the shape the backend stores. */
 export function normalizeDimensionCodes(codes: unknown): string[] {
@@ -194,25 +300,28 @@ export function normalizeDimensionCodes(codes: unknown): string[] {
 /** A report's department/project filter is ONE comma-separated query value (Champ multi-select, GLRepGLDlg.cpp DepartCode IN (...)); a code never holds a comma. */
 export function reportCodeList(value: string): string[] { return normalizeDimensionCodes(value.split(",")); }
 /** Options for one journal line: active register codes the account allows, plus the code the line already holds when it is no longer offered (shown so it can be read and replaced). */
-export function dimensionOptions(register: GLDimension[], allowed: string[], current: string): GLDimension[] {
-  const offered = activeDimensions(register).filter((item) => allowed.length === 0 || allowed.includes(item.code));
+export function dimensionOptions(register: GLDimension[], allowed: string[] | null, current: string): GLDimension[] {
+  const offered = activeDimensions(register).filter((item) => allowed === null || allowed.includes(item.code));
   const held = current.trim();
   if (!held || offered.some((item) => item.code === held)) return offered;
   return [...offered, { code: held, name: "", isactive: false }];
 }
-/** Champ OnCheckComboData (glfrmjournal.cpp:2812-3056): after the account of a line changes, a department or project the new account
+/** Champ OnCheckComboData (glfrmjournal.cpp:2812-3056): after the account of a line changes, a code of any dimension the new account
  *  does not allow is cleared — flag off, or a code outside the account's list. Returns only the fields to clear. */
-export function lineDimensionsAfterAccountChange(line: Pick<GLLine, "departmentcode" | "projectcode">, account: GLAccount | undefined): Partial<Pick<GLLine, "departmentcode" | "projectcode">> {
-  const patch: Partial<Pick<GLLine, "departmentcode" | "projectcode">> = {};
-  const depart = line.departmentcode?.trim() ?? "", project = line.projectcode?.trim() ?? "";
-  const departList = accountDimensionCodes(account, "departments"), projectList = accountDimensionCodes(account, "projects");
-  if (depart && (!account?.departseparate || (departList.length > 0 && !departList.includes(depart)))) patch.departmentcode = "";
-  if (project && (!account?.projectseparate || (projectList.length > 0 && !projectList.includes(project)))) patch.projectcode = "";
+export function lineDimensionsAfterAccountChange(line: Partial<Pick<GLLine, GLDimensionLineField>>, account: GLAccount | undefined): Partial<Pick<GLLine, GLDimensionLineField>> {
+  const patch: Partial<Pick<GLLine, GLDimensionLineField>> = {};
+  for (const def of DIMENSIONS) {
+    const held = line[def.line]?.trim() ?? "";
+    if (!held) continue;
+    const allowed = accountAllowedCodes(account, def);
+    if (allowed !== null && !allowed.includes(held)) patch[def.line] = "";
+  }
   return patch;
 }
-/** create/update payload of a department or project: only the contract fields, trimmed — nothing from the other masters. */
-export function dimensionPayload(record: Pick<GLDimension, "id" | "version" | "code" | "name" | "isactive">): GLDimension {
-  return { ...(record.id ? { id: record.id } : {}), ...(record.version ? { version: record.version } : {}), code: record.code.trim(), name: record.name.trim(), isactive: record.isactive ?? true };
+/** create/update payload of a register code: only the contract fields, trimmed — nothing from the other masters. usergroup is Champ's UserGroup column (display only). */
+export function dimensionPayload(record: Pick<GLDimension, "id" | "version" | "code" | "name" | "isactive"> & { usergroup?: string }): GLDimension {
+  const usergroup = record.usergroup?.trim() ?? "";
+  return { ...(record.id ? { id: record.id } : {}), ...(record.version ? { version: record.version } : {}), code: record.code.trim(), name: record.name.trim(), ...(usergroup ? { usergroup } : {}), isactive: record.isactive ?? true };
 }
 export function isJournalBookType(value: unknown): value is GLJournalBookType { return Number.isInteger(Number(value)) && JOURNAL_BOOK_TYPES.includes(Number(value) as GLJournalBookType); }
 export function emptyJournalBook(): GLJournalBook { return { code: "", name: "", nameen: "", booktype: 0, isactive: true }; }

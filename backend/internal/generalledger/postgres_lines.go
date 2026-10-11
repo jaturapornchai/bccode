@@ -52,6 +52,10 @@ type projectedLine struct {
 	BranchCode     string `json:"branch_code"`
 	DepartmentCode string `json:"department_code"`
 	ProjectCode    string `json:"project_code"`
+	AllocateCode   string `json:"allocate_code"`
+	JobCode        string `json:"job_code"`
+	PartCode       string `json:"part_code"`
+	SideCode       string `json:"side_code"`
 	Kind           string `json:"kind"`
 	Currency       string `json:"currency"`
 	Scale          int    `json:"scale"`
@@ -71,8 +75,8 @@ func insertProjectedLines(ctx context.Context, tx *sql.Tx, lines []projectedLine
 	if err != nil {
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO gl_lines(company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit)
-      SELECT * FROM jsonb_to_recordset($1::jsonb) AS line(company text,journal_id text,line_no integer,doc_no text,entry_date date,fiscal_year text,book_code text,branch_code text,department_code text,project_code text,kind text,currency text,scale integer,account_code text,account_name text,account_type text,normal_balance text,is_cash boolean,description text,cash_flow text,debit numeric(38,8),credit numeric(38,8))`, string(payload))
+	_, err = tx.ExecContext(ctx, `INSERT INTO gl_lines(company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,allocate_code,job_code,part_code,side_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit)
+      SELECT * FROM jsonb_to_recordset($1::jsonb) AS line(company text,journal_id text,line_no integer,doc_no text,entry_date date,fiscal_year text,book_code text,branch_code text,department_code text,project_code text,allocate_code text,job_code text,part_code text,side_code text,kind text,currency text,scale integer,account_code text,account_name text,account_type text,normal_balance text,is_cash boolean,description text,cash_flow text,debit numeric(38,8),credit numeric(38,8))`, string(payload))
 	return err
 }
 
@@ -88,6 +92,7 @@ func verifyProjectedJournal(ctx context.Context, tx *sql.Tx, company string, j J
 	err = tx.QueryRowContext(ctx, `WITH incoming AS (SELECT value,ordinality AS line_no FROM jsonb_array_elements($3::jsonb) WITH ORDINALITY) SELECT COALESCE(bool_and(
       p.doc_no=$4 AND p.entry_date=$5::date AND p.fiscal_year=$6 AND p.book_code=$7 AND p.branch_code=$8 AND p.kind=$9 AND p.currency=$10
       AND p.account_code=i.value->>'accountcode' AND p.department_code=i.value->>'departmentcode' AND p.project_code=i.value->>'projectcode'
+      AND p.allocate_code=i.value->>'allocatecode' AND p.job_code=i.value->>'jobcode' AND p.part_code=i.value->>'partcode' AND p.side_code=i.value->>'sidecode'
       AND p.description=i.value->>'description' AND p.cash_flow=i.value->>'cashflow' AND p.debit=(i.value->>'debit')::numeric AND p.credit=(i.value->>'credit')::numeric),false)
       FROM gl_lines p JOIN incoming i USING(line_no) WHERE p.company=$1 AND p.journal_id=$2`, company, j.ID, string(payload), j.DocNo, j.Date, j.FiscalYear, j.BookCode, j.BranchCode, j.Kind, projectionCurrency).Scan(&matches)
 	if err != nil {

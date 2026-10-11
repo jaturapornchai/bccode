@@ -31,13 +31,17 @@ func glQuery(req SourceRequest) gl.ReportQuery {
 	q := gl.ReportQuery{
 		From: p["date_from"], To: p["date_to"], FiscalYear: p["fiscal_year"],
 		AccountFrom: p["account_from"], AccountTo: p["account_to"], BranchCode: p["branch"],
-		DepartmentCode: p["departments"], ProjectCode: p["projects"], BookCode: p["books"],
+		DepartmentCode: p["departments"], ProjectCode: p["projects"],
+		AllocateCode: p["allocates"], JobCode: p["jobs"], PartCode: p["parts"], SideCode: p["sides"],
+		BookCode: p["books"],
 		DocNoFrom: p["doc_no_from"], DocNoTo: p["doc_no_to"], PostStatus: p["post_status"],
 		BudgetCode: p["budget_code"], BudgetCodeTo: p["budget_to"],
 		Summary: flag("summary"), Gross: flag("gross"), HideOpening: flag("hide_opening"), HideZero: flag("hide_zero"),
 		ControlTotals: flag("control_totals"), DayTotals: flag("day_totals"),
-		ByDepartment: flag("by_department"), ByProject: flag("by_project"), DimTotals: flag("dim_totals"),
-		OrderBy: req.Sort, Page: req.Page, Limit: req.Limit, Timeout: req.Timeout,
+		ByDepartment: flag("by_department"), ByProject: flag("by_project"),
+		ByAllocate: flag("by_allocate"), ByJob: flag("by_job"), ByPart: flag("by_part"), BySide: flag("by_side"),
+		DimTotals: flag("dim_totals"),
+		OrderBy:   req.Sort, Page: req.Page, Limit: req.Limit, Timeout: req.Timeout,
 	}
 	if p["budget_from"] != "" {
 		q.BudgetCode = p["budget_from"]

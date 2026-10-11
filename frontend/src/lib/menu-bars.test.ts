@@ -227,7 +227,7 @@ describe("Champ-style menu bar layout", () => {
     // Champ GL reports (central report screen): master-data reports nested first, then the daily reports, budget comparison last
     const glDaily = MENU_BARS.find((bar) => bar.id === "gl")?.nodes.find((node) => node.kind === "submenu" && node.id === "gl-reports-daily");
     const glMaster = glDaily?.kind === "submenu" ? glDaily.nodes.find((node) => node.kind === "submenu" && node.id === "gl-reports-master") : undefined;
-    expect(glMaster?.kind === "submenu" ? glMaster.nodes.map((node) => (node.kind === "item" ? node.item.id : node.kind)) : []).toEqual(["gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-budget-detail", "gl-chart-of-accounts-report"]);
+    expect(glMaster?.kind === "submenu" ? glMaster.nodes.map((node) => (node.kind === "item" ? node.item.id : node.kind)) : []).toEqual(["gl-journal-books-report", "gl-department-report", "gl-project-report", "gl-allocate-report", "gl-job-report", "gl-part-report", "gl-side-report", "gl-budget-detail", "gl-chart-of-accounts-report"]);
     expect(submenuNodes("gl", "gl-reports-daily")).toEqual(["submenu", "divider", "gl-daily-report", "gl-daily-summary-report", "general-ledger", "general-ledger-summary", "divider", "budget-comparison-report"]);
   });
 

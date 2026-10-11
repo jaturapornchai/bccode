@@ -267,7 +267,7 @@ func projectJournal(ctx context.Context, tx *sql.Tx, company string, journal Jou
 		if name == "" {
 			name = account.ThaiName()
 		}
-		projected = append(projected, projectedLine{Company: company, JournalID: journal.ID, LineNo: index + 1, DocNo: journal.DocNo, Date: journal.Date, FiscalYear: journal.FiscalYear, BookCode: journal.BookCode, BranchCode: journal.BranchCode, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, Kind: journal.Kind, Currency: projectionCurrency, Scale: fiscal.Scale, AccountCode: line.AccountCode, AccountName: name, AccountType: account.AccountType, NormalBalance: account.NormalBalance, IsCash: account.IsCash, Description: line.Description, CashFlow: line.CashFlow, Debit: d.String(), Credit: c.String()})
+		projected = append(projected, projectedLine{Company: company, JournalID: journal.ID, LineNo: index + 1, DocNo: journal.DocNo, Date: journal.Date, FiscalYear: journal.FiscalYear, BookCode: journal.BookCode, BranchCode: journal.BranchCode, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, AllocateCode: line.AllocateCode, JobCode: line.JobCode, PartCode: line.PartCode, SideCode: line.SideCode, Kind: journal.Kind, Currency: projectionCurrency, Scale: fiscal.Scale, AccountCode: line.AccountCode, AccountName: name, AccountType: account.AccountType, NormalBalance: account.NormalBalance, IsCash: account.IsCash, Description: line.Description, CashFlow: line.CashFlow, Debit: d.String(), Credit: c.String()})
 	}
 	if !debit.Equal(credit) {
 		return fmt.Errorf("ยอดเดบิตและเครดิตไม่เท่ากัน")

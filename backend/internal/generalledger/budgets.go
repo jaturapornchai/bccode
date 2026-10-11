@@ -51,7 +51,12 @@ type Budget struct {
 	BranchCode     string       `json:"branchcode"`
 	DepartmentCode string       `json:"departmentcode"`
 	ProjectCode    string       `json:"projectcode"`
-	Status         string       `json:"status,omitempty"`
+	// AllocateCode / JobCode / PartCode / SideCode - the other four dimensions of Champ BCGLBudget (SQLSERVER_Script.sql:9207-9230); '' = any
+	AllocateCode string       `json:"allocatecode"`
+	JobCode      string       `json:"jobcode"`
+	PartCode     string       `json:"partcode"`
+	SideCode     string       `json:"sidecode"`
+	Status       string       `json:"status,omitempty"`
 	Remark         string       `json:"remark"`
 	Lines          []BudgetLine `json:"lines,omitempty"`
 }
@@ -147,7 +152,7 @@ func spreadBudget(cmd Command, periodCount int) (Result, error) {
 }
 
 func normalizeBudget(b *Budget) {
-	for _, code := range []*string{&b.Code, &b.FiscalYear, &b.BranchCode, &b.DepartmentCode, &b.ProjectCode} {
+	for _, code := range []*string{&b.Code, &b.FiscalYear, &b.BranchCode, &b.DepartmentCode, &b.ProjectCode, &b.AllocateCode, &b.JobCode, &b.PartCode, &b.SideCode} {
 		*code = NormalizeCode(*code)
 	}
 	b.Name = strings.TrimSpace(b.Name)
@@ -222,7 +227,7 @@ func (s *PostgresStore) validateBudget(ctx context.Context, tx *sql.Tx, scope Sc
 	if b.Status != budgetStatusOpen && b.Status != budgetStatusClosed {
 		return errBudgetStatusInvalid
 	}
-	for _, dim := range []struct{ value, field, label string }{{b.BranchCode, "branchcode", "รหัสสาขา"}, {b.DepartmentCode, "departmentcode", "รหัสแผนก"}, {b.ProjectCode, "projectcode", "รหัสโครงการ"}} {
+	for _, dim := range []struct{ value, field, label string }{{b.BranchCode, "branchcode", "รหัสสาขา"}, {b.DepartmentCode, "departmentcode", "รหัสแผนก"}, {b.ProjectCode, "projectcode", "รหัสโครงการ"}, {b.AllocateCode, "allocatecode", "รหัสการจัดสรร"}, {b.JobCode, "jobcode", "รหัสงาน"}, {b.PartCode, "partcode", "รหัสหน่วยงาน"}, {b.SideCode, "sidecode", "รหัสฝ่าย"}} {
 		if dim.value != "" {
 			if err := checkCode(dim.value, dim.field, dim.label, codeMaxRunes); err != nil {
 				return err
@@ -276,7 +281,7 @@ func (s *PostgresStore) validateBudget(ctx context.Context, tx *sql.Tx, scope Sc
 			return budgetAccountNotPosting(line.AccountCode)
 		}
 	}
-	return nil
+	return checkBudgetDimensions(ctx, tx, scope.Company, b, accounts)
 }
 
 func (s *PostgresStore) mutateBudget(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
@@ -293,8 +298,8 @@ func (s *PostgresStore) mutateBudget(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := s.validateBudget(ctx, tx, scope, b); err != nil {
 			return nil, err
 		}
-		result, err := tx.ExecContext(ctx, `INSERT INTO gl_budgets(company,code,name,fiscal_year,branch_code,department_code,project_code,status,remark,version,created_by,created_at,updated_by,updated_at)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,1,$10,$11,$10,$11) ON CONFLICT DO NOTHING`, scope.Company, b.Code, b.Name, b.FiscalYear, b.BranchCode, b.DepartmentCode, b.ProjectCode, b.Status, b.Remark, scope.Actor, now)
+		result, err := tx.ExecContext(ctx, `INSERT INTO gl_budgets(company,code,name,fiscal_year,branch_code,department_code,project_code,allocate_code,job_code,part_code,side_code,status,remark,version,created_by,created_at,updated_by,updated_at)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,1,$14,$15,$14,$15) ON CONFLICT DO NOTHING`, scope.Company, b.Code, b.Name, b.FiscalYear, b.BranchCode, b.DepartmentCode, b.ProjectCode, b.AllocateCode, b.JobCode, b.PartCode, b.SideCode, b.Status, b.Remark, scope.Actor, now)
 		if err != nil {
 			return nil, err
 		}
@@ -332,8 +337,8 @@ func (s *PostgresStore) mutateBudget(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := s.validateBudget(ctx, tx, scope, b); err != nil {
 			return nil, err
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE gl_budgets SET name=$3,fiscal_year=$4,branch_code=$5,department_code=$6,project_code=$7,status=$8,remark=$9,version=version+1,updated_by=$10,updated_at=$11 WHERE company=$1 AND code=$2`,
-			scope.Company, b.Code, b.Name, b.FiscalYear, b.BranchCode, b.DepartmentCode, b.ProjectCode, b.Status, b.Remark, scope.Actor, now); err != nil {
+		if _, err = tx.ExecContext(ctx, `UPDATE gl_budgets SET name=$3,fiscal_year=$4,branch_code=$5,department_code=$6,project_code=$7,allocate_code=$8,job_code=$9,part_code=$10,side_code=$11,status=$12,remark=$13,version=version+1,updated_by=$14,updated_at=$15 WHERE company=$1 AND code=$2`,
+			scope.Company, b.Code, b.Name, b.FiscalYear, b.BranchCode, b.DepartmentCode, b.ProjectCode, b.AllocateCode, b.JobCode, b.PartCode, b.SideCode, b.Status, b.Remark, scope.Actor, now); err != nil {
 			return nil, err
 		}
 		if _, err = tx.ExecContext(ctx, `DELETE FROM gl_budget_lines WHERE company=$1 AND budget_code=$2`, scope.Company, b.Code); err != nil {
@@ -403,11 +408,11 @@ type budgetQuerier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-const budgetHeaderColumns = `code,name,fiscal_year,branch_code,department_code,project_code,status,remark,version,created_by,created_at,updated_by,updated_at`
+const budgetHeaderColumns = `code,name,fiscal_year,branch_code,department_code,project_code,allocate_code,job_code,part_code,side_code,status,remark,version,created_by,created_at,updated_by,updated_at`
 
 func scanBudgetHeader(row interface{ Scan(...any) error }, scope Scope, extra ...any) (budgetRecord, error) {
 	var r budgetRecord
-	dest := []any{&r.Code, &r.Name, &r.FiscalYear, &r.BranchCode, &r.DepartmentCode, &r.ProjectCode, &r.Status, &r.Remark, &r.Version, &r.CreatedBy, &r.CreatedAt, &r.UpdatedBy, &r.UpdatedAt}
+	dest := []any{&r.Code, &r.Name, &r.FiscalYear, &r.BranchCode, &r.DepartmentCode, &r.ProjectCode, &r.AllocateCode, &r.JobCode, &r.PartCode, &r.SideCode, &r.Status, &r.Remark, &r.Version, &r.CreatedBy, &r.CreatedAt, &r.UpdatedBy, &r.UpdatedAt}
 	err := row.Scan(append(dest, extra...)...)
 	r.ID, r.HoldingCode, r.BusinessCode = r.Code, scope.Holding, scope.Company
 	r.CreatedAt, r.UpdatedAt = r.CreatedAt.UTC(), r.UpdatedAt.UTC()
