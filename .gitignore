@@ -90,3 +90,7 @@ blob-report/
 
 # i18n sweep working files (tools/i18n-sweep.mjs)
 .i18n-sweep/
+
+# mydocs sample PDFs and backup archive (specs & datamodels remain tracked)
+mydocs/sample/
+mydocs.zip
