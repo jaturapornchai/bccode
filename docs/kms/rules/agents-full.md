@@ -12,9 +12,9 @@ For every task under `D:\bccode`:
 2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `.agents/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
 3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
-5. **กฎโฟลเดอร์ `mydocs/` (ข้อกำหนดและกฎจากลุงจืด - Human-Only Specification)**:
-   - **อ่านใหม่เสมอเมื่อมีการเปลี่ยนแปลงจากลุงจืด (Always Re-read on Changes)**: โฟลเดอร์ `mydocs/` (เช่น `mydocs/specs/rules.md` และเอกสารอื่นๆ ภายใน) เป็นพื้นที่ที่ลุงจืดใช้กำหนดสเปก กติกา และกฎเกณฑ์ระบบโดยตรง AI ต้องตรวจเช็คและอ่านใหม่เสมอเมื่อลุงจืดมีการเปลี่ยนแปลง เพื่อยึดเป็นข้อกำหนดล่าสุด
-   - **ห้าม AI แก้ไข ลบ เพิ่ม ใน folder นี้โดยเด็ดขาด (Strict Read-Only for AI)**: AI ทุกตัว (Claude, Codex, Gemini/Antigravity ฯลฯ) ห้ามเขียนไฟล์ใหม่, ห้ามแก้ไข, และห้ามลบไฟล์ใดๆ ภายใน `mydocs/` เด็ดขาด สิทธิ์การจัดการในโฟลเดอร์นี้เป็นของลุงจืดเพียงผู้เดียว AI มีสิทธิ์อ่านอย่างเดียวเท่านั้น (Strict Read-Only)
+5. **กฎโฟลเดอร์ `mydocs/` (ข้อกำหนดและสเปกระบบ — AI อ่าน แก้ไข และอัปเดตได้)**:
+   - **เก็บสเปกและข้อกำหนดของระบบ**: โฟลเดอร์ `mydocs/` (เช่น `mydocs/specs/rules.md`, `mydocs/specs/gl/`, `mydocs/datamodels/gl/`) เก็บข้อกำหนดทางธุรกิจ กฎ กติกา และสเปกโครงสร้างข้อมูล
+   - **AI สามารถอ่าน ปรับปรุง แก้ไข เพิ่ม หรือลบเอกสาร/สเปกได้**: ให้สอดคล้องกับโค้ดจริง คำสั่งลุงจืด และพฤติกรรมของ Champ (`D:\project-champ`) โดยยึดหลัก "ปรับแก้เดินหน้าไปเรื่อยๆ อะไรขัดแย้งให้ใช้ของใหม่" และ "ลอก BC (Champ) 100% หรือลบออกได้ถ้าไม่ได้ใช้"
 
 ไฟล์นี้เป็นทั้งจุดเข้าเส้นทาง (routing) และกฎบังคับของโปรเจ็กต์ — รายละเอียดว่าระบบทำงานอย่างไรอยู่ที่ `docs/kms/` (code = truth: ถ้า docs ขัดกับโค้ด ให้ยึดโค้ดแล้วแก้ docs ใน commit เดียวกัน)
 
@@ -27,7 +27,7 @@ For every task under `D:\bccode`:
 | **กฎโปรเจ็กต์** | `AGENTS.md` (ไฟล์นี้) | Codex / ZCode / Antigravity อ่านตรง · Claude ผ่าน `CLAUDE.md` (`@AGENTS.md`) · Gemini CLI ผ่าน `.gemini/settings.json` (`context.fileName`) |
 | **Skill** | `.agents/skills/<name>/SKILL.md` (มาตรฐาน Agent Skills ที่ Codex, Gemini CLI, Antigravity, ZCode ค้นหาเอง) | Claude Code ต้องมี `.claude/skills` → junction ไป `.agents/skills` ด้วย `npm run ai:link` (ครั้งเดียวต่อ clone เหมือน `npm run hooks:install`) |
 | **ฐานความรู้ (ทำไม/อย่างไร)** | `docs/kms/` | ทุกตัวเปิดอ่านเฉพาะบทความที่ตรงงาน (ผังใน `docs/README.md`) |
-| **ข้อกำหนดของลุงจืด** | `mydocs/` | อ่านอย่างเดียว ห้ามแก้ (กฎข้อ 5 ด้านบน) |
+| **ข้อกำหนดของลุงจืด** | `mydocs/` | อ่าน แก้ไข และปรับปรุงสเปก/datamodels ให้ตรงกับโค้ดจริงและคำสั่งลุงจืดได้ (กฎข้อ 5 ด้านบน) |
 
 1. **ห้ามสร้างไฟล์กฎแยกต่อเครื่องมือ** (`GEMINI.md`, `.agents/rules/*`, `.cursorrules`, `.codex/AGENTS.md`, กฎซ้ำใน `CLAUDE.md` ฯลฯ) — ถ้าเครื่องมือใหม่ต้องการไฟล์ของตัวเอง ให้ทำเป็น **pointer/import มาที่ `AGENTS.md`** เท่านั้น ห้ามคัดลอกเนื้อหา
 2. **ห้ามคัดลอก skill ไปที่อื่น** (`.claude/skills/` จริง, `.gemini/skills/`, `docs/skills/`, `~/.agents/skills/`) — ที่เดียวคือ `.agents/skills/`; Claude ใช้ junction จาก `npm run ai:link` (`.claude/` ถูก gitignore จึงต้องรันเองต่อ clone)
@@ -36,15 +36,14 @@ For every task under `D:\bccode`:
 
 ที่มา/ทางเลือกที่พิจารณา: ADR `docs/kms/decisions/2026-09-20-single-source-ai-rules-skills.md` (แทน ADR 2026-09-07 ที่เคยเลือก `docs/skills/`)
 
-## กฎ: โฟลเดอร์ `mydocs/` เป็นพื้นที่ข้อกำหนดของลุงจืดเท่านั้น — AI อ่านใหม่เสมอเมื่อมีการเปลี่ยนแปลง และห้าม AI แก้ไข/ลบ/เพิ่ม โดยเด็ดขาด (ตั้งโดยลุงจืด 2026-09-20)
+## กฎ: โฟลเดอร์ `mydocs/` เก็บข้อกำหนดและสเปก — AI อ่าน แก้ไข และอัปเดตให้ตรงกับโค้ดจริงและคำสั่งลุงจืดได้ (ตั้งโดยลุงจืด 2026-09-20, ปรับปรุง 2026-10-11)
 
-1. **อ่านใหม่เสมอเมื่อมีการเปลี่ยนแปลงจากลุงจืด (Always Re-read `mydocs/` on Changes)**:
-   - โฟลเดอร์ `mydocs/` (เช่น `mydocs/specs/rules.md`) คือ **Single Source of Truth** ที่ลุงจืดใช้เขียนข้อกำหนดทางธุรกิจ กฎของระบบ สเปกฐานข้อมูล และแนวทางดำเนินงาน
-   - ก่อนเริ่มลงมือทำงานหรือเมื่อเริ่มรอบการทำงานใหม่ AI ต้องตรวจเช็คและอ่านไฟล์ในโฟลเดอร์ `mydocs/` เสมอหากพบว่ามีการอัปเดตหรือแก้ไขจากลุงจืด เพื่อให้การพัฒนายึดตามข้อกำหนดล่าสุดเสมอ
-2. **ห้าม AI แก้ไข ลบ เพิ่ม ใน folder นี้โดยเด็ดขาด (Strict Read-Only for AI — User-Only Control)**:
-   - AI ทุกตัว (Claude, Codex, Gemini, Antigravity ฯลฯ) **ห้ามสร้างไฟล์ใหม่ (No Create/Add), ห้ามแก้ไข (No Edit/Modify/Overwrite), และห้ามลบ (No Delete/Remove)** ไฟล์หรือโฟลเดอร์ใดๆ ภายใน `mydocs/` เด็ดขาด
-   - โฟลเดอร์ `mydocs/` เป็นพื้นที่เฉพาะของลุงจืด (Human-Only Zone) AI มีสิทธิ์เพียงการ **"อ่าน" (Strict Read-Only)** เพื่อทำความเข้าใจเท่านั้น
-   - หาก AI มีข้อเสนอแนะ ให้เสนอแนะผ่านข้อความแชทตอบลุงจืด หรือเขียนลงในเอกสารทั่วไป/Artifact อื่นภายนอก `mydocs/` ห้ามแตะต้องไฟล์ใน `mydocs/` โดยเด็ดขาด
+1. **อ่านและอัปเดตให้ตรงกับความจริงเสมอ (Always In Sync with Code & Owner Orders)**:
+   - โฟลเดอร์ `mydocs/` (เช่น `mydocs/specs/rules.md`, `mydocs/specs/gl/`, `mydocs/datamodels/gl/`) เก็บข้อกำหนดทางธุรกิจ สเปกฐานข้อมูล และสเปกระบบ
+   - AI สามารถอ่าน ปรับปรุง แก้ไข เพิ่ม หรือลบเอกสาร/สเปก/SQL datamodels ภายใน `mydocs/` ได้ เพื่อให้ตรงกับโค้ดจริง คำสั่งลุงจืด และพฤติกรรมของ Champ (`D:\project-champ`)
+2. **หลักการ Forward-Only และ Champ Parity (ลุงจืดสั่ง 2026-10-11)**:
+   - ใช้ BC (Champ) เป็นหลัก แล้วแปลงมาเป็น web ตัวนี้ ดังนั้นยึดลอก BC (Champ) 100% หรือลบออกได้ถ้าไม่ได้ใช้
+   - `mydocs/`, `docs/kms/`, `.agents/skills/` ปรับแก้เดินหน้าไปเรื่อยๆ อะไรขัดแย้งให้ใช้ของใหม่เสมอ
 
 ## กฎ: งานเสร็จแล้ว Deploy ขึ้น Production ได้ทันที พร้อมใช้วิธี Deploy ที่เร็วที่สุด (ตั้งโดยลุงจืด 2026-09-12)
 
@@ -284,7 +283,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 - ลุงจืดสั่ง 2026-10-04: Claude Opus 5.5 เป็นผู้คุมทั้งหมด ส่วน Claude รุ่นอื่นเป็น agent ลูก — กฎเต็ม + ตารางเลือกรุ่น (haiku/sonnet/opus/fable) อยู่ใน Orchestration Rule ของ `~/.agents/AGENTS.md`
 - **ใน repo นี้:** งานบัญชี/ภาษี/เงิน (Rule 20), security/auth/สิทธิ์, และการ verify ผลของลูกตัวอื่น → `opus`; สำรวจโค้ด, แก้ UI, เขียน unit + test → `sonnet`; `haiku` ใช้ได้แค่งานกลไก **ห้ามใช้เขียนคอลัมน์ th ของ `languages.tsv`/ข้อความบนจอ/KMS ภาษาไทย** (audit ไทยเพี้ยน) และห้ามใช้ทำ audit ที่ต้องครบ (Champ parity, secret scan, ลบ flag); `fable` เฉพาะปัญหายากที่ Opus ติด
-- ลูกได้กฎไฟล์นี้อัตโนมัติ แต่ผลของลูกยังต้องผ่าน Opus: รัน `npm run verify`/test/query PostgreSQL เอง, ภาษีต้องมีอ้างอิงทางการตาม skill `thai-accounting-tax`; ลูกห้าม commit/push/deploy และห้ามแตะ `mydocs/`
+- ลูกได้กฎไฟล์นี้อัตโนมัติ แต่ผลของลูกยังต้องผ่าน Opus: รัน `npm run verify`/test/query PostgreSQL เอง, ภาษีต้องมีอ้างอิงทางการตาม skill `thai-accounting-tax`; ลูกห้าม commit/push/deploy
 - ห้ามใช้ AI ค่ายอื่น (`deepseek-ask.py` ฯลฯ) ร่าง/แปล/review เว้นลุงจืดสั่ง
 
 ## กฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก — โค้ดใช้ key ภาษาอังกฤษ ข้อความอยู่ใน backend (ตั้งโดยลุงจืด 2026-09-14)
