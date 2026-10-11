@@ -43,6 +43,10 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	if len(patch.StatementLines)+len(patch.Settlements)+len(patch.Matches)+len(patch.Withdrawals) == 0 && !replaceWithholdings && !replaceVats {
 		return nil, fmt.Errorf("ไม่มีรายละเอียดกระทบยอด")
 	}
+	// ERP/เช็คตัดหนี้ของตัวเองในโมดูล: GL เพิ่มการตัดยอดให้ใบของโมดูลไม่ได้ เหมือนแก้ใบ (Champ glfrmjournal.cpp:524-529)
+	if moduleSourceSystems[current.SourceSystem] && len(patch.Settlements)+len(patch.Allocations) > 0 {
+		return nil, journalFromModuleError(current.DocNo)
+	}
 	if err = s.checkOpenDate(ctx, tx, scope, current.Date); err != nil {
 		return nil, err
 	}
@@ -193,6 +197,10 @@ func (m *subledgerMutation) withdraw(w SubledgerWithdrawal) error {
 	j, err := m.referencedJournal(jid)
 	if err != nil {
 		return err
+	}
+	// การตัดหนี้/จัดสรรที่โมดูลบันทึกไว้ ถอนได้จากโมดูลเท่านั้น (ยกเลิกเอกสารต้นทาง); reconcile เป็นคำสั่ง GL เสมอ
+	if w.Kind != "match" && moduleSourceSystems[j.SourceSystem] {
+		return journalFromModuleError(j.DocNo)
 	}
 	if j.Status != "posted" && j.ID != m.journal.ID {
 		return fmt.Errorf("ถอนรายละเอียดได้เฉพาะใบสำคัญที่ผ่านบัญชี")

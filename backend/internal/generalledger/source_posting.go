@@ -111,6 +111,19 @@ const (
 
 var moduleSourceSystems = map[string]bool{SourceSystemERP: true, SourceSystemCheque: true}
 
+// moduleRequestIDPrefixes - request id ที่โมดูลสร้างส่ง ExecuteSourceTx (transaction/httpapi/posting.go:153, cheque/glposting/glposting.go:51).
+// คำสั่ง GL ใช้ไม่ได้: ถ้าจองรหัสไว้ก่อน โมดูลจะได้ผลของคำสั่ง GL กลับไปเหมือนเป็นคำขอซ้ำ
+var moduleRequestIDPrefixes = []string{"erp-", "chq-"}
+
+func moduleRequestID(id string) bool {
+	for _, p := range moduleRequestIDPrefixes {
+		if strings.HasPrefix(id, p) {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	codeJournalFromModule           = "journal_from_module"
 	codeJournalSourceSystemReserved = "journal_source_system_reserved"

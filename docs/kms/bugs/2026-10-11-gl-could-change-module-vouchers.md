@@ -24,3 +24,10 @@ fixed: true
 ## Regression Test
 
 `TestGLCommandCannotChangeModuleVoucherIntegration` (`backend/internal/generalledger/source_posting_integration_test.go`) — พังก่อนแก้ ("GL update was accepted"): GL แก้/ลบร่าง, กลับรายการใบที่ผ่านแล้ว, สร้างด้วย `source_system=erp` ถูกปฏิเสธด้วย code ที่ถูกต้อง; GL ผ่านบัญชีได้; โมดูลกลับรายการใบของตัวเองได้
+
+## ช่องที่หลุดจากรอบแรก (รีวิว 2026-10-11)
+
+- `reconcile` ถอน (`withdrawals`) การตัดหนี้/การจัดสรรที่ใบสำคัญของโมดูลบันทึกไว้ได้ — ถอนผ่านใบ GL ที่ผ่านบัญชีใบไหนก็ได้ เพราะ `withdraw` (`subledger_reconcile.go`) ไม่ดูว่าแถวเป็นของใบใด → ปฏิเสธ `journal_from_module` เมื่อใบเจ้าของแถวเป็นของโมดูล (ถอนการจับคู่ Statement ยังทำได้ เป็นงานกระทบยอดธนาคารของฝ่ายบัญชี)
+- `reconcile` เพิ่มการตัดหนี้/จัดสรรให้ใบสำคัญของโมดูลได้ → ปฏิเสธเหมือนกัน (ภาษีหัก ณ ที่จ่าย/VAT ของใบโมดูลยังแก้ได้ตามกฎฐานภาษีแก้ได้)
+- คำสั่ง GL ใช้ request id ขึ้นต้น `erp-`/`chq-` ได้ ถ้าจองไว้ก่อน โมดูลจะได้ผลของคำสั่ง GL กลับไปเหมือนเป็นคำขอซ้ำ → `Execute` (`postgres_store.go`) ปฏิเสธ prefix ใน `moduleRequestIDPrefixes` (`source_posting.go`)
+- Regression: test เดิมเพิ่มขั้นถอน/เพิ่มการตัดหนี้ผ่าน GL และ request id `erp-` — พังก่อนแก้ ("GL reconcile was accepted")

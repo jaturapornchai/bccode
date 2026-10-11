@@ -84,7 +84,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Resource == "processes" && cmd.Action == ClosePreviewAction {
 		return s.previewClose(ctx, scope, cmd)
 	}
-	if !validRequestID(cmd.RequestID) {
+	if !validRequestID(cmd.RequestID) || moduleRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
 	if cmd.Resource == BankAccountKind {

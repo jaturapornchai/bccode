@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -228,6 +229,43 @@ func TestGLCommandCannotChangeModuleVoucherIntegration(t *testing.T) {
 	reverse := Command{Resource: "journals", Action: "reverse", RequestID: uuid.NewString(), ID: toPost.ID, Version: posted.Version, DocNo: "RV-INV-P", Date: "2026-03-02", Reason: "ลูกค้าคืนสินค้าทั้งใบ"}
 	refused(reverse, codeJournalFromModule)
 	refused(Command{Resource: "journals", Action: "create", RequestID: uuid.NewString(), Journal: voucher("INV-S")}, codeJournalSourceSystemReserved)
+
+	// Reconcile cannot withdraw what a module recorded either, through the module voucher or through any other posted
+	// journal (Champ: BCTrans.Source != 0 is never saved from the journal screen, glfrmjournal.cpp:524-529).
+	f.inTx(func(tx *sql.Tx) {
+		if _, err := tx.ExecContext(f.ctx, `INSERT INTO gl_subledger_partners(company,code,version,payload) VALUES($1,'C001',1,'{}')`, f.scope.Company); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.ExecContext(f.ctx, `INSERT INTO gl_subledger_documents(company,id,ledger,partner_code,branch_code,control_account_code,amount,side,version,created_journal_id,payload)
+			VALUES($1,'AR-INV-P','ar','C001','B1','1000',107,1,1,$2,'{}'),($1,'RC-INV-P','ar','C001','B1','1000',107,2,1,$2,'{}')`, f.scope.Company, toPost.ID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.ExecContext(f.ctx, `INSERT INTO gl_subledger_settlements(company,id,journal_id,debt_id,payment_id,amount,settlement_date,payload,created_at,created_by)
+			VALUES($1,'SET-AR-INV-P-1',$2,'AR-INV-P','RC-INV-P',107,'2026-03-01','{}',now(),'erp')`, f.scope.Company, toPost.ID); err != nil {
+			t.Fatal(err)
+		}
+	})
+	withdraw := &Journal{Details: &JournalDetails{Withdrawals: []SubledgerWithdrawal{{Kind: "settlement", ID: "SET-AR-INV-P-1", Reason: "ตัดหนี้ผิดใบ"}}}}
+	refused(Command{Resource: "journals", Action: "reconcile", RequestID: uuid.NewString(), ID: toPost.ID, Version: posted.Version, Journal: withdraw}, codeJournalFromModule)
+	settle := &Journal{Details: &JournalDetails{Settlements: []SubledgerSettlement{{ID: "SET-AR-INV-P-2", Ledger: "ar", PartnerCode: "C001", DebtDocumentID: "AR-INV-P", PaymentDocumentID: "RC-INV-P", Date: "2026-03-01", Amount: "1.00"}}}}
+	refused(Command{Resource: "journals", Action: "reconcile", RequestID: uuid.NewString(), ID: toPost.ID, Version: posted.Version, Journal: settle}, codeJournalFromModule)
+	manual := voucher("JV-0001")
+	manual.BookCode, manual.SourceSystem, manual.SourceRecordID, manual.Description = "JV", "", "", "ปรับปรุงค่าใช้จ่ายค้างจ่าย"
+	created, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", RequestID: uuid.NewString(), Journal: manual})
+	if err != nil {
+		t.Fatalf("GL create of a manual voucher: %v", err)
+	}
+	manualPosted, err := f.execute(f.scope, Command{Resource: "journals", Action: "post", RequestID: uuid.NewString(), ID: created.ID, Version: created.Version})
+	if err != nil {
+		t.Fatalf("GL post of a manual voucher: %v", err)
+	}
+	refused(Command{Resource: "journals", Action: "reconcile", RequestID: uuid.NewString(), ID: created.ID, Version: manualPosted.Version, Journal: withdraw}, codeJournalFromModule)
+
+	// A GL command cannot take the request id a module derives for its own posting (erp-/chq- + hash of the document).
+	manual.DocNo = "JV-0002"
+	if _, err = f.execute(f.scope, Command{Resource: "journals", Action: "create", RequestID: "erp-" + strings.Repeat("a", 40), Journal: manual}); err == nil {
+		t.Fatal("GL command with a module request id was accepted")
+	}
 
 	f.inTx(func(tx *sql.Tx) {
 		reverse.RequestID = uuid.NewString()
