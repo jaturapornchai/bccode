@@ -191,6 +191,237 @@ export const deleteBankBook = (code: string, version: number, language: Language
 export const changeBankBookNumber = (code: string, version: number, newNumber: string, language: LanguageCode) =>
   sendBookCommand("change-account-number", { id: code, version, newaccountnumber: newNumber }, language);
 
+// ---- ทะเบียนเช็ค (registers) และเอกสารเปลี่ยนสถานะ 419-426 (docs): backend cheque/register.go, cheque/docs.go ----
+// เงินทุกช่องเป็นสตริงทศนิยมจาก backend ห้ามแปลงเป็น number
+
+export type ChequePage<T> = { items: T[]; total: number; page: number; limit: number };
+
+export type ChequeRegister = {
+  id: string;
+  cheque_type: number;
+  doc_no: string;
+  doc_date: string;
+  due_date: string;
+  partner_code: string;
+  partner_name: string;
+  cheque_no: string;
+  bank_code: string;
+  bank_branch_code: string;
+  book_code: string;
+  status: number;
+  ext_status_code: string;
+  currency_code: string;
+  exchange_rate: string;
+  amount: string;
+  home_amount: string;
+  balance_amount: string;
+  description: string;
+  sale_code: string;
+  department_code: string;
+  source_kind: string;
+  prepare_doc_no: string;
+  print_count: number;
+  version: number;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+};
+
+/** แถวในตารางเอกสารอ้างอิงใต้หัวเช็ค; kind_key = key ของ doctype (หรือชนิดต้นทางถ้าไม่มี doctype) */
+export type ChequeReference = { kind_key: string; doc_no: string; doc_date: string; amount: string; description: string };
+
+export type ChequeEvent = {
+  id: number;
+  event_kind: string;
+  doc_flag?: number;
+  doc_no?: string;
+  event_date: string;
+  from_status: number | null;
+  to_status: number | null;
+  book_code: string;
+  reason: string;
+  actor: string;
+  created_at: string;
+};
+
+export type ChequeRegisterDetail = ChequeRegister & { last_event: ChequeEvent | null; references: ChequeReference[] };
+
+export type ChequeRegisterQuery = {
+  type: number;
+  status?: number | null;
+  partner?: string;
+  book?: string;
+  dueFrom?: string;
+  dueTo?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+};
+
+export function listChequeRegisters(filter: ChequeRegisterQuery, language: LanguageCode): Promise<ChequePage<ChequeRegister>> {
+  const path = `/api/cheque/registers${query({
+    type: filter.type,
+    status: filter.status ?? undefined,
+    partner: filter.partner?.trim(),
+    book: filter.book,
+    due_from: filter.dueFrom,
+    due_to: filter.dueTo,
+    q: filter.q?.trim(),
+    page: filter.page,
+    limit: filter.limit,
+  })}`;
+  return request<ChequePage<ChequeRegister>>(path, language);
+}
+
+export async function getChequeRegister(id: string, language: LanguageCode): Promise<ChequeRegisterDetail> {
+  const result = await request<{ data: ChequeRegisterDetail }>(`/api/cheque/registers/${encodeURIComponent(id)}`, language);
+  return { ...result.data, references: result.data.references ?? [] };
+}
+
+export type ChequeSelectableQuery = {
+  transflag: number;
+  docDate?: string;
+  book?: string;
+  cancelType?: number | null;
+  cancelPassed?: boolean;
+  q?: string;
+  page?: number;
+  limit?: number;
+};
+
+/** เช็คที่เอกสารสถานะชนิดนั้นเลือกได้ ณ วันที่เอกสาร (backend ตรวจซ้ำตอนบันทึก) */
+export function listSelectableCheques(filter: ChequeSelectableQuery, language: LanguageCode): Promise<ChequePage<ChequeRegister>> {
+  const path = `/api/cheque/registers/selectable${query({
+    transflag: filter.transflag,
+    doc_date: filter.docDate,
+    book: filter.book,
+    cancel_type: filter.cancelType ?? undefined,
+    cancel_passed: filter.cancelPassed,
+    q: filter.q?.trim(),
+    page: filter.page,
+    limit: filter.limit,
+  })}`;
+  return request<ChequePage<ChequeRegister>>(path, language);
+}
+
+/** ค่าที่ผู้ใช้กรอกในจอทะเบียน (สกุลเงินบาท อัตรา 1 เท่านั้นจนกว่าจะตัดสิน D15) */
+export type ChequeRegisterInput = {
+  cheque_type: number;
+  doc_no: string;
+  doc_date: string;
+  due_date: string;
+  partner_code: string;
+  cheque_no: string;
+  bank_code: string;
+  bank_branch_code: string;
+  book_code: string;
+  status: number;
+  ext_status_code: string;
+  currency_code: "THB";
+  exchange_rate: "1";
+  amount: string;
+  description: string;
+  sale_code: string;
+  department_code: string;
+};
+
+/** ทุกคำสั่งเขียนของเช็คใช้ requestid ใหม่ต่อการกดหนึ่งครั้ง (ส่งซ้ำหลัง timeout ได้ผลเดิม ไม่เขียนซ้ำ) */
+function sendChequeCommand<T>(resource: string, action: string, body: Record<string, unknown>, language: LanguageCode): Promise<T> {
+  return request<{ data: T }>("/api/cheque/command", language, {
+    method: "POST",
+    body: JSON.stringify({ resource, action, requestid: newRequestId(), ...body }),
+  }).then((result) => result.data);
+}
+
+export const createChequeRegister = (input: ChequeRegisterInput, language: LanguageCode) =>
+  sendChequeCommand<ChequeRegister>("registers", "create", input, language);
+
+/** confirm = ผู้ใช้ยืนยันแล้ว (D8): แก้ฟิลด์หลักของเช็คที่ถูกอ้างแล้ว หรือแก้สถานะตรงในจอทะเบียน */
+export const updateChequeRegister = (input: ChequeRegisterInput & { id: string; version: number }, confirm: boolean, language: LanguageCode) =>
+  sendChequeCommand<ChequeRegister>("registers", "update", confirm ? { ...input, confirm: true } : input, language);
+
+/** ลบเช็คออกจากทะเบียน (เก็บประวัติไว้); ถูกเอกสารใช้อยู่หรือมาจากเอกสารต้นทาง backend ปฏิเสธ */
+export const cancelChequeRegister = (target: { chequeType: number; id: string; version: number }, language: LanguageCode) =>
+  sendChequeCommand<ChequeRegister>("registers", "cancel", { cheque_type: target.chequeType, id: target.id, version: target.version }, language);
+
+export type ChequeDocLine = {
+  line_no: number;
+  cheque_id: string;
+  cheque_no: string;
+  partner_code: string;
+  partner_name: string;
+  bank_code: string;
+  bank_branch_code: string;
+  cheque_date: string;
+  due_date: string;
+  description: string;
+  from_status: number;
+  amount: string;
+  fee_amount: string;
+  net_amount: string;
+};
+
+/** gl_status: none / posted / no_mapping / not_required; status: active / cancelled */
+export type ChequeDoc = {
+  transflag: number;
+  doc_no: string;
+  doc_date: string;
+  branch_code: string;
+  book_code: string;
+  cancel_type: number | null;
+  cancel_passed: boolean;
+  description: string;
+  total_amount: string;
+  fee_amount: string;
+  net_amount: string;
+  gl_status: string;
+  journal_docno: string;
+  status: string;
+  cancel_reason: string;
+  cancelled_at: string | null;
+  cancelled_by: string;
+  version: number;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  lines: ChequeDocLine[];
+};
+
+export type ChequeDocQuery = { q?: string; status?: "active" | "cancelled"; dateFrom?: string; dateTo?: string; page?: number; limit?: number };
+
+export function listChequeDocs(flag: number, filter: ChequeDocQuery, language: LanguageCode): Promise<ChequePage<ChequeDoc>> {
+  const path = `/api/cheque/docs/${flag}${query({ q: filter.q?.trim(), status: filter.status, date_from: filter.dateFrom, date_to: filter.dateTo, page: filter.page, limit: filter.limit })}`;
+  return request<ChequePage<ChequeDoc>>(path, language);
+}
+
+export async function getChequeDoc(flag: number, docNo: string, language: LanguageCode): Promise<ChequeDoc> {
+  const result = await request<{ data: ChequeDoc }>(`/api/cheque/docs/${flag}/${encodeURIComponent(docNo)}`, language);
+  return { ...result.data, lines: result.data.lines ?? [] };
+}
+
+export type ChequeDocInput = {
+  transflag: number;
+  doc_no: string;
+  doc_date: string;
+  book_code: string;
+  /** ใช้เฉพาะ 423 (ชนิดอื่นต้องไม่ส่ง) */
+  cancel_type?: number;
+  /** ใช้เฉพาะ 426 */
+  cancel_passed?: boolean;
+  description: string;
+  lines: { cheque_id: string; fee_amount: string }[];
+  /** ยอดท้ายเอกสารที่หน้าจอรวมมา — backend คำนวณซ้ำแล้วต้องตรงกัน */
+  totals: { total: string; fee: string; net: string };
+};
+
+export const createChequeDoc = (input: ChequeDocInput, language: LanguageCode) => sendChequeCommand<ChequeDoc>("docs", "create", input, language);
+
+/** ยกเลิกเอกสาร: ต้องมีเหตุผล; เช็คกลับสถานะเดิมและใบสำคัญ GL ถูกกลับรายการ */
+export const cancelChequeDoc = (target: { transflag: number; docNo: string; version: number; reason: string }, language: LanguageCode) =>
+  sendChequeCommand<ChequeDoc>("docs", "cancel", { transflag: target.transflag, doc_no: target.docNo, version: target.version, reason: target.reason }, language);
+
 /**
  * ข้อความผิดพลาดที่จะแสดงผู้ใช้: ข้อความจาก backend ก่อน (ตรงภาษาและแทนค่าให้แล้ว);
  * ความผิดที่ BFF สร้างเอง (message = code) หรือเชื่อมต่อไม่ได้ ใช้ข้อความจาก dictionary ตาม code

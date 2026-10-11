@@ -11,7 +11,7 @@ const COMMAND_RESOURCES = ["codes", "bank-contacts", "registers", "docs", "recal
 // พารามิเตอร์ที่ส่งต่อได้: รายการรหัส/ผู้ติดต่อ, ตัวกรองทะเบียนเช็ค, รายการเลือกเช็คของเอกสาร, รายการเอกสาร และยอดคงเหลือ
 const ALLOWED_QUERY = [
   "q", "page", "limit", "bank_code", "bank_branch_code", "active",
-  "type", "status", "book", "partner", "due_from", "due_to", "transflag", "cancel_type", "doc_date", "date_from", "date_to",
+  "type", "status", "book", "partner", "due_from", "due_to", "transflag", "cancel_type", "cancel_passed", "doc_date", "date_from", "date_to",
 ];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // เอกสารสถานะเช็ค 419-426 (นำฝาก ผ่าน คืน นำเข้าใหม่ ยกเลิก ขายลด เช็คจ่ายผ่าน ยกเลิกเช็คจ่าย)

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CHEQUE_DOC_CONFIGS, CHEQUE_SCREEN_ROUTES } from "./cheque-doc-config";
 import {
   ERP_MODULE_CONFIGS,
   isErpTransactionRoute,
@@ -70,8 +71,8 @@ describe("ERP Transaction domain configs and operations", () => {
 
     // Cash & Bank
     expect(isErpTransactionRoute("/transaction/accounttransfer")).toBe(true);
-    expect(isErpTransactionRoute("/transaction/chequereceived")).toBe(true);
-    expect(isErpTransactionRoute("/transaction/chequeissued")).toBe(true);
+    // เช็ค 10 จอย้ายไปโมดูลเช็คเฉพาะ (cheque-register-screen / cheque-status-doc-screen) จึงไม่ใช่จอ ERP แบบ config อีกแล้ว
+    for (const route of CHEQUE_SCREEN_ROUTES) expect(isErpTransactionRoute(route)).toBe(false);
 
     // Non-transaction route
     expect(isErpTransactionRoute("/product")).toBe(false);
@@ -132,7 +133,11 @@ describe("ERP Transaction domain configs and operations", () => {
     const source = readFileSync(resolve(process.cwd(), "../backend/internal/doctype/doctype.go"), "utf8");
     const registryKeys = [...source.matchAll(/^\t\{"([a-z-]+)", /gm)].map((match) => match[1]);
     expect(registryKeys).toHaveLength(63);
-    expect([...ERP_TRANSACTION_MODULES].sort()).toEqual([...registryKeys].sort());
+    // เอกสารเช็ค 10 ประเภทยังอยู่ในทะเบียน backend (เลขเอกสาร/ชนิด) แต่ไม่รับที่ /transaction/:module → ไม่อยู่ในรายการฝั่ง frontend
+    const chequeKeys = ["chequereceived", "chequeissued", ...CHEQUE_DOC_CONFIGS.map((config) => config.doctypeKey)];
+    expect(chequeKeys).toHaveLength(10);
+    for (const key of chequeKeys) expect(registryKeys).toContain(key);
+    expect([...ERP_TRANSACTION_MODULES].sort()).toEqual(registryKeys.filter((key) => !chequeKeys.includes(key)).sort());
     expect(new Set(ERP_TRANSACTION_MODULES).size).toBe(ERP_TRANSACTION_MODULES.length);
   });
 

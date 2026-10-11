@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BANK_CODE_KINDS, BANK_CODE_ROUTE_PREFIX } from "./bank-code-kinds";
+import { CHEQUE_SCREEN_ROUTES } from "./cheque-doc-config";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
 import { getErpModuleConfig } from "./erp-transaction";
@@ -13,6 +14,8 @@ describe("menu screen availability", () => {
     const routes = [...source.matchAll(/activeTab.route === "([^"]+)"/g)].map((match) => match[1]);
     // จอกำหนดรหัสธนาคารเลือกชนิดจาก route ด้วย bankCodeKindFromRoute() ตัวเดียว → ขยายเป็น route ของทุกชนิด
     if (source.includes("bankCodeKindFromRoute(activeTab.route)")) routes.push(...BANK_CODE_KINDS.map((kind) => BANK_CODE_ROUTE_PREFIX + kind));
+    // จอเช็ค 10 จอเลือกจาก route ด้วย chequeScreenFromRoute() ตัวเดียว → ขยายเป็น route ของทั้ง 10 จอ
+    if (source.includes("chequeScreenFromRoute(activeTab.route)")) routes.push(...CHEQUE_SCREEN_ROUTES);
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 

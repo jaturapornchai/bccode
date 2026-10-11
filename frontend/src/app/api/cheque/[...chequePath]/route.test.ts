@@ -53,6 +53,8 @@ describe("cheque BFF", () => {
     ["registers?type=0&status=1&book=SCB-01&partner=AR-0012&due_from=2026-10-01&due_to=2026-10-31&q=1023&page=2&limit=50&company=99",
       "registers?type=0&status=1&book=SCB-01&partner=AR-0012&due_from=2026-10-01&due_to=2026-10-31&q=1023&page=2&limit=50"],
     ["registers/selectable?transflag=423&cancel_type=3&book=SCB-01&doc_date=2026-10-25", "registers/selectable?transflag=423&cancel_type=3&book=SCB-01&doc_date=2026-10-25"],
+    // 426: ติ๊ก "ยกเลิกเช็คที่ผ่านแล้ว" ต้องไปถึง backend ไม่เช่นนั้นรายการเช็คที่เลือกได้จะผิดชุด
+    ["registers/selectable?transflag=426&cancel_passed=1&book=SCB-01&doc_date=2026-10-25&x=1", "registers/selectable?transflag=426&cancel_passed=1&book=SCB-01&doc_date=2026-10-25"],
     ["registers/0b8e6a52-3c1d-4f0a-9e2b-5d7c8a1f4e30", "registers/0b8e6a52-3c1d-4f0a-9e2b-5d7c8a1f4e30?"],
     ["docs/420?date_from=2026-10-01&date_to=2026-10-31&q=CQIP&holdingcode=OTHER", "docs/420?date_from=2026-10-01&date_to=2026-10-31&q=CQIP"],
     ["docs/419/CQDP6910-0001", "docs/419/CQDP6910-0001?"],

@@ -30,6 +30,12 @@ const (
 	OutPrepared  = 3
 )
 
+// transflag ของทะเบียนเช็ค (doctype registry; ใช้เป็นชุดเลขที่และคีย์ mapping ลงบัญชี)
+const (
+	FlagRegisterReceived = 61  // บันทึกเช็ครับ CHQ-IN
+	FlagRegisterIssued   = 418 // บันทึกเช็คจ่าย CHQ-OUT
+)
+
 // transflag ของเอกสารเปลี่ยนสถานะ 8 ตัว (doctype registry)
 const (
 	FlagDeposit        = 419 // นำฝาก
@@ -87,6 +93,16 @@ func ruleFor(flag int) (docRule, bool) {
 func DocChequeType(flag int) (int, bool) {
 	r, ok := docRules[flag]
 	return r.chequeType, ok
+}
+
+// OwnsDocFlag คือ true เมื่อ transflag นั้นเป็นของโมดูลเช็ค (ทะเบียนเช็ค 2 ชนิด + เอกสารเปลี่ยนสถานะ 8 ชนิด);
+// เส้นทางเอกสารทั่วไปใช้ปฏิเสธชนิดเหล่านี้ เพราะตารางและการลงบัญชีของเช็คอยู่ที่ /cheque/v1 เท่านั้น
+func OwnsDocFlag(flag int) bool {
+	if flag == FlagRegisterReceived || flag == FlagRegisterIssued {
+		return true
+	}
+	_, ok := docRules[flag]
+	return ok
 }
 
 // DocFlags คือ transflag ของเอกสารเปลี่ยนสถานะทั้ง 8 ตัว เรียงจากน้อยไปมาก

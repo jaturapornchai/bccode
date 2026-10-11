@@ -159,3 +159,41 @@ export function formatDecimalText(value: string | undefined, minFraction = 2): s
   const isZero = !/[1-9]/.test(integer + decimals);
   return `${isZero ? "" : sign}${grouped}${decimals ? `.${decimals}` : ""}`;
 }
+
+// ---- เงินแบบทศนิยมตรงตัว (ห้าม float): จำนวนเต็มสตางค์ด้วย BigInt — ใช้แสดงยอดรวมก่อนส่ง backend ซึ่งคำนวณซ้ำและต้องตรงกัน ----
+
+const MONEY_TEXT = /^(\d{1,16})(?:\.(\d{1,2}))?$/;
+
+/** ข้อความเงินที่ backend รับ: จำนวนบวกไม่เกิน 16 หลัก ทศนิยมไม่เกิน 2 ตำแหน่ง ไม่มีเครื่องหมาย จุลภาค หรือรูปยกกำลัง */
+export const isMoneyText = (value: string): boolean => MONEY_TEXT.test(value.trim());
+
+/** ข้อความเงิน → สตางค์; ไม่ใช่เงินที่ถูกต้อง = null */
+export function moneyToCents(value: string): bigint | null {
+  const match = MONEY_TEXT.exec(value.trim());
+  if (!match) return null;
+  return BigInt(match[1] ?? "0") * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0") || "0");
+}
+
+/** สตางค์ → ข้อความเงิน 2 ตำแหน่ง ("1234.50"); ค่าติดลบคงเครื่องหมายลบ */
+export function centsToMoney(cents: bigint): string {
+  const negative = cents < BigInt(0);
+  const abs = negative ? -cents : cents;
+  const whole = abs / BigInt(100);
+  const fraction = (abs % BigInt(100)).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${whole.toString()}.${fraction}`;
+}
+
+/** ผลรวมของข้อความเงิน (ค่าว่างหรือไม่ถูกต้องนับเป็น 0) */
+export function sumMoney(values: readonly string[]): string {
+  return centsToMoney(values.reduce((total, value) => total + (moneyToCents(value) ?? BigInt(0)), BigInt(0)));
+}
+
+/** ข้อความเงินของ amount − fee (ค่าว่างหรือไม่ถูกต้องนับเป็น 0) */
+export function subtractMoney(amount: string, fee: string): string {
+  return centsToMoney((moneyToCents(amount) ?? BigInt(0)) - (moneyToCents(fee) ?? BigInt(0)));
+}
+
+/** วันที่ ISO (YYYY-MM-DD) ของวันนี้ตามเวลา Asia/Bangkok — ค่าตั้งต้นของวันที่เอกสาร */
+export function todayIso(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}

@@ -360,9 +360,9 @@ func lockNumbering(ctx context.Context, tx *sql.Tx, company, series string) erro
 }
 
 func registerPrefix(chequeType int) string {
-	flag := 61 // บันทึกเช็ครับ CHQ-IN
+	flag := FlagRegisterReceived
 	if chequeType == TypeIssued {
-		flag = 418 // บันทึกเช็คจ่าย CHQ-OUT
+		flag = FlagRegisterIssued
 	}
 	dt, _ := doctype.ByFlag(flag)
 	return dt.Prefix

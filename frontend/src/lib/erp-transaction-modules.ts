@@ -1,7 +1,7 @@
 /**
  * คีย์ประเภทเอกสารธุรกรรมที่ route /transaction/:module ของ backend รับ — ตรงกับทะเบียนเดียว
- * `backend/internal/doctype/doctype.go` (63 ประเภท) ห้ามเพิ่ม/ลบที่นี่ก่อนแก้ทะเบียน backend
- * (มี test เทียบสองฝั่งใน erp-transaction.test.ts)
+ * `backend/internal/doctype/doctype.go` (63 ประเภท ลบ 10 ประเภทเช็คที่ย้ายไปโมดูล /cheque/v1 = 53) ห้ามเพิ่ม/ลบที่นี่ก่อนแก้ทะเบียน backend
+ * (มี test เทียบสองฝั่งใน erp-transaction.test.ts; เช็คถูกปฏิเสธที่ /transaction/:module ด้วย erp_err_cheque_module_moved)
  */
 export const ERP_TRANSACTION_MODULES: readonly string[] = [
   // สินค้าคงคลัง
@@ -27,7 +27,6 @@ export const ERP_TRANSACTION_MODULES: readonly string[] = [
   "paid",
   "receivedeposit",
   "receiveadvancerefund",
-  "chequereceived",
   // ซื้อ เจ้าหนี้
   "purchase-requisition",
   "purchase-order",
@@ -59,15 +58,6 @@ export const ERP_TRANSACTION_MODULES: readonly string[] = [
   "bankexpense",
   "bankincome",
   "banktransfer",
-  "chequeissued",
-  "chequedeposit",
-  "chequereceivedclear",
-  "chequereceivedreturn",
-  "chequeredeposit",
-  "chequereceivedcancel",
-  "chequediscount",
-  "chequeissuedclear",
-  "chequeissuedcancel",
   "creditcard",
   "creditcardsettle",
   "creditcardcancel",

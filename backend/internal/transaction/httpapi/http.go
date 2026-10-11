@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"smlcloudplatform/internal/cheque"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
@@ -93,6 +94,11 @@ func (h *Http) authorize(request microservice.IContext, action string) *docAcces
 	dt, ok := lookupDocType(request.Param("module"))
 	if !ok {
 		_ = fail(request, http.StatusBadRequest, "erp_err_invalid_module", request.Param("module"))
+		return nil
+	}
+	// เอกสารเช็ค (ทะเบียน + เปลี่ยนสถานะ) อยู่ที่ /cheque/v1 เท่านั้น: เส้นทางทั่วไปไม่รู้กติกาสถานะเช็คและการลงบัญชีของเช็ค
+	if cheque.OwnsDocFlag(dt.Flag) {
+		_ = fail(request, http.StatusBadRequest, "erp_err_cheque_module_moved")
 		return nil
 	}
 	// ทุกคำสั่งเขียนตรวจงวดบัญชี (ปีบัญชี/งวดล็อก) ของวันที่เอกสาร และเอกสารที่ลงบัญชีเขียนใบสำคัญ/บัญชีย่อยในธุรกรรมเดียวกัน

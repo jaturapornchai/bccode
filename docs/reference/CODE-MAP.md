@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit 1339b31c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit 20fca388 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -403,6 +403,63 @@ Files indexed: 32
 | 3047 | function | `DetailSection` |
 | 3090 | function | `DetailField` |
 
+## frontend/src/app/menu/main-menu-screen.tsx (2395 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 228 | function | `mt` |
+| 233 | function | `isRecord` |
+| 237 | function | `stringValue` |
+| 241 | function | `stringArray` |
+| 254 | function | `normalizeSettingRecords` |
+| 274 | function | `fetchAllowedMenuIds` |
+| 310 | function | `fetchSessionStats` |
+| 357 | function | `sessionTimeText` |
+| 368 | function | `sessionRelativeText` |
+| 378 | function | `sessionStatsTooltip` |
+| 399 | function | `guardsUnsavedRoute` |
+| 403 | function | `MainMenuScreen` |
+| 411 | function | `MainMenuDashboard` |
+| 537 | function | `loadProfile` |
+| 565 | function | `loadMenuPermissions` |
+| 662 | function | `confirmLeaveLedger` |
+| 668 | function | `selectWorkTab` |
+| 673 | function | `openWorkspace` |
+| 677 | function | `openMenuItem` |
+| 724 | function | `openMenuItemInNewTab` |
+| 728 | function | `openManageShortcuts` |
+| 747 | function | `openOverview` |
+| 754 | function | `toggleSection` |
+| 761 | function | `closeAllTabs` |
+| 769 | function | `runMenuAction` |
+| 778 | function | `closeTab` |
+| 788 | function | `reorderTabs` |
+| 804 | function | `stopLinePolling` |
+| 811 | function | `handleLineLink` |
+| 862 | function | `startLinePolling` |
+| 876 | function | `pollLineLink` |
+| 910 | function | `closeLineDialog` |
+| 916 | function | `copyLineLoginUrl` |
+| 926 | function | `handleChangePassword` |
+| 978 | function | `logout` |
+| 987 | function | `handleContentScroll` |
+| 1015 | const-arrow | `onPointerMove` |
+| 1021 | const-arrow | `onPointerUp` |
+| 1707 | function | `SidebarButton` |
+| 1740 | function | `MenuSectionAccordion` |
+| 1834 | function | `MenuTreeFolder` |
+| 1886 | function | `MenuTreeItemButton` |
+| 1952 | function | `getVisibleItems` |
+| 1962 | function | `getBarTreeNodes` |
+| 1979 | function | `SectionIcon` |
+| 1997 | function | `OpenTabs` |
+| 2051 | function | `captureTabRects` |
+| 2062 | function | `getInsertSide` |
+| 2067 | function | `clearDragState` |
+| 2074 | function | `reorderFromPointer` |
+| 2199 | function | `WorkTabPanel` |
+| 2380 | function | `DashboardLoading` |
+
 ## frontend/src/app/system-settings/company-branch-tree-view.tsx (2390 lines)
 
 | Line | Kind | Name |
@@ -429,63 +486,6 @@ Files indexed: 32
 | 1149 | const-arrow | `handleLogoUpload` |
 | 1206 | const-arrow | `handleSave` |
 | 2366 | function | `saveErrorMessage` |
-
-## frontend/src/app/menu/main-menu-screen.tsx (2383 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 225 | function | `mt` |
-| 230 | function | `isRecord` |
-| 234 | function | `stringValue` |
-| 238 | function | `stringArray` |
-| 251 | function | `normalizeSettingRecords` |
-| 271 | function | `fetchAllowedMenuIds` |
-| 307 | function | `fetchSessionStats` |
-| 354 | function | `sessionTimeText` |
-| 365 | function | `sessionRelativeText` |
-| 375 | function | `sessionStatsTooltip` |
-| 396 | function | `guardsUnsavedRoute` |
-| 400 | function | `MainMenuScreen` |
-| 408 | function | `MainMenuDashboard` |
-| 534 | function | `loadProfile` |
-| 562 | function | `loadMenuPermissions` |
-| 659 | function | `confirmLeaveLedger` |
-| 665 | function | `selectWorkTab` |
-| 670 | function | `openWorkspace` |
-| 674 | function | `openMenuItem` |
-| 721 | function | `openMenuItemInNewTab` |
-| 725 | function | `openManageShortcuts` |
-| 744 | function | `openOverview` |
-| 751 | function | `toggleSection` |
-| 758 | function | `closeAllTabs` |
-| 766 | function | `runMenuAction` |
-| 775 | function | `closeTab` |
-| 785 | function | `reorderTabs` |
-| 801 | function | `stopLinePolling` |
-| 808 | function | `handleLineLink` |
-| 859 | function | `startLinePolling` |
-| 873 | function | `pollLineLink` |
-| 907 | function | `closeLineDialog` |
-| 913 | function | `copyLineLoginUrl` |
-| 923 | function | `handleChangePassword` |
-| 975 | function | `logout` |
-| 984 | function | `handleContentScroll` |
-| 1012 | const-arrow | `onPointerMove` |
-| 1018 | const-arrow | `onPointerUp` |
-| 1704 | function | `SidebarButton` |
-| 1737 | function | `MenuSectionAccordion` |
-| 1831 | function | `MenuTreeFolder` |
-| 1883 | function | `MenuTreeItemButton` |
-| 1949 | function | `getVisibleItems` |
-| 1959 | function | `getBarTreeNodes` |
-| 1976 | function | `SectionIcon` |
-| 1994 | function | `OpenTabs` |
-| 2048 | function | `captureTabRects` |
-| 2059 | function | `getInsertSide` |
-| 2064 | function | `clearDragState` |
-| 2071 | function | `reorderFromPointer` |
-| 2196 | function | `WorkTabPanel` |
-| 2368 | function | `DashboardLoading` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 
@@ -1071,43 +1071,6 @@ Files indexed: 32
 | 491 | function | `handleKeyDown` |
 | 1263 | function | `DuplicateInvoiceBadge` |
 
-## frontend/src/lib/erp-transaction.ts (1239 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 72 | function | `exact` |
-| 86 | function | `addExact` |
-| 90 | function | `negate` |
-| 93 | function | `mulExact` |
-| 97 | function | `roundExact` |
-| 105 | function | `exactString` |
-| 114 | function | `erpLineAmount` |
-| 124 | function | `erpDocTotals` |
-| 136 | function | `erpBeforeVatAmount` |
-| 145 | function | `erpMoneyDisplay` |
-| 150 | function | `erpSignedSum` |
-| 155 | function | `erpDecimalSign` |
-| 161 | function | `erpDueDate` |
-| 168 | function | `erpDocForSave` |
-| 186 | function | `erpDocLifecycle` |
-| 891 | function | `isErpTransactionRoute` |
-| 896 | function | `getErpModuleConfig` |
-| 907 | function | `statusErrorKey` |
-| 914 | function | `userDetail` |
-| 918 | function | `fetchErpTransactions` |
-| 949 | function | `saveErpTransaction` |
-| 979 | function | `deleteErpTransaction` |
-| 1022 | function | `approveErpDoc` |
-| 1044 | function | `unapproveErpDoc` |
-| 1067 | function | `cancelErpDoc` |
-| 1100 | function | `postBatchErpDocs` |
-| 1130 | function | `approveBatchErpDocs` |
-| 1139 | function | `unapproveBatchErpDocs` |
-| 1149 | function | `cancelBatchErpDocs` |
-| 1159 | function | `fetchErpDocEvents` |
-| 1192 | function | `fetchDeliveryDateInvoices` |
-| 1214 | function | `saveDeliveryDates` |
-
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 
 | Line | Kind | Name |
@@ -1258,6 +1221,43 @@ Files indexed: 32
 | Line | Kind | Name |
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
+
+## frontend/src/lib/erp-transaction.ts (1139 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 72 | function | `exact` |
+| 86 | function | `addExact` |
+| 90 | function | `negate` |
+| 93 | function | `mulExact` |
+| 97 | function | `roundExact` |
+| 105 | function | `exactString` |
+| 114 | function | `erpLineAmount` |
+| 124 | function | `erpDocTotals` |
+| 136 | function | `erpBeforeVatAmount` |
+| 145 | function | `erpMoneyDisplay` |
+| 150 | function | `erpSignedSum` |
+| 155 | function | `erpDecimalSign` |
+| 161 | function | `erpDueDate` |
+| 168 | function | `erpDocForSave` |
+| 186 | function | `erpDocLifecycle` |
+| 791 | function | `isErpTransactionRoute` |
+| 796 | function | `getErpModuleConfig` |
+| 807 | function | `statusErrorKey` |
+| 814 | function | `userDetail` |
+| 818 | function | `fetchErpTransactions` |
+| 849 | function | `saveErpTransaction` |
+| 879 | function | `deleteErpTransaction` |
+| 922 | function | `approveErpDoc` |
+| 944 | function | `unapproveErpDoc` |
+| 967 | function | `cancelErpDoc` |
+| 1000 | function | `postBatchErpDocs` |
+| 1030 | function | `approveBatchErpDocs` |
+| 1039 | function | `unapproveBatchErpDocs` |
+| 1049 | function | `cancelBatchErpDocs` |
+| 1059 | function | `fetchErpDocEvents` |
+| 1092 | function | `fetchDeliveryDateInvoices` |
+| 1114 | function | `saveDeliveryDates` |
 
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 

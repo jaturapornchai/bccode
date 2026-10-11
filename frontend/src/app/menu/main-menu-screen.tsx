@@ -139,6 +139,9 @@ import { BankCodeScreen } from "@/components/bank-code-screen";
 import { BankContactScreen } from "@/components/bank-contact-screen";
 import { BookBankScreen } from "@/components/book-bank-screen";
 import { bankCodeKindFromRoute } from "@/lib/bank-code-kinds";
+import { ChequeRegisterScreen } from "@/components/cheque-register-screen";
+import { ChequeStatusDocScreen } from "@/components/cheque-status-doc-screen";
+import { chequeScreenFromRoute } from "@/lib/cheque-doc-config";
 
 type WorkTab = {
   id: string;
@@ -2298,6 +2301,15 @@ function WorkTabPanel({
     return <FixedAssetsScreen embedded language={language} route={activeTab.route} />;
   }
 
+
+  // เช็ค 10 จอมีโมดูลเฉพาะ (/cheque/v1) ไม่ผ่านจอ ERP แบบ config; key ผูกกับ route เพื่อล้างสถานะฟอร์มเมื่อสลับจอ
+  const chequeScreen = chequeScreenFromRoute(activeTab.route);
+  if (chequeScreen?.kind === "register") {
+    return <ChequeRegisterScreen key={activeTab.route} chequeType={chequeScreen.chequeType} language={language} />;
+  }
+  if (chequeScreen?.kind === "doc") {
+    return <ChequeStatusDocScreen key={activeTab.route} flag={chequeScreen.flag} language={language} />;
+  }
 
   if (isErpTransactionRoute(activeTab.route)) {
     return <ErpCrudWorkbench embedded language={language} route={activeTab.route} auth={auth} workspace={workspace} />;

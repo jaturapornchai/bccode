@@ -8,6 +8,7 @@ import { isOperationsRoute, getOperationsConfig, isApprovalApiReady } from "./er
 import { getThaiTaxConfig } from "./thai-tax";
 import { taxFormRouteCode } from "./tax-forms";
 import { BANK_CODE_KINDS, BANK_CODE_ROUTE_PREFIX } from "./bank-code-kinds";
+import { CHEQUE_SCREEN_ROUTES } from "./cheque-doc-config";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
@@ -21,6 +22,8 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/bookbankscreen",
   // จอกำหนดรหัสธนาคาร 5 ชนิด: WorkTabPanel ใช้ bankCodeKindFromRoute() ตัวเดียวแทนการเทียบ route ทีละตัว
   ...BANK_CODE_KINDS.map((kind) => BANK_CODE_ROUTE_PREFIX + kind),
+  // จอเช็ค 10 จอ (ทะเบียนเช็ครับ/จ่าย + เอกสารเปลี่ยนสถานะ 419-426): WorkTabPanel ใช้ chequeScreenFromRoute() ตัวเดียว
+  ...CHEQUE_SCREEN_ROUTES,
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

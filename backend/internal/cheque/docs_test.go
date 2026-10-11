@@ -207,6 +207,20 @@ func TestDocRegistryCoversEightFlags(t *testing.T) {
 	}
 }
 
+// OwnsDocFlag = ทะเบียนเช็ค 2 ชนิด + เอกสารสถานะ 8 ชนิด (รวม 10) และไม่รวมเอกสารอื่นที่เลขใกล้กัน
+func TestOwnsDocFlagCoversExactlyTheTenChequeDocTypes(t *testing.T) {
+	for _, flag := range []int{FlagRegisterReceived, FlagRegisterIssued, 419, 420, 421, 422, 423, 424, 425, 426} {
+		if !OwnsDocFlag(flag) {
+			t.Errorf("OwnsDocFlag(%d) = false", flag)
+		}
+	}
+	for _, flag := range []int{0, 60, 62, 417, 427, 44} {
+		if OwnsDocFlag(flag) {
+			t.Errorf("OwnsDocFlag(%d) = true", flag)
+		}
+	}
+}
+
 func TestNewBookNoGLAccountErrorNamesTheBook(t *testing.T) {
 	e := wantErrorKey(t, NewBookNoGLAccountError(""), "cheque_err_book_no_gl_account")
 	if !reflect.DeepEqual(e.Args, []string{"-"}) || e.Status != 400 {

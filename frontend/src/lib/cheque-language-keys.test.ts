@@ -10,6 +10,11 @@ const sources = [
   "src/components/book-bank-screen.tsx",
   "src/lib/cheque-api.ts",
   "src/lib/cheque-forms.ts",
+  "src/lib/cheque-doc-config.ts",
+  "src/lib/cheque-doc-forms.ts",
+  "src/components/cheque-register-screen.tsx",
+  "src/components/cheque-status-doc-screen.tsx",
+  "src/components/cheque-doc-dialogs.tsx",
   "src/lib/bank-code-kinds.ts",
   "src/app/api/cheque/[...chequePath]/route.ts",
 ].map((file) => resolve(process.cwd(), file));
