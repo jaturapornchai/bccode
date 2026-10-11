@@ -129,6 +129,12 @@ func checkPayPrepareLines(ctx context.Context, tx *sql.Tx, company string, doc *
 		if line.PayBillNo == "" {
 			continue
 		}
+		// ยอดติดลบ/ศูนย์จะไปหักยอดรวมของคู่ (ใบเตรียมจ่าย, หนี้) ทำให้บรรทัดอื่นเกินยอดที่จองไว้ได้ — ตรวจก่อนรวม
+		if !money(line.SumAmount).IsPositive() {
+			e := amountInvalidError()
+			e.Field = fmt.Sprintf("details[%d].sumamount", i)
+			return e
+		}
 		key := useKey{line.PayBillNo, line.DebtDocumentID}
 		if _, seen := firstLine[key]; !seen {
 			firstLine[key] = i
@@ -259,6 +265,7 @@ func settleLines(ctx context.Context, tx *sql.Tx, scope gl.Scope, spec subledger
 	}
 	var lines []payLine
 	perDebt, firstLine := map[string]decimal.Decimal{}, map[string]int{}
+	directPerDebt, firstDirect := map[string]decimal.Decimal{}, map[string]int{}
 	var ids []string
 	sum := decimal.Zero
 	for i, item := range doc.Details {
@@ -276,6 +283,12 @@ func settleLines(ctx context.Context, tx *sql.Tx, scope gl.Scope, spec subledger
 			ids = append(ids, item.DebtDocumentID)
 		}
 		perDebt[item.DebtDocumentID] = perDebt[item.DebtDocumentID].Add(amount)
+		if item.PayBillNo == "" {
+			if _, seen := firstDirect[item.DebtDocumentID]; !seen {
+				firstDirect[item.DebtDocumentID] = i
+			}
+			directPerDebt[item.DebtDocumentID] = directPerDebt[item.DebtDocumentID].Add(amount)
+		}
 		sum = sum.Add(amount)
 		lines = append(lines, payLine{i, amount})
 	}
@@ -301,9 +314,10 @@ func settleLines(ctx context.Context, tx *sql.Tx, scope gl.Scope, spec subledger
 	if err != nil {
 		return ledgerFail(err)
 	}
-	remaining := map[string]decimal.Decimal{}
+	remaining, available := map[string]decimal.Decimal{}, map[string]decimal.Decimal{}
 	for _, item := range open {
 		remaining[item.ID] = item.Remaining.Decimal()
+		available[item.ID] = item.Available.Decimal()
 	}
 	for _, id := range ids {
 		current, err := debtOutstanding(ctx, tx, scope.Company, id)
@@ -315,6 +329,16 @@ func settleLines(ctx context.Context, tx *sql.Tx, scope gl.Scope, spec subledger
 			e := settleExceedsOutstandingError(debtNos[id], limit)
 			e.Field = fmt.Sprintf("details[%d].sumamount", firstLine[id])
 			return e
+		}
+		// บรรทัดที่ไม่ได้ดึงจากใบเตรียมจ่ายจ่ายได้เฉพาะยอดที่ใบเตรียมจ่ายอื่นไม่ได้จองไว้ — Champ ซ่อนหนี้ที่ถูกจองจาก
+		// ตัวเลือกหนี้ของใบจ่าย (apfrmappayment1view.cpp:1612-1617); บรรทัดจากใบเตรียมจ่ายคุมด้วย checkPayPrepareLines
+		if direct, ok := directPerDebt[id]; ok {
+			free := decimal.Max(decimal.Min(available[id], current), decimal.Zero)
+			if direct.GreaterThan(free) {
+				e := settleExceedsOutstandingError(debtNos[id], free)
+				e.Field = fmt.Sprintf("details[%d].sumamount", firstDirect[id])
+				return e
+			}
 		}
 	}
 

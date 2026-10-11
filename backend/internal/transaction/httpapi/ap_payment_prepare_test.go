@@ -189,6 +189,20 @@ func TestSettleLinesRejectsNonPositiveLine(t *testing.T) {
 	}
 }
 
+// บรรทัดที่ดึงจากใบเตรียมจ่ายต้องมียอดมากกว่า 0 แม้ใบจ่ายไม่ลงบัญชี (ไม่ถึง settleLines): ยอดติดลบทำให้ยอดที่ใช้ของใบเตรียมจ่ายลดลง
+// แล้วใบจ่ายอื่นดึงเกินที่เตรียมไว้ได้ — ปฏิเสธก่อนแตะฐานข้อมูล
+func TestCheckPayPrepareLinesRejectsNonPositiveLine(t *testing.T) {
+	tx, _ := beginMockTx(t)
+	doc := &ErpTransactionDoc{Details: []ErpDetailItem{
+		{LineNumber: 1, DebtDocumentID: "AP-PU6910-0001", PayBillNo: "PP6910-0001", SumAmount: decimal.RequireFromString("100.00")},
+		{LineNumber: 2, DebtDocumentID: "AP-PU6910-0002", PayBillNo: "PP6910-0001", SumAmount: decimal.RequireFromString("-500.00")},
+	}}
+	err := checkPayPrepareLines(context.Background(), tx, "01", doc, "PV6910-0001", nil)
+	if user, ok := gl.AsUserError(err); !ok || user.Code != "erp_amount_invalid" || user.Field != "details[1].sumamount" {
+		t.Fatalf("checkPayPrepareLines error = %#v, want erp_amount_invalid on details[1].sumamount", err)
+	}
+}
+
 // หนี้ที่ไม่ใช่ของเจ้าหนี้/บัญชีคุมของใบจ่าย (แถวกลับมาแต่ไม่ตรงเงื่อนไข) ต้องปฏิเสธพร้อมชี้บรรทัด
 func TestSettleLinesRejectsDebtOfAnotherCreditor(t *testing.T) {
 	tx, mock := beginMockTx(t)
@@ -219,12 +233,15 @@ func expectPrepareUse(mock sqlmock.Sqlmock, debtID, payAmount, settled, pending 
 			AddRow(testPrepareNo, debtID, 1, payAmount, settled, pending, "PUR6910-0001", "2026-10-01", "15000.00", "15000.00", 0, 1, "ซื้อเหล็กเส้น"))
 }
 
-// expectOpenDebt: used = ยอดที่ใบเตรียมจ่ายที่กำลังแก้ตัดหนี้แล้ว (as-of เดียวกับ remaining)
+// expectOpenDebt: used = ยอดที่ใบเตรียมจ่ายที่กำลังแก้ตัดหนี้แล้ว (as-of เดียวกับ remaining); APOpenItems อ่านสองรอบ
+// (as-of แล้วยอด ณ ปัจจุบัน) — ทั้งสองรอบคืนแถวเดียวกัน = ไม่มีใบจ่ายลงวันที่หลัง as-of
 func expectOpenDebt(mock sqlmock.Sqlmock, id, remaining, available, used string) {
-	mock.ExpectQuery(`posted_alloc AS`).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "docno", "date", "due", "description", "kind", "from_gl",
-			"amount", "remaining", "reserved", "available", "used", "total"}).
-			AddRow(id, "PUR6910-0001", "2026-10-01", "2026-10-31", "ซื้อเหล็กเส้น", 0, false, "15000.00", remaining, "0.00", available, used, 1))
+	for range 2 {
+		mock.ExpectQuery(`posted_alloc AS`).
+			WillReturnRows(sqlmock.NewRows([]string{"id", "docno", "date", "due", "description", "kind", "from_gl",
+				"amount", "remaining", "reserved", "available", "used", "total"}).
+				AddRow(id, "PUR6910-0001", "2026-10-01", "2026-10-31", "ซื้อเหล็กเส้น", 0, false, "15000.00", remaining, "0.00", available, used, 1))
+	}
 }
 
 func checkLines(tx *sql.Tx, isEdit bool, ids []string, amounts ...string) ([]preparedLine, error) {

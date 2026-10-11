@@ -251,12 +251,34 @@ func TestIntegrationPrepareAmountsScaleTwo(t *testing.T) {
 	if _, err = f.prepare(f.scope, "PP6910-0202", f.debt, rows[0].AvailableAmount, 0, ""); err != nil {
 		t.Fatalf("save the picked amount as returned: %v", err)
 	}
-	// A payment outside any preparation leaves 470.00 against 570.00 held by the second preparation.
-	if _, err = f.payOn(erpDocDay, "", f.debt, f.purchaseNo, "600.00"); err != nil {
-		t.Fatalf("payment outside preparations: %v", err)
+	// The two preparations hold the whole debt: a payment outside them may not pay what they reserved (Champ hides a bill
+	// whose PayBillAmount reached its balance from the payment picker, apfrmappayment1view.cpp:1612-1617).
+	_, err = f.payOn(erpDocDay, "", f.debt, f.purchaseNo, "600.00")
+	wantUserError(t, "payment outside preparations over what they hold", err, "erp_settle_exceeds_remaining", f.purchaseNo, "0.00")
+	_, err = f.prepare(f.scope, first.DocNo, f.debt, "500.01", first.Version, first.DocNo)
+	wantUserError(t, "edit above what the other preparation leaves", err, "ap_prepare_over_balance", f.purchaseNo, "500.00")
+}
+
+// A payment dated after today that already settled the debt is seen by a preparation dated today: it cannot reserve
+// what is no longer owed (the picker shows 0.00 available and the save refuses).
+func TestIntegrationPrepareSeesFutureDatedPayment(t *testing.T) {
+	f, projection := newPrepareFixture(t)
+	today, err := dayStart(businessDay(time.Now()))
+	if err != nil {
+		t.Fatal(err)
 	}
-	_, err = f.prepare(f.scope, first.DocNo, f.debt, "500.00", first.Version, first.DocNo)
-	wantUserError(t, "edit when others hold more than remains", err, "ap_prepare_over_balance", f.purchaseNo, "0.00")
+	later := time.Date(today.Year(), today.Month(), today.Day()+20, 9, 0, 0, 0, time.UTC)
+	if later.Year() != erpDocDay.Year() {
+		seedFiscalYear(t, projection, later.Year())
+	}
+	if _, err = f.payOn(later, "", f.debt, f.purchaseNo, "1070.00"); err != nil {
+		t.Fatalf("future-dated payment: %v", err)
+	}
+	if rows := f.outstanding(f.scope, ""); len(rows) == 1 && rows[0].AvailableAmount != "0.00" {
+		t.Fatalf("picker available after a future-dated payment = %s, want 0.00", rows[0].AvailableAmount)
+	}
+	_, err = f.prepare(f.scope, "PP6910-0301", f.debt, "1070.00", 0, "")
+	wantUserError(t, "preparation of a debt paid by a future-dated payment", err, "ap_prepare_over_balance", f.purchaseNo, "0.00")
 }
 
 // seedFiscalYear opens the fiscal year of a payment dated past the year seedLedger opens.

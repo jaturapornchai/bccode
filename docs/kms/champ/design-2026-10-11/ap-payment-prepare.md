@@ -397,7 +397,9 @@ LIMIT $7 OFFSET $8;
 - normalize side ตามแหล่ง: หนี้ = (payload มี `balance_side` → side 1) หรือ (หนี้จาก ERP ฝั่ง AP → side 2); เอกสารจ่ายของ PV = ฝั่งตรงข้าม
 - สกุลเงิน: payload ที่ไม่มี `currency_code` (ERP ทุกใบตอนนี้) ถือเป็น `THB`; ต้องตรงกันทั้งสองขา
 - เจ้าหนี้ (`partner_code`), ledger `ap` และบัญชีคุม (`control_account_code`) ต้องตรงกัน
-- ยอด ≤ ยอดคงเหลือ as-of จากฟังก์ชันเดียวของ §4.2 (ไม่ใช่ `debtOutstanding` ที่ settlement ไม่ as-of); as-of = วันที่ใบจ่ายหรือวันนี้ที่หลังกว่า เหมือนจอเตรียมจ่าย เพราะ as-of นับเวลาผ่านบัญชีด้วย — ใบจ่ายที่คีย์ย้อนหลังต้องเห็นหนี้ที่เพิ่งผ่านบัญชีวันนี้ (`pay_settlement.go` settleLines)
+- ยอด ≤ ยอดคงเหลือ as-of จากฟังก์ชันเดียวของ §4.2 (ไม่ใช่ `debtOutstanding` ที่ settlement ไม่ as-of); as-of = วันที่ใบจ่ายหรือวันนี้ที่หลังกว่า เหมือนจอเตรียมจ่าย เพราะ as-of นับเวลา
+- บรรทัดที่ไม่ได้ดึงจากใบเตรียมจ่าย (`paybillno` ว่าง) รวมต่อหนี้ ≤ `available_amount` (ยอดที่ใบเตรียมจ่ายอื่นไม่ได้จอง) → เกิน = `erp_settle_exceeds_remaining` พร้อมยอดที่จ่ายได้ — Champ ซ่อนหนี้ที่ถูกจองจากตัวเลือกหนี้ของใบจ่าย (`apfrmappayment1view.cpp:1612-1617`); บรรทัดจากใบเตรียมจ่ายคุมด้วย `payamount − used` ของใบนั้น และยอดต้องเป็นบวก
+- `available_amount` ของ §4.2 ไม่เกินค่าเดียวกันที่คำนวณ ณ ปัจจุบัน (`APOpenItems` อ่านซ้ำที่ `reservationAsOf`) เพราะใบจ่ายที่ลงวันที่หลัง as-of ตัดหนี้ไปแล้วแต่ as-of มองไม่เห็น — ใช้ทั้งจอเตรียมจ่าย, `checkPrepareLines` และ `settleLines`ผ่านบัญชีด้วย — ใบจ่ายที่คีย์ย้อนหลังต้องเห็นหนี้ที่เพิ่งผ่านบัญชีวันนี้ (`pay_settlement.go` settleLines)
 - PV ของ ERP ตัดหนี้ที่บันทึกจาก GL ได้ (หลัง normalize) เพราะเจ้าหนี้รายเดียวมีหนี้ได้ทั้งสองแหล่ง และ Champ ตัดหนี้ทุกประเภทจากจอเดียว (`PaymentProcessBill` เลือกตารางตาม BillType)
 - ผิดเงื่อนไข → `gl_err_ap_pay_settle_mismatch`
 - test: (1) PV(ERP) ตัด PUR(ERP) (2) PV(ERP) ตัดหนี้จาก GL `balance_side=1` (3) จับคู่ side ผิด (เอาเอกสารจ่ายมาเป็นหนี้) ต้องถูกปฏิเสธ (4) สกุลเงินว่าง vs `THB` ผ่าน

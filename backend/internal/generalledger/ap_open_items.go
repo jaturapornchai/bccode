@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 
 	"smlcloudplatform/internal/goapi/language"
 )
@@ -26,6 +27,7 @@ type APOpenQuery struct {
 // APOpenItem คือหนี้ค้างจ่ายหนึ่งแถวของบัญชีย่อยเจ้าหนี้ (ยอดเป็นข้อความทศนิยมจาก NUMERIC ของ PostgreSQL)
 // Remaining = ยอดคงเหลือ as-of, Reserved = ยอดที่ใบเตรียมจ่ายอื่นยังจองไว้, Available = ยอดที่ยังเตรียมจ่ายได้,
 // PrepareUsed = ยอดที่ตัดหนี้แล้วจากใบ ExcludePrepare (as-of เดียวกัน) — เพดานของบรรทัดเดิม = Available + PrepareUsed
+// ซึ่งไม่เกินเพดานเดียวกันที่คำนวณ ณ ปัจจุบัน (นับใบจ่ายที่ลงวันที่หลัง as-of ด้วย)
 type APOpenItem struct {
 	ID           string
 	DocumentNo   string
@@ -108,8 +110,36 @@ func APOpenItems(ctx context.Context, tx *sql.Tx, scope Scope, query APOpenQuery
 	if ids == nil {
 		ids = []string{}
 	}
-	rows, err := tx.QueryContext(ctx, subledgerReadCTE+apOpenItemsSQL,
-		scope.Company, scope.Branch, q, query.AsOf, partner, query.ExcludePrepare, pq.Array(ids), limit, offset)
+	items, total, err := queryAPOpenItems(ctx, tx, scope.Company, scope.Branch, q, query.AsOf, partner, query.ExcludePrepare, ids, limit, offset)
+	if err != nil || query.AsOf == reservationAsOf || len(items) == 0 {
+		return items, total, err
+	}
+	// ใบจ่ายที่ลงวันที่หลัง as-of ตัดหนี้ไปแล้ว as-of มองไม่เห็น: ยอดที่ยังเตรียมจ่าย/จ่ายได้ต้องไม่เกินยอด ณ ปัจจุบันด้วย
+	// (นับทุกการตัดหนี้ไม่ว่าลงวันที่ใด) — เพดานของบรรทัดเดิม (Available + PrepareUsed) จึงเป็นค่าที่ต่ำกว่าของสองช่วงเวลา
+	nowIDs := make([]string, len(items))
+	for i, item := range items {
+		nowIDs[i] = item.ID
+	}
+	now, _, err := queryAPOpenItems(ctx, tx, scope.Company, scope.Branch, "", reservationAsOf, partner, query.ExcludePrepare, nowIDs, len(nowIDs), 0)
+	if err != nil {
+		return nil, 0, err
+	}
+	nowLimit := make(map[string]decimal.Decimal, len(now))
+	for _, n := range now {
+		nowLimit[n.ID] = n.Available.Decimal().Add(n.PrepareUsed.Decimal())
+	}
+	for i := range items {
+		used := items[i].PrepareUsed.Decimal()
+		if limit, ok := nowLimit[items[i].ID]; ok && items[i].Available.Decimal().Add(used).GreaterThan(limit) {
+			items[i].Available = amountFromDecimal(limit.Sub(used))
+		}
+	}
+	return items, total, nil
+}
+
+// queryAPOpenItems runs apOpenItemsSQL once and scans every row (rows are closed before the caller queries again on tx).
+func queryAPOpenItems(ctx context.Context, tx *sql.Tx, company, branch, q, asOf, partner, excludePrepare string, ids []string, limit, offset int) ([]APOpenItem, int, error) {
+	rows, err := tx.QueryContext(ctx, subledgerReadCTE+apOpenItemsSQL, company, branch, q, asOf, partner, excludePrepare, pq.Array(ids), limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("ap open items: %w", err)
 	}
