@@ -10,6 +10,7 @@ import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload, type GLPage, type GLStatementNotes, type StatementNote } from "@/lib/general-ledger";
 import { Field, Notice, UnsavedBadge, YearSelect, actionClass, control, useGLCommand, useGLLanguage, useGLText, useReferences } from "./gl-common";
 import { GLNotesPrint, printCompanyName, statementPeriodText, useGLPrint } from "./gl-print";
+import { ensureReportRight } from "./gl-print-conditions";
 
 /** อ่านหมายเหตุของปีบัญชี: ค้นจาก list แล้วเลือกรายการที่ code ตรงปีพอดี จากนั้นอ่านฉบับล่าสุดด้วย id (ได้ version สำหรับแก้ไข) */
 export async function loadStatementNotes(year: string): Promise<{ record: GLStatementNotes; notes: StatementNote[] } | null> {
@@ -109,6 +110,18 @@ export function GLStatementNotesEditor({ onDirtyChange }: { onDirtyChange: (dirt
   function saveFailed(e: unknown) {
     setError((e as Error).message);
     setReloadNeeded(statementNotesNeedReload(e instanceof GLCommandError ? e.code : ""));
+  }
+
+  // Champ ตรวจสิทธิ์พิมพ์รายงานตอนกดพิมพ์ (BaseReportView.cpp:733-746): หมายเหตุที่พิมพ์คือฉบับที่กำลังแก้บนจอ จึงให้ backend ตรวจสิทธิ์ก่อน
+  async function printNotes() {
+    try {
+      setError("");
+      await ensureReportRight("statement-notes", "print");
+    } catch (e) {
+      setError((e as Error).message);
+      return;
+    }
+    notesPrint.print(<GLNotesPrint notes={notes} company={printCompanyName()} period={period} tr={tr} />, "portrait");
   }
 
   function updateNote(id: string, patch: Partial<StatementNote>) {
@@ -213,7 +226,7 @@ export function GLStatementNotesEditor({ onDirtyChange }: { onDirtyChange: (dirt
           <UnsavedBadge dirty={dirty} className="text-[0.9rem]" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" className={actionClass} disabled={!notes.length} onClick={() => notesPrint.print(<GLNotesPrint notes={notes} company={printCompanyName()} period={period} tr={tr} />, "portrait")}>
+          <Button type="button" variant="outline" className={actionClass} disabled={!notes.length} onClick={() => void printNotes()}>
             <Printer className="mr-1.5 h-4 w-4" /> {tr("gl_statement_notes_print", "พิมพ์หมายเหตุประกอบงบ")}
           </Button>
           {record?.id && (

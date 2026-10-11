@@ -47,6 +47,12 @@ describe("GL report print / export rights",()=>{
     expect(source).not.toContain("statementPrint.print(statementView(calculated)");
     expect(source).not.toContain("reportCsv(calculated)");
   });
+  it("checks the print right before printing the statement notes being edited",()=>{
+    const notes=readFileSync(resolve(process.cwd(),"src/app/gl/gl-statement-notes.tsx"),"utf8");
+    const handler=notes.slice(notes.indexOf("async function printNotes"),notes.indexOf("notesPrint.print("));
+    expect(handler).toContain("await ensureReportRight(\"statement-notes\", \"print\");");
+    expect(notes).toContain("onClick={() => void printNotes()}");
+  });
   it("checks the right before printing or exporting the chart of accounts already on screen",()=>{
     const masters=readFileSync(resolve(process.cwd(),"src/app/gl/gl-masters.tsx"),"utf8");
     expect(masters.slice(masters.indexOf("const handleExportCsv"),masters.indexOf("chartOfAccountsCsv(treeAccounts"))).toContain('await ensureReportRight("accounts", "export");');
