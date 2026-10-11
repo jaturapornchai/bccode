@@ -701,7 +701,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
-  // 2026-10-09 (S2): หัว "จัดการระบบ" ของ Champ 5.5 — เฉพาะรายการที่ BC ยังไม่มีจอ (/pending/*). จอตั้งค่าที่มีอยู่แล้ว
+  // 2026-10-09 (S2): หัว "จัดการระบบ" ของ Champ 5.5 — รายการ /settings/* ที่ยังเป็น "รอพัฒนา" (2026-10-11: จอเดิมเป็น UI อย่างเดียว ถอดแล้ว). จอตั้งค่าที่มีอยู่แล้ว
   // (บริษัท/สาขา, ผู้ใช้, สิทธิ์, พนักงาน, กลุ่มลูกหนี้, คลัง) เปิดจากแถบเมนูโดยตรง (menu-bars.ts route node) ไม่อยู่ในแคตตาล็อกสิทธิ์.
   {
     id: "system",
@@ -725,7 +725,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
-  // 2026-10-10: หัว "หน้าต่าง" ของ Champ 5.5 — submenu "เลือกตัวอักษรในการแสดงผลต่าง" (6 รายการ /pending/*)
+  // 2026-10-10: หัว "หน้าต่าง" ของ Champ 5.5 — submenu "เลือกตัวอักษรในการแสดงผลต่าง" (6 รายการ /settings/font*; มีจอจริงเฉพาะ /settings/font, อีก 5 รายการรอพัฒนา)
   {
     id: "window",
     title: { key: "menu_bar_window", th: "หน้าต่าง", en: "Window" },
@@ -744,7 +744,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
-  // 2026-10-10: หัว "ช่วยเหลือ" ของ Champ 5.5 — About และ มาตรฐานซอฟท์แวร์ของกรมสรรพากร (/pending/*)
+  // 2026-10-10: หัว "ช่วยเหลือ" ของ Champ 5.5 — About และ มาตรฐานซอฟท์แวร์ของกรมสรรพากร (/settings/about, /settings/standard-software — รอพัฒนา)
   {
     id: "help",
     title: { key: "menu_bar_help", th: "ช่วยเหลือ", en: "Help" },

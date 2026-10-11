@@ -134,32 +134,6 @@ import { DataModelGraphScreen } from "./datamodel-graph-screen";
 import { CustomerLabelPrintScreen } from "@/components/customer-label-print";
 import { BillingNoteAutoPrintScreen } from "@/components/billing-note-auto-print";
 import { ScreenFontSettings } from "@/components/screen-font-settings";
-import { BankingContactsScreen } from "@/components/banking-contacts-screen";
-import { PettyCashLimitScreen } from "@/components/petty-cash-limit-screen";
-import { ChequeIssuedPrepareScreen } from "@/components/cheque-issued-prepare-screen";
-import { DepositReceiptScreen } from "@/components/deposit-receipt-screen";
-import { BillingNoteAutoScreen } from "@/components/billing-note-auto-screen";
-import { TransactionLockScreen } from "@/components/transaction-lock-screen";
-import { ApPaymentPrepareScreen } from "@/components/ap-payment-prepare-screen";
-import { ChequeMovementScreen } from "@/components/cheque-movement-screen";
-import { BankServiceScreen } from "@/components/bank-service-screen";
-import { SaleReservationScreen } from "@/components/sale-reservation-screen";
-import { SaleDispatchScreen } from "@/components/sale-dispatch-screen";
-import { StockCountHandheldScreen } from "@/components/stock-count-handheld-screen";
-import { ProductSupplierUpdateScreen } from "@/components/product-supplier-update-screen";
-import { SystemJournalFormatScreen } from "@/components/system-journal-format-screen";
-import { SystemWorkDateScreen } from "@/components/system-work-date-screen";
-import { SystemProductByWarehouseScreen } from "@/components/system-product-by-warehouse-screen";
-import { SystemDefaultWarehouseScreen } from "@/components/system-default-warehouse-screen";
-import { SystemCurrencyScreen } from "@/components/system-currency-screen";
-import { SystemPaymentTermsScreen } from "@/components/system-payment-terms-screen";
-import { SystemCreditDebitReasonsScreen } from "@/components/system-credit-debit-reasons-screen";
-import { SystemMainMapScreen } from "@/components/system-main-map-screen";
-import { SystemCustomerInquiryScreen } from "@/components/system-customer-inquiry-screen";
-import { SystemProductInquiryScreen } from "@/components/system-product-inquiry-screen";
-import { SystemAboutScreen } from "@/components/system-about-screen";
-import { SystemStandardSoftwareScreen } from "@/components/system-standard-software-screen";
-import { ETaxInvoiceScreen } from "@/components/etax-invoice-screen";
 
 type WorkTab = {
   id: string;
@@ -1386,8 +1360,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <p className="min-w-0 truncate text-sm font-bold">
                   {backendText(backendLanguage, "menu_search_results", "ผลการค้นหา")}: <span className="text-primary">{globalSearch.trim()}</span>
                 </p>
-                      // tools/uat/ui.mjs opens every screen through this attribute (npm run uat)
-                      data-menu-route={item.route}
                 <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground">{topSearchResults.length}</span>
                 <Button
                   type="button"
@@ -1414,6 +1386,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     <button
                       key={item.id}
                       type="button"
+                      // tools/uat/ui.mjs opens every screen through this attribute (npm run uat)
+                      data-menu-route={item.route}
                       className="min-w-0 rounded-xl border border-border bg-card/80 p-3 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-card"
                       onClick={() => {
                         setGlobalSearch("");
@@ -2320,10 +2294,6 @@ function WorkTabPanel({
   }
 
 
-  if (activeTab.route === "/transaction/receivedeposit") {
-    return <DepositReceiptScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
   if (isErpTransactionRoute(activeTab.route)) {
     return <ErpCrudWorkbench embedded language={language} route={activeTab.route} auth={auth} workspace={workspace} />;
   }
@@ -2345,115 +2315,8 @@ function WorkTabPanel({
     return <BillingNoteAutoPrintScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
-  if (
-    activeTab.route === "/settings/font" ||
-    activeTab.route === "/settings/font-report" ||
-    activeTab.route === "/settings/font-report-title" ||
-    activeTab.route === "/settings/font-report-column" ||
-    activeTab.route === "/settings/font-report-detail" ||
-    activeTab.route === "/settings/font-report-company"
-  ) {
-    return <ScreenFontSettings language={language} route={activeTab.route} />;
-  }
-
-  if (activeTab.route === "/banking/contacts") {
-    return <BankingContactsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/banking/petty-cash-limit") {
-    return <PettyCashLimitScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/banking/cheque-issued-prepare") {
-    return <ChequeIssuedPrepareScreen language={language} />;
-  }
-
-  if (activeTab.route === "/ar/billing-note-auto") {
-    return <BillingNoteAutoScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/tools/transaction-lock") {
-    return <TransactionLockScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/ap/payment-prepare") {
-    return <ApPaymentPrepareScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/banking/cheque-movement") {
-    return <ChequeMovementScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/banking/bank-service") {
-    return <BankServiceScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/sale/reservation") {
-    return <SaleReservationScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/sale/dispatch") {
-    return <SaleDispatchScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/inventory/stock-count-handheld") {
-    return <StockCountHandheldScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/inventory/product-supplier-update") {
-    return <ProductSupplierUpdateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/journal-format") {
-    return <SystemJournalFormatScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/work-date") {
-    return <SystemWorkDateScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/product-by-warehouse") {
-    return <SystemProductByWarehouseScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/default-warehouse") {
-    return <SystemDefaultWarehouseScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/currency") {
-    return <SystemCurrencyScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/payment-terms") {
-    return <SystemPaymentTermsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/credit-debit-reasons") {
-    return <SystemCreditDebitReasonsScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/main-map") {
-    return <SystemMainMapScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/customer-inquiry") {
-    return <SystemCustomerInquiryScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/product-inquiry") {
-    return <SystemProductInquiryScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/about") {
-    return <SystemAboutScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/settings/standard-software") {
-    return <SystemStandardSoftwareScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} />;
-  }
-
-  if (activeTab.route === "/transaction/etax") {
-    return <ETaxInvoiceScreen language={language} holdingcode={workspace?.shop.holdingcode ?? ""} branchcode={workspace?.branch?.code ?? "00000"} />;
+  if (activeTab.route === "/settings/font") {
+    return <ScreenFontSettings language={language} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

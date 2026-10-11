@@ -3,10 +3,10 @@ import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
 import { menuText, type MenuItem } from "@/lib/menu-data";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
-import { MenuPendingBadge } from "./menu-pending-badge";
 
 /**
- * "เมนูในแผนพัฒนา" card with the "รอพัฒนา" badge. Shown by the menu tab (main-menu-screen.tsx) and by the
+ * "เมนูในแผนพัฒนา" card with the "รอพัฒนา" chip (data-menu-pending). The chip lives on the card only; the menus themselves
+ * stay clean like Champ (MenuPendingBadge returns null). Shown by the menu tab (main-menu-screen.tsx) and by the
  * standalone settings route (system-settings-screen.tsx) for screens that have no API yet — including the
  * ones whose MongoDB-era API was removed (isMenuBackendRetired in src/lib/menu-screen-status.ts).
  */
@@ -30,7 +30,9 @@ export function MenuPlannedCard({ route, item, title, language, backendLanguage 
               <h2 className="break-words text-2xl font-semibold leading-relaxed">{item ? menuText(item.label, language, backendLanguage) : title}</h2>
             </div>
           </div>
-          <MenuPendingBadge route={route} language={language} backendLanguage={backendLanguage} />
+          <span data-menu-pending={route} className="inline-flex shrink-0 whitespace-nowrap rounded-md border border-border bg-muted px-1.5 text-[0.9rem] leading-normal text-foreground">
+            {menuText({ key: "menu_pending_development", th: "รอพัฒนา", en: "In development" }, language, backendLanguage)}
+          </span>
         </div>
 
         <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-base leading-relaxed text-muted-foreground">

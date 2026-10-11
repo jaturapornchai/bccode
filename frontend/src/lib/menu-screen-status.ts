@@ -15,34 +15,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/datamodelgraph", "/inventory/product-sets", "/productset",
   "/report/vatsummary", "/customer/label-print",
   "/ar/billing-note-auto-print",
-  "/settings/font", "/banking/contacts",
-  "/settings/font-report", "/settings/font-report-title",
-  "/settings/font-report-column", "/settings/font-report-detail", "/settings/font-report-company",
-  "/banking/petty-cash-limit",
-  "/banking/cheque-issued-prepare",
-  "/transaction/receivedeposit",
-  "/ar/billing-note-auto",
-  "/tools/transaction-lock",
-  "/ap/payment-prepare",
-  "/banking/cheque-movement",
-  "/banking/bank-service",
-  "/sale/reservation",
-  "/sale/dispatch",
-  "/inventory/stock-count-handheld",
-  "/inventory/product-supplier-update",
-  "/settings/journal-format",
-  "/settings/work-date",
-  "/settings/product-by-warehouse",
-  "/settings/default-warehouse",
-  "/settings/currency",
-  "/settings/payment-terms",
-  "/settings/credit-debit-reasons",
-  "/settings/main-map",
-  "/settings/customer-inquiry",
-  "/settings/product-inquiry",
-  "/settings/about",
-  "/settings/standard-software",
-  "/transaction/etax",
+  "/settings/font",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
@@ -70,6 +43,9 @@ const RETIRED_BACKEND_ROUTES = new Set<string>([
   "/pricehistory", "/inventory/product-sets", "/productset",
   // เมนู จัดการระบบ › ที่เก็บสินค้าตามคลัง / กลุ่มลูกหนี้ (2026-10-09) — config ตั้งค่ายังอยู่แต่ API เดิมถูกถอดแล้ว
   "/productwarehousescreen", "/debtorgroup",
+  // 2026-10-11: ใบรับเงินมัดจำมี config ERP + API จริง แต่จอ ErpCrudWorkbench ของโมดูล hasLineItems:false ไม่มีช่องกรอกยอดเงิน
+  // (บันทึกแล้ว doc.totalamount = 0 เสมอ) — เอกสารเงินที่ใส่เงินไม่ได้ต้องไม่เปิดให้ใช้ ถอดออกจากรายการนี้เมื่อจอมีช่องยอดเงินระดับหัวเอกสาร
+  "/transaction/receivedeposit",
 ]);
 
 // ข้อมูลตั้งค่าที่ backend PostgreSQL ยังให้บริการ

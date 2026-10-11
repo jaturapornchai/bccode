@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
+import { getErpModuleConfig } from "./erp-transaction";
 import { CUSTOM_MENU_SCREEN_ROUTES, isMenuBackendRetired, isMenuScreenPending, isMenuDataPending, isRetiredBackendScreen } from "./menu-screen-status";
 
 describe("menu screen availability", () => {
@@ -12,8 +13,46 @@ describe("menu screen availability", () => {
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 
-  // Champ parity 2026-09-19: all Champ pending routes are now fully connected!
-  const CHAMP_PENDING_ROUTES: string[] = [];
+  // 2026-10-11: จอ custom ที่ branch อยู่ก่อน isErpTransactionRoute ใน WorkTabPanel จะบังจอ ERP จริงของ route เดียวกัน
+  // (จอเงา deposit-receipt เคยบัง /transaction/receivedeposit) — route ใน CUSTOM ต้องไม่มี config ERP
+  it("never lets a custom screen shadow an ERP transaction route", () => {
+    expect(CUSTOM_MENU_SCREEN_ROUTES.filter((route) => getErpModuleConfig(route))).toEqual([]);
+  });
+
+  // 2026-10-11: จอ UI-only (ข้อมูลจำลอง/localStorage ไม่มี API+PostgreSQL จริง) ถอดเป็น "รอพัฒนา" จนกว่าจะสร้างจริง
+  // (docs/kms/champ/design-2026-10-11/facade-screens.md). ลบ route ออกจากรายการนี้ใน commit เดียวกับที่สร้างจอจริง
+  const CHAMP_PENDING_ROUTES: string[] = [
+    "/ap/payment-prepare",
+    "/ar/billing-note-auto",
+    "/banking/bank-service",
+    "/banking/cheque-issued-prepare",
+    "/banking/cheque-movement",
+    "/banking/contacts",
+    "/banking/petty-cash-limit",
+    "/inventory/product-supplier-update",
+    "/inventory/stock-count-handheld",
+    "/sale/dispatch",
+    "/sale/reservation",
+    "/settings/about",
+    "/settings/credit-debit-reasons",
+    "/settings/currency",
+    "/settings/customer-inquiry",
+    "/settings/default-warehouse",
+    "/settings/font-report",
+    "/settings/font-report-column",
+    "/settings/font-report-company",
+    "/settings/font-report-detail",
+    "/settings/font-report-title",
+    "/settings/journal-format",
+    "/settings/main-map",
+    "/settings/payment-terms",
+    "/settings/product-by-warehouse",
+    "/settings/product-inquiry",
+    "/settings/standard-software",
+    "/settings/work-date",
+    "/tools/transaction-lock",
+    "/transaction/etax",
+  ];
 
   // 2026-10-09 (S1): cancel/approve screens Champ has; they render the operations workbench (connected to the approval API since 2026-10-10).
   const CHAMP_OPERATIONS_ROUTES = [
@@ -25,7 +64,7 @@ describe("menu screen availability", () => {
   ];
 
   // 2026-10-08: เมนูที่ backend ไม่มีประเภทเอกสารรองรับ (ไม่มี config ใน erp-transaction.ts) → pending
-  // 2026-10-10: all routes now connected! /transaction/etax connected to ETaxInvoiceScreen
+  // 2026-10-11: /transaction/etax กลับเป็น pending (คิวเอกสารเป็นข้อมูลจำลอง) — อยู่ใน CHAMP_PENDING_ROUTES ด้านบน
   const NO_BACKEND_DOCUMENT_ROUTES: string[] = [];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
@@ -37,7 +76,12 @@ describe("menu screen availability", () => {
     expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual(expected);
     expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(items.length - expected.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
-    expect(isMenuScreenPending("/transaction/etax")).toBe(false);
+    expect(isMenuScreenPending("/transaction/etax")).toBe(true);
+    // 2026-10-11: ถอดจอเงาแล้ว แต่ใบรับเงินมัดจำยังเป็น "รอพัฒนา" — จอ ERP จริง (hasLineItems:false) ไม่มีช่องกรอกยอดเงิน
+    // บันทึกแล้ว totalamount = 0 เสมอ; WorkTabPanel เช็ก isRetiredBackendScreen ก่อน isErpTransactionRoute จึงเป็นการ์ดรอพัฒนา
+    expect(getErpModuleConfig("/transaction/receivedeposit")?.hasLineItems).toBe(false);
+    expect(isRetiredBackendScreen("/transaction/receivedeposit")).toBe(true);
+    expect(isMenuScreenPending("/transaction/receivedeposit")).toBe(true);
     // เอกสารธุรกรรมที่ยังมี config ทำงานจริงกับตาราง doc (ไม่ใช่ retired / pending)
     expect(isMenuBackendRetired("/transaction/landedcost")).toBe(false);
     expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(false);

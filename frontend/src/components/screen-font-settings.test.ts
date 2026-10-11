@@ -1,37 +1,33 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { isMenuScreenPending } from "@/lib/menu-screen-status";
 import { flattenMenuItems } from "@/lib/menu-data";
 import { appFonts, defaultFontId, normalizeAppFont } from "@/lib/font-data";
-import { FONT_TARGET_CONFIGS, targetFromRoute } from "./screen-font-settings";
 
 describe("Screen Font Settings (Champ parity - Window Fonts)", () => {
-  it("has active routes for all 6 font settings in menu hierarchy under window head", () => {
+  it("keeps /settings/font working and sets the 5 report-font menus to รอพัฒนา (2026-10-11)", () => {
     const items = flattenMenuItems();
-    const targets = [
-      { id: "window-font-screen", route: "/settings/font", label: "เลือกตัวอักษรสำหรับหน้าจอทั่วไป" },
+    const screen = items.find((i) => i.id === "window-font-screen");
+    expect(screen?.route).toBe("/settings/font");
+    expect(screen?.label.th).toContain("เลือกตัวอักษรสำหรับหน้าจอทั่วไป");
+    expect(isMenuScreenPending("/settings/font")).toBe(false);
+
+    // report fonts were saved in localStorage but no code read them -> pending until stored per company in the backend
+    const reportFonts = [
       { id: "window-font-report", route: "/settings/font-report", label: "เลือกตัวอักษรสำหรับรายงานทั่วไป" },
       { id: "window-font-report-title", route: "/settings/font-report-title", label: "เลือกตัวอักษรสำหรับชื่อของรายงาน" },
       { id: "window-font-report-column", route: "/settings/font-report-column", label: "เลือกตัวอักษรสำหรับคอลัมน์ของรายงาน" },
       { id: "window-font-report-detail", route: "/settings/font-report-detail", label: "เลือกตัวอักษรสำหรับรายการย่อยของรายงาน" },
       { id: "window-font-report-company", route: "/settings/font-report-company", label: "เลือกตัวอักษรสำหรับชื่อบริษัทในรายงาน" },
     ];
-
-    for (const t of targets) {
+    for (const t of reportFonts) {
       const item = items.find((i) => i.id === t.id);
       expect(item, t.id).toBeDefined();
       expect(item?.route).toBe(t.route);
       expect(item?.label.th).toContain(t.label);
-      expect(isMenuScreenPending(t.route)).toBe(false);
+      expect(isMenuScreenPending(t.route), t.route).toBe(true);
     }
-  });
-
-  it("correctly resolves target from route parameter", () => {
-    expect(targetFromRoute("/settings/font")).toBe("screen");
-    expect(targetFromRoute("/settings/font-report")).toBe("report");
-    expect(targetFromRoute("/settings/font-report-title")).toBe("report-title");
-    expect(targetFromRoute("/settings/font-report-column")).toBe("report-column");
-    expect(targetFromRoute("/settings/font-report-detail")).toBe("report-detail");
-    expect(targetFromRoute("/settings/font-report-company")).toBe("report-company");
   });
 
   it("provides available fonts with default Thai typography", () => {
@@ -39,28 +35,25 @@ describe("Screen Font Settings (Champ parity - Window Fonts)", () => {
     expect(defaultFontId).toBe("inter");
     expect(normalizeAppFont("sarabun")).toBe("sarabun");
     expect(normalizeAppFont("non-existent-font")).toBe(defaultFontId);
-    expect(Object.keys(FONT_TARGET_CONFIGS)).toHaveLength(6);
   });
 
-  it("supports company-level default persistence and theme selection", () => {
-    const storage: Record<string, string> = {};
-    const mockCompanySettings = {
-      fonts: {
-        screen: "sarabun",
-        report: "sarabun",
-        "report-title": "kanit",
-        "report-column": "prompt",
-        "report-detail": "sarabun",
-        "report-company": "ibm-plex-sans-thai",
-      },
-      theme: "dark",
-      updatedAt: new Date().toISOString(),
-    };
-    storage["bc_company_font_theme_settings"] = JSON.stringify(mockCompanySettings);
-    const stored = JSON.parse(storage["bc_company_font_theme_settings"] || "{}");
-    expect(stored.theme).toBe("dark");
-    expect(stored.fonts.screen).toBe("sarabun");
-    expect(stored.fonts["report-company"]).toBe("ibm-plex-sans-thai");
+  it("offers only the screen font: no target tabs, no company-default button, no report-font storage", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/components/screen-font-settings.tsx"), "utf8");
+    expect(source).not.toContain("FONT_TARGET_CONFIGS");
+    expect(source).not.toContain("handleSaveCompanyDefault");
+    expect(source).not.toContain("bc_company_font_theme_settings");
+    expect(source).not.toContain("bc_app_font_report");
+    // heading and description come from language keys, not hard-coded text (no "(Font for General Screens)" subtitle)
+    expect(source).toContain('tr("window_font_screen"');
+    expect(source).toContain('"font_screen_description"');
+    expect(source).not.toContain("Font for General Screens");
+    // theme bar + footer text also come from language keys (Thai left on screen in en mode = bug)
+    for (const key of ["font_theme_mode_label", "font_theme_mode_hint", "font_theme_light", "font_theme_dark", "font_theme_system", "font_compat_note"]) {
+      expect(source, key).toContain(`tr("${key}"`);
+    }
+    expect(source).not.toMatch(/>\s*(สว่าง|มืด|ตามระบบ)\s*\(/);
+    // the screen font still takes effect immediately (cookie + CSS variable)
+    expect(source).toContain("applyAppFont(fontId)");
+    expect(source).toContain("writeFontCookie(fontId)");
   });
 });
-

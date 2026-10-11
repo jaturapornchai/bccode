@@ -166,8 +166,12 @@ describe("Champ-style menu bar layout", () => {
     const adj = items.get("purchase-receipt-date-adjust");
     expect(adj?.route).toBe("/procurement/delivery-dates");
     expect(isMenuScreenPending("/procurement/delivery-dates")).toBe(false);
+    // 2026-10-11: window-font-screen is the only font menu with a working screen; the 5 report-font menus and
+    // help-about / help-standard-software are UI-only facades set to "รอพัฒนา" (facade-screens.md D-4, D-5, D-6)
+    const fontScreen = items.get("window-font-screen");
+    expect(fontScreen?.route).toBe("/settings/font");
+    expect(isMenuScreenPending("/settings/font")).toBe(false);
     for (const [id, route] of [
-      ["window-font-screen", "/settings/font"],
       ["window-font-report", "/settings/font-report"],
       ["window-font-report-title", "/settings/font-report-title"],
       ["window-font-report-column", "/settings/font-report-column"],
@@ -178,7 +182,7 @@ describe("Champ-style menu bar layout", () => {
     ]) {
       const f = items.get(id);
       expect(f?.route).toBe(route);
-      expect(isMenuScreenPending(route)).toBe(false);
+      expect(isMenuScreenPending(route)).toBe(true);
     }
 
     // ยกเลิกเอกสารที่ผ่านรายการแล้ว: Champ 5.5 dropdown "บัญชี" มีเป็นเมนูของตัวเองต่อจาก "ผ่านรายการ"
