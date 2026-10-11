@@ -88,7 +88,8 @@ CREATE TABLE IF NOT EXISTS cheque_registers (
 	CHECK ((cheque_type = 0 AND status BETWEEN 0 AND 6) OR (cheque_type = 1 AND status BETWEEN 0 AND 3)),
 	CHECK (cheque_type = 0 OR (book_code IS NOT NULL AND doc_date <= due_date)),
 	-- เช็ครับสถานะ <> 0 ต้องมีสมุด ยกเว้นยกเลิกเช็คในมือ (423 ชนิด 0 ไม่ใช้สมุด cqfrmcheqincancel.cpp)
-	CHECK (cheque_type = 1 OR status IN (0,4) OR book_code IS NOT NULL),
+	-- และขายลด (424 ไม่บังคับสมุด: การตรวจถูก comment ออกที่ cqfrmcheqinsale.cpp:374-382)
+	CONSTRAINT cheque_registers_in_book_check CHECK (cheque_type = 1 OR status IN (0,4,5) OR book_code IS NOT NULL),
 	CHECK (cheque_type = 0 OR sale_code = '')
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_in_no  ON cheque_registers (company, cheque_no, bank_code, bank_branch_code) WHERE cheque_type = 0 AND deleted_at IS NULL;
@@ -97,6 +98,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_doc_no ON cheque_registers (company,
 CREATE INDEX IF NOT EXISTS ix_cheque_select  ON cheque_registers (company, cheque_type, status, due_date);
 CREATE INDEX IF NOT EXISTS ix_cheque_partner ON cheque_registers (company, cheque_type, partner_code);
 CREATE INDEX IF NOT EXISTS ix_cheque_book    ON cheque_registers (company, book_code);
+-- ตารางที่สร้างก่อน 2026-10-11 มี CHECK สมุดของเช็ครับแบบไม่มีชื่อ (status IN (0,4)) ซึ่ง CREATE TABLE IF NOT EXISTS ไม่แก้ให้:
+-- ลบตัวเดิม (หาจากเนื้อหา เพราะชื่ออัตโนมัติขึ้นกับลำดับ CHECK) แล้วใส่ตัวที่มีชื่อ — ทำครั้งเดียว รอบถัดไปข้ามทั้งก้อน
+DO $$
+DECLARE old_check text;
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'cheque_registers'::regclass AND conname = 'cheque_registers_in_book_check') THEN
+		FOR old_check IN SELECT conname FROM pg_constraint WHERE conrelid = 'cheque_registers'::regclass AND contype = 'c'
+			AND pg_get_constraintdef(oid) LIKE '%book_code IS NOT NULL%' AND pg_get_constraintdef(oid) NOT LIKE '%doc_date%'
+		LOOP
+			EXECUTE format('ALTER TABLE cheque_registers DROP CONSTRAINT %I', old_check);
+		END LOOP;
+		ALTER TABLE cheque_registers ADD CONSTRAINT cheque_registers_in_book_check CHECK (cheque_type = 1 OR status IN (0,4,5) OR book_code IS NOT NULL);
+	END IF;
+END $$;
 
 -- ประวัติของเช็ค (append-only; ยกเลิกด้วย voided_*): edit = แก้ฟิลด์หลักหลังยืนยัน, manual_status = แก้สถานะในจอทะเบียน (D8)
 CREATE TABLE IF NOT EXISTS cheque_events (

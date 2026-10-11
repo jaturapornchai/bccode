@@ -92,10 +92,10 @@ export function isRegisterDraftDirty(draft: RegisterDraft, baseline: RegisterDra
   return JSON.stringify(trimRegister(draft)) !== JSON.stringify(trimRegister(baseline));
 }
 
-/** สมุดเงินฝากบังคับเมื่อ: เช็คจ่ายเสมอ / เช็ครับที่สถานะไม่ใช่ "เช็คในมือ" (0) และไม่ใช่ "เช็คยกเลิก" (4) — backend ตรวจซ้ำ */
+/** สมุดเงินฝากบังคับเมื่อ: เช็คจ่ายเสมอ / เช็ครับที่สถานะไม่ใช่ "เช็คในมือ" (0), "เช็คยกเลิก" (4) และ "ขายลด" (5: ขายลดไม่บังคับสมุด) — backend ตรวจซ้ำ */
 export function registerBookRequired(chequeType: number, status: number): boolean {
   if (chequeType === CHEQUE_TYPE_ISSUED) return true;
-  return status !== 0 && status !== 4;
+  return status !== 0 && status !== 4 && status !== 5;
 }
 
 /** ชื่อช่องบังคับที่ยังว่างหรือผิดรูปแบบ เรียงตามลำดับช่องบนจอ (ว่าง = ครบ) */

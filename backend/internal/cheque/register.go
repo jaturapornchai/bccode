@@ -253,12 +253,13 @@ func validRegisterStatus(chequeType, status int, creating bool) bool {
 }
 
 // registerBook: เช็ครับในมือระบุสมุดหรือไม่ก็ได้ (Champ cqfrmcheqin.cpp:391-400,488 บันทึก BookNo ตามที่เลือก ใช้กรองตอนนำเช็คเข้า 420/424);
-// เช็ครับสถานะอื่นต้องมีสมุด ยกเว้นยกเลิกแล้ว (ยกเลิกเช็คในมือ 423 ชนิด 0 ไม่ใช้สมุด); เช็คจ่ายบังคับสมุดตั้งแต่ normalizeRegister
+// เช็ครับสถานะอื่นต้องมีสมุด ยกเว้นสถานะที่เอกสารพาไปได้โดยไม่มีสมุด (ยกเลิกเช็คในมือ 423 ชนิด 0, ขายลด 424 ที่ไม่ระบุสมุด
+// cqfrmcheqinsale.cpp:374-382) ให้ตรงกับ CHECK ของตาราง — ไม่เช่นนั้นแก้ทะเบียนเช็คเหล่านี้ไม่ได้; เช็คจ่ายบังคับสมุดตั้งแต่ normalizeRegister
 func registerBook(chequeType, status int, book string) (string, error) {
 	if chequeType != TypeReceived || status == InOnHand {
 		return book, nil
 	}
-	if book == "" && status != InCancelled {
+	if book == "" && status != InCancelled && status != InDiscounted {
 		return "", badRequest("cheque_err_book_required", "book_code")
 	}
 	return book, nil

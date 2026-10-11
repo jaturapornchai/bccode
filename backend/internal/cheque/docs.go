@@ -199,8 +199,13 @@ type docLine struct {
 
 // lockDocCheques ล็อกเช็คทุกใบของเอกสาร (เรียงตาม id กัน deadlock) แล้วตรวจกับกติกาของเอกสาร:
 // สถานะที่เลือกได้ + วันที่ + สมุด (checkSelectable), วันที่เอกสารไม่ก่อน event สถานะล่าสุดของเช็ค, ค่าใช้จ่าย ≤ ยอดเช็ค
-func lockDocCheques(ctx context.Context, tx *sql.Tx, company string, v docValues) ([]docLine, [3]decimal.Decimal, error) {
+// released = เช็คที่การแก้เอกสารนี้เพิ่งถอนผลรอบเดิม (releaseDoc); สร้างเอกสารใหม่ส่ง nil
+func lockDocCheques(ctx context.Context, tx *sql.Tx, company string, v docValues, released []string) ([]docLine, [3]decimal.Decimal, error) {
 	var totals [3]decimal.Decimal
+	releasedSet := make(map[string]bool, len(released))
+	for _, id := range released {
+		releasedSet[id] = true
+	}
 	ids := make([]string, len(v.lines))
 	for i, l := range v.lines {
 		ids[i] = l.chequeID
@@ -240,7 +245,13 @@ func lockDocCheques(ctx context.Context, tx *sql.Tx, company string, v docValues
 		if !ok {
 			return nil, totals, notFound("cheque_err_not_found", in.field)
 		}
-		if err = checkSelectable(v.flag, v.cancelType, v.cancelPassd, v.date, v.book, l.cheque, in.field); err != nil {
+		checked := l.cheque
+		// ถอนผลรอบเดิมคืนเช็คเป็นในมือและล้างสมุด (CQFrmBaseTransStatus.cpp:188-190) — สมุดว่างนี้มาจากการแก้เอกสารเอง
+		// ไม่ใช่เช็คของสมุดอื่น จึงไม่ตรวจสมุดตรงกับเอกสารซ้ำ (ไม่เช่นนั้นแก้ 420/424 ของเช็คที่อยู่ในมือพร้อมสมุดไม่ได้เลย)
+		if releasedSet[checked.id] && checked.status == InOnHand && checked.book == "" {
+			checked.book = v.book
+		}
+		if err = checkSelectable(v.flag, v.cancelType, v.cancelPassd, v.date, v.book, checked, in.field); err != nil {
 			return nil, totals, err
 		}
 		// สถานะของเช็ค derive จาก event ล่าสุดตามวันที่ จึงห้ามเอกสารลงวันที่ก่อน event สถานะล่าสุดของเช็ค
@@ -402,7 +413,7 @@ func CreateDoc(ctx context.Context, db *sql.DB, ledger Ledger, scope Scope, requ
 	if err != nil {
 		return Doc{}, err
 	}
-	lines, totals, err := lockDocCheques(ctx, tx, scope.Company, v)
+	lines, totals, err := lockDocCheques(ctx, tx, scope.Company, v, nil)
 	if err != nil {
 		return Doc{}, err
 	}
@@ -487,15 +498,16 @@ func lockDoc(ctx context.Context, tx *sql.Tx, company string, flag int, docNo st
 }
 
 // releaseDoc ถอนผลของเอกสารเดิม: void event ของเช็คทุกใบ → คำนวณสถานะเช็คใหม่จากประวัติ → กลับรายการใบสำคัญ
-func releaseDoc(ctx context.Context, tx *sql.Tx, ledger Ledger, scope Scope, flag int, docNo, reason string, edit bool) error {
+// แล้วคืนเช็คที่ถูกถอนผล (UpdateDoc ใช้ยกเว้นการตรวจสมุดของเช็คที่ถูกล้างสมุดตอนถอนผล)
+func releaseDoc(ctx context.Context, tx *sql.Tx, ledger Ledger, scope Scope, flag int, docNo, reason string, edit bool) ([]string, error) {
 	ids, err := voidDocEvents(ctx, tx, scope, flag, docNo, reason)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err = restoreStates(ctx, tx, scope, ids); err != nil {
-		return err
+		return nil, err
 	}
-	return reverseDocJournal(ctx, tx, ledger, scope, flag, docNo, edit)
+	return ids, reverseDocJournal(ctx, tx, ledger, scope, flag, docNo, edit)
 }
 
 // UpdateDoc แก้เอกสารสถานะ: ถอนผลเดิมทั้งหมด (event void + ใบสำคัญกลับรายการ) แล้วบันทึกเนื้อหาใหม่เป็นรอบใหม่
@@ -532,7 +544,8 @@ func UpdateDoc(ctx context.Context, db *sql.DB, ledger Ledger, scope Scope, requ
 			return Doc{}, err
 		}
 	}
-	if err = releaseDoc(ctx, tx, ledger, scope, v.flag, v.docNo, docReasonText("erp_gl_reverse_edit", v.docNo), true); err != nil {
+	released, err := releaseDoc(ctx, tx, ledger, scope, v.flag, v.docNo, docReasonText("erp_gl_reverse_edit", v.docNo), true)
+	if err != nil {
 		return Doc{}, err
 	}
 	if _, err = tx.ExecContext(ctx, `DELETE FROM cheque_doc_lines WHERE company = $1 AND transflag = $2 AND doc_no = $3`, scope.Company, v.flag, v.docNo); err != nil {
@@ -542,7 +555,7 @@ func UpdateDoc(ctx context.Context, db *sql.DB, ledger Ledger, scope Scope, requ
 	if err != nil {
 		return Doc{}, err
 	}
-	lines, totals, err := lockDocCheques(ctx, tx, scope.Company, v)
+	lines, totals, err := lockDocCheques(ctx, tx, scope.Company, v, released)
 	if err != nil {
 		return Doc{}, err
 	}
@@ -604,7 +617,7 @@ func CancelDoc(ctx context.Context, db *sql.DB, ledger Ledger, scope Scope, requ
 	if err = ledger.CheckDate(ctx, tx, scope, cur.date); err != nil {
 		return Doc{}, err
 	}
-	if err = releaseDoc(ctx, tx, ledger, scope, flag, docNo, reason, false); err != nil {
+	if _, err = releaseDoc(ctx, tx, ledger, scope, flag, docNo, reason, false); err != nil {
 		return Doc{}, err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE cheque_docs SET status = 'cancelled', cancel_reason = $4, cancelled_at = now(), cancelled_by = $5,

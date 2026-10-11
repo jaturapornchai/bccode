@@ -417,7 +417,7 @@ CREATE TABLE IF NOT EXISTS cheque_registers (
   CHECK ((deleted_at IS NULL) = (deleted_by IS NULL)),
   CHECK ((cheque_type = 0 AND status BETWEEN 0 AND 6) OR (cheque_type = 1 AND status BETWEEN 0 AND 3)),
   CHECK (cheque_type = 0 OR (book_code IS NOT NULL AND doc_date <= due_date)),   -- เช็คจ่าย: สมุดบังคับ, วันที่จ่าย <= ถึงกำหนด
-  CHECK (cheque_type = 1 OR status = 0 OR book_code IS NOT NULL),               -- เช็ครับ: สถานะ <> 0 ต้องมีสมุด
+  CONSTRAINT cheque_registers_in_book_check CHECK (cheque_type = 1 OR status IN (0,4,5) OR book_code IS NOT NULL), -- เช็ครับ: ต้องมีสมุด ยกเว้น 0 ในมือ, 4 (423 ชนิด 0 ไม่ใช้สมุด), 5 (424 ไม่บังคับสมุด cqfrmcheqinsale.cpp:374-382); ตารางเก่าที่มี CHECK เดิม status = 0 ถูกแทนด้วย DO block ใน schema.go
   CHECK (cheque_type = 0 OR sale_code = '')
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_in_no   ON cheque_registers (company, cheque_no, bank_code, bank_branch_code) WHERE cheque_type = 0 AND deleted_at IS NULL;
@@ -650,7 +650,7 @@ CREATE TABLE IF NOT EXISTS gl_journal_cheques (
    - ทะเบียนไม่ตรวจงวดปิด (Champ ไม่ตรวจ เพราะทะเบียนไม่ลงบัญชี)
 8. **สถานะในจอทะเบียน:**
    - เลือกได้เฉพาะตอนสร้าง (ยกมา/เช็คที่ไม่มีเอกสารต้นทาง)
-     - เช็ครับ: 0..6 แต่ ≠ 0 ต้องมีสมุด
+     - เช็ครับ: 0..6 ต้องมีสมุด ยกเว้น 0, 4 และ 5 (ขายลด 424 ไม่บังคับสมุด จึงยอมให้ทะเบียนสถานะ 5 ไม่มีสมุดตาม CHECK `cheque_registers_in_book_check`; Champ จอทะเบียนบังคับเมื่อ ≠ 0 `cqfrmcheqin.cpp:393-401`)
      - เช็คจ่าย: 0 หรือ 3 เตรียมจ่าย
    - หลังสร้าง: เปลี่ยนด้วยเอกสารสถานะ (ลงบัญชี) หรือแก้ตรงในจอทะเบียนตาม Champ หลังถามยืนยัน (ไม่ลงบัญชี เหมือน Champ)
    - **D8 ตัดสินแล้ว 2026-10-11 = ทำตาม Champ**: แก้สถานะในจอทะเบียนได้โดยตรง; ประวัติยังครบเพราะบันทึก event `manual_status` (from→to, ผู้แก้, เวลา) แบบ append-only

@@ -127,6 +127,10 @@ func TestRegisterStatusAndBookRules(t *testing.T) {
 	if book, err := registerBook(TypeReceived, InCancelled, ""); err != nil || book != "" {
 		t.Fatalf("cancelled on-hand cheque needs no book: %q, %v", book, err)
 	}
+	// ขายลด 424 ไม่บังคับสมุด (cqfrmcheqinsale.cpp:374-382) — เช็คขายลดที่ไม่มีสมุดต้องแก้ทะเบียนต่อได้
+	if book, err := registerBook(TypeReceived, InDiscounted, ""); err != nil || book != "" {
+		t.Fatalf("discounted cheque without a book: %q, %v", book, err)
+	}
 	if book, err := registerBook(TypeIssued, OutCleared, "SCB01"); err != nil || book != "SCB01" {
 		t.Fatalf("issued cheque keeps its book: %q, %v", book, err)
 	}

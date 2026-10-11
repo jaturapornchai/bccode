@@ -123,11 +123,12 @@ describe("register draft", () => {
     expect(isRegisterDraftDirty({ ...base, amount: "15000.01" }, base)).toBe(true);
   });
 
-  it("requires a book for issued cheques and for received cheques that are not on-hand or cancelled", () => {
+  it("requires a book for issued cheques and for received cheques that are not on-hand, cancelled or discounted", () => {
     expect(registerBookRequired(1, 0)).toBe(true);
     expect(registerBookRequired(0, 0)).toBe(false);
     expect(registerBookRequired(0, 4)).toBe(false);
-    for (const status of [1, 2, 3, 5, 6]) expect(registerBookRequired(0, status), String(status)).toBe(true);
+    expect(registerBookRequired(0, 5)).toBe(false);
+    for (const status of [1, 2, 3, 6]) expect(registerBookRequired(0, status), String(status)).toBe(true);
   });
 
   it("lists missing required fields in screen order", () => {

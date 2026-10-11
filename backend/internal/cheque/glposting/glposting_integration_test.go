@@ -516,6 +516,38 @@ func TestChequeLifecycleOnRealLedger(t *testing.T) {
 	}
 	f.wantState(d.ID, cheque.InDiscounted, "KBANK-02")
 
+	// 10.1 แก้ขายลดของเช็คที่อยู่ในมือพร้อมสมุด: ถอนผลเดิมคืนเช็คเป็นในมือและล้างสมุด (CQFrmBaseTransStatus.cpp:188-190)
+	// แล้วต้องบันทึกรอบใหม่ได้ (เดิมติด cheque_err_book_mismatch เพราะสมุดของเช็คว่างแล้ว)
+	discount, err = cheque.UpdateDoc(f.ctx, f.db, glposting.Ledger{}, f.scope, f.rid(), cheque.DocInput{
+		Flag: cheque.FlagDiscount, DocNo: discount.DocNo, Version: discount.Version, DocDate: "2026-10-21", BookCode: "KBANK-02",
+		Lines: []cheque.DocLineInput{{ChequeID: d.ID, FeeAmount: "60.00"}},
+	})
+	if err != nil {
+		t.Fatalf("edit the discount of an on-hand cheque with a book: %v", err)
+	}
+	if discount.FeeAmount != "60.00" || discount.NetAmount != "4940.00" {
+		t.Fatalf("edited discount = %+v", discount)
+	}
+	f.wantState(d.ID, cheque.InDiscounted, "KBANK-02")
+
+	// 10.2 ขายลดไม่บังคับสมุด (cqfrmcheqinsale.cpp:374-382): เช็คในมือที่ไม่มีสมุด → สถานะ 5 ไม่มีสมุด และยังแก้ทะเบียนต่อได้
+	g := f.receive("10234595", "3200.00", "2026-10-06", "2026-12-15")
+	noBook := f.mustDoc(cheque.FlagDiscount, "2026-10-22", "", nil, cheque.DocLineInput{ChequeID: g.ID, FeeAmount: "20.00"})
+	if noBook.BookCode != "" || noBook.NetAmount != "3180.00" {
+		t.Fatalf("discount without a book = %+v", noBook)
+	}
+	f.wantState(g.ID, cheque.InDiscounted, "")
+	gNow, err := cheque.GetRegister(f.ctx, f.db, "01", g.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = cheque.UpdateRegister(f.ctx, f.db, f.scope, f.rid(), cheque.RegisterInput{ID: g.ID, Version: gNow.Version,
+		ChequeType: cheque.TypeReceived, DocDate: "2026-10-06", DueDate: "2026-12-15", PartnerCode: "AR-0012", ChequeNo: "10234595",
+		BankCode: "KBANK", BankBranchCode: "0123", Amount: "3200.00", Description: "รับชำระค่าข้อต่อท่อตามใบแจ้งหนี้ IV6910-0011"}); err != nil {
+		t.Fatalf("edit the register of a discounted cheque without a book: %v", err)
+	}
+	f.wantState(g.ID, cheque.InDiscounted, "")
+
 	// 11. เช็คจ่ายผ่าน 425 ต้องระบุสมุด (cqfrmcheqoutpass.cpp:362-366) → ไม่มีอะไรค้าง
 	_, err = f.doc(cheque.FlagIssuedClear, "2026-10-12", "", nil, cheque.DocLineInput{ChequeID: c.ID})
 	wantKey(t, err, "cheque_err_book_required")
@@ -601,5 +633,50 @@ func TestChequeLifecycleOnRealLedger(t *testing.T) {
 	f.wantState(b.ID, cheque.InCleared, "SCB-01")
 	if check, err = cheque.CheckRecalculate(f.ctx, f.db, "01"); err != nil || len(check.Mismatches) != 0 {
 		t.Fatalf("after apply = %+v, %v", check, err)
+	}
+}
+
+// TestEnsureSchemaRelaxesReceivedBookCheck: ฐานที่สร้างตารางทะเบียนเช็คไว้ก่อน (CHECK เดิมห้ามเช็ครับสถานะ 5 ไม่มีสมุด)
+// ต้องได้ CHECK ใหม่จาก EnsureSchema เอง เพราะ CREATE TABLE IF NOT EXISTS ไม่แตะตารางที่มีอยู่แล้ว
+func TestEnsureSchemaRelaxesReceivedBookCheck(t *testing.T) {
+	f := newChequeIT(t)
+	var schema string
+	if err := f.db.QueryRowContext(f.ctx, `SELECT current_schema()`).Scan(&schema); err != nil {
+		t.Fatal(err)
+	}
+	f.exec(`ALTER TABLE cheque_registers DROP CONSTRAINT IF EXISTS cheque_registers_in_book_check`)
+	f.exec(`ALTER TABLE cheque_registers ADD CHECK (cheque_type = 1 OR status IN (0,4) OR book_code IS NOT NULL)`)
+
+	// การเชื่อมต่อใหม่ = EnsureSchema รันจริงอีกครั้ง (ไม่ติด cache ของ *sql.DB เดิม); รันซ้ำสองรอบต้องไม่ error
+	u, err := url.Parse(os.Getenv("BC_GL_TEST_POSTGRES_DSN"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := u.Query()
+	query.Set("search_path", schema)
+	u.RawQuery = query.Encode()
+	db, err := sql.Open("postgres", u.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	for i := 0; i < 2; i++ {
+		if err = cheque.EnsureSchema(f.ctx, db); err != nil {
+			t.Fatalf("ensure schema run %d: %v", i+1, err)
+		}
+	}
+
+	insert := `INSERT INTO cheque_registers (company, id, cheque_type, doc_no, doc_date, due_date, partner_code, cheque_no, bank_code, bank_branch_code,
+		status, amount, home_amount, created_by, updated_by)
+		VALUES ('01', gen_random_uuid(), 0, $1, '2026-10-01', '2026-10-15', 'AR-0012', $2, 'KBANK', '0123', $3, 1800.00, 1800.00, 'cq-it', 'cq-it')`
+	if _, err = f.db.ExecContext(f.ctx, insert, "CHQIN6910-0901", "10239901", cheque.InDiscounted); err != nil {
+		t.Fatalf("discounted received cheque without a book must be allowed: %v", err)
+	}
+	if _, err = f.db.ExecContext(f.ctx, insert, "CHQIN6910-0902", "10239902", cheque.InDeposited); err == nil {
+		t.Fatal("deposited received cheque without a book must still be refused")
+	}
+	if n := f.count(`SELECT count(*) FROM pg_constraint WHERE conrelid = 'cheque_registers'::regclass AND contype = 'c'
+		AND pg_get_constraintdef(oid) LIKE '%book_code IS NOT NULL%' AND pg_get_constraintdef(oid) NOT LIKE '%doc_date%'`); n != 1 {
+		t.Fatalf("received-cheque book checks = %d, want exactly the new one", n)
 	}
 }
