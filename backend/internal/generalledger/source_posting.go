@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
+	"smlcloudplatform/internal/goapi/language"
 )
 
 // ExecuteSourceTx runs a journal command (create, post or reverse) for a module that posts on behalf of its own
@@ -98,7 +101,35 @@ func SourceAccountIsCash(ctx context.Context, tx *sql.Tx, scope Scope, code stri
 const (
 	codeSourceFiscalYearNotFound = "source_fiscal_year_not_found"
 	codeSourceFiscalYearClosed   = "source_fiscal_year_closed"
+	codeSourcePeriodLocked       = "source_period_locked"
 )
+
+// CheckSourceDateOpen is the period-close guard of a source document (Champ IsPeriodClose): every create, edit,
+// delete, approve, unapprove or cancel of an ERP document checks its date inside the module transaction before
+// it writes. It returns the open fiscal year code, or a coded user error when there is no open year or the date
+// falls in a locked period.
+func CheckSourceDateOpen(ctx context.Context, tx *sql.Tx, scope Scope, date string) (string, error) {
+	year, err := SourceFiscalYear(ctx, tx, scope, date)
+	if err != nil {
+		return "", err
+	}
+	locked, err := periodLocked(ctx, tx, scope.Company, date)
+	if err != nil {
+		return "", err
+	}
+	if locked {
+		return "", periodLockedError(date)
+	}
+	return year, nil
+}
+
+// periodLockedError is the coded failure for a date inside a locked period; its Thai text is the th cell of the
+// gl_err_source_period_locked row, so the wording lives in languages.tsv only.
+func periodLockedError(date string) *UserError {
+	e := fieldError(codeSourcePeriodLocked, "date", strings.ReplaceAll(language.Text("gl_err_"+codeSourcePeriodLocked, "th"), "{0}", date))
+	e.Args = []string{date}
+	return e
+}
 
 // SourceReversalDate dates the reversal of a posted source voucher on the voucher's own date while the ledger
 // still takes vouchers there (the period nets to zero and a corrected document posts back into it). A date in a

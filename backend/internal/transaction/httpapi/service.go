@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"smlcloudplatform/internal/doctype"
 	gl "smlcloudplatform/internal/generalledger"
+	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 )
 
 type Store struct{}
@@ -18,7 +20,17 @@ func NewStore() *Store {
 	return &Store{}
 }
 
-func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transflag int, q string, status string, offset, limit int) ([]ErpTransactionDoc, int, error) {
+// DocListFilter คือเงื่อนไขค้นหารายการเอกสาร: วันที่ YYYY-MM-DD เป็นวันตามปฏิทินของ holding รวมวันต้นและวันปลาย,
+// custcode ตรงตัว, status = pending|approved|cancelled|active
+type DocListFilter struct {
+	Q        string
+	Status   string
+	CustCode string
+	FromDate string
+	ToDate   string
+}
+
+func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transflag int, filter DocListFilter, offset, limit int) ([]ErpTransactionDoc, int, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -30,15 +42,39 @@ func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transf
 	args := []any{company, transflag}
 	argIdx := 3
 
-	if strings.TrimSpace(q) != "" {
-		search := "%" + strings.TrimSpace(q) + "%"
+	if q := strings.TrimSpace(filter.Q); q != "" {
+		search := "%" + q + "%"
 		whereClause += fmt.Sprintf(" AND (docno ILIKE $%d OR custcode ILIKE $%d)", argIdx, argIdx)
 		args = append(args, search)
 		argIdx++
 	}
 
-	status = strings.ToLower(strings.TrimSpace(status))
-	switch status {
+	// ช่วงวันที่เป็นขอบเวลาครึ่งเปิด [วันต้น 00:00, วันถัดจากวันปลาย 00:00) ตามเวลาของ holding — ใช้ดัชนี docdatetime ได้
+	if from := strings.TrimSpace(filter.FromDate); from != "" {
+		start, err := dayStart(from)
+		if err != nil {
+			return nil, 0, listDateInvalidError("fromdate", from)
+		}
+		whereClause += fmt.Sprintf(" AND docdatetime >= $%d", argIdx)
+		args = append(args, start)
+		argIdx++
+	}
+	if to := strings.TrimSpace(filter.ToDate); to != "" {
+		start, err := dayStart(to)
+		if err != nil {
+			return nil, 0, listDateInvalidError("todate", to)
+		}
+		whereClause += fmt.Sprintf(" AND docdatetime < $%d", argIdx)
+		args = append(args, start.AddDate(0, 0, 1))
+		argIdx++
+	}
+	if custCode := strings.TrimSpace(filter.CustCode); custCode != "" {
+		whereClause += fmt.Sprintf(" AND custcode = $%d", argIdx)
+		args = append(args, custCode)
+		argIdx++
+	}
+
+	switch strings.ToLower(strings.TrimSpace(filter.Status)) {
 	case "pending":
 		whereClause += " AND NOT COALESCE(iscancel, false) AND COALESCE(approval_status, '') = ''"
 	case "approved":
@@ -63,7 +99,7 @@ func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transf
 		COALESCE(isclosed, false), COALESCE(branchid, ''),
 		COALESCE(custname, ''), COALESCE(description, ''), COALESCE(remark, ''), created_at, modified_at,
 		COALESCE(approval_status, ''), COALESCE(approved_by, ''), approved_at,
-		COALESCE(cancelled_by, ''), cancelled_at, COALESCE(cancelreason, '')
+		COALESCE(cancelled_by, ''), cancelled_at, COALESCE(cancelreason, ''), COALESCE(creator_code, '')
 		FROM doc %s ORDER BY docdatetime DESC, docno DESC LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
 
 	args = append(args, limit, offset)
@@ -87,7 +123,7 @@ func (s *Store) ListDocs(ctx context.Context, db *sql.DB, company string, transf
 			&d.IsClosed, &d.BranchCode,
 			&d.CustName, &d.Description, &d.Remark, &createdAt, &modifiedAt,
 			&d.ApprovalStatus, &d.ApprovedBy, &d.ApprovedAt,
-			&d.CancelledBy, &d.CancelledAt, &d.CancelReason,
+			&d.CancelledBy, &d.CancelledAt, &d.CancelReason, &d.CreatedBy,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan doc row: %w", err)
 		}
@@ -246,7 +282,7 @@ func isCancellableModule(transflag int) bool {
 	return ok
 }
 
-// ApproveDoc อนุมัติเอกสารหนึ่งใบ (เปลี่ยนสถานะจาก '' เป็น 'approved' พร้อมบันทึกผู้/เวลาอนุมัติ และลง audit log)
+// ApproveDoc อนุมัติเอกสารหนึ่งใบ (เปลี่ยนสถานะจาก ” เป็น 'approved' พร้อมบันทึกผู้/เวลาอนุมัติ และลง audit log)
 func (s *Store) ApproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, docIdOrNo string) (*ErpTransactionDoc, error) {
 	if !isApprovableModule(dt.Flag) {
 		return nil, docNotPendingError()
@@ -270,8 +306,9 @@ func (s *Store) ApproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt d
 	var docNo string
 	var isCancel bool
 	var approvalStatus string
-	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, '') FROM doc %s FOR UPDATE", where)
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus); err != nil {
+	var docDate sql.NullTime
+	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, ''), docdatetime FROM doc %s FOR UPDATE", where)
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus, &docDate); err != nil {
 		return nil, err
 	}
 
@@ -280,6 +317,9 @@ func (s *Store) ApproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt d
 	}
 	if approvalStatus != "" {
 		return nil, docNotPendingError()
+	}
+	if err := checkDocDates(ctx, tx, scope, docDate); err != nil {
+		return nil, err
 	}
 
 	now := time.Now().UTC()
@@ -309,7 +349,7 @@ func (s *Store) ApproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt d
 	return s.GetDoc(ctx, db, scope.Company, dt.Flag, docNo)
 }
 
-// UnapproveDoc ยกเลิกการอนุมัติเอกสาร (เปลี่ยนสถานะจาก 'approved' กลับเป็น '')
+// UnapproveDoc ยกเลิกการอนุมัติเอกสาร (เปลี่ยนสถานะจาก 'approved' กลับเป็น ”)
 func (s *Store) UnapproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, docIdOrNo string, reason string) (*ErpTransactionDoc, error) {
 	if !isApprovableModule(dt.Flag) {
 		return nil, docNotApprovedError()
@@ -333,8 +373,9 @@ func (s *Store) UnapproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt
 	var docNo string
 	var isCancel bool
 	var approvalStatus string
-	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, '') FROM doc %s FOR UPDATE", where)
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus); err != nil {
+	var docDate sql.NullTime
+	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, ''), docdatetime FROM doc %s FOR UPDATE", where)
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus, &docDate); err != nil {
 		return nil, err
 	}
 
@@ -358,6 +399,9 @@ func (s *Store) UnapproveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt
 	}
 	if hasDownstream {
 		return nil, docHasDownstreamError()
+	}
+	if err := checkDocDates(ctx, tx, scope, docDate); err != nil {
+		return nil, err
 	}
 
 	now := time.Now().UTC()
@@ -422,8 +466,9 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	var docNo string
 	var isCancel bool
 	var approvalStatus string
-	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, '') FROM doc %s FOR UPDATE", where)
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus); err != nil {
+	var docDate sql.NullTime
+	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, ''), docdatetime FROM doc %s FOR UPDATE", where)
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &isCancel, &approvalStatus, &docDate); err != nil {
 		return nil, err
 	}
 
@@ -449,6 +494,9 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	}
 	if hasDownstream {
 		return nil, docHasDownstreamError()
+	}
+	if err := checkDocDates(ctx, tx, scope, docDate); err != nil {
+		return nil, err
 	}
 
 	now := time.Now().UTC()
@@ -491,99 +539,82 @@ func (s *Store) CancelDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 }
 
 // ApproveBatchDocs อนุมัติเอกสารหลายใบพร้อมกันแบบทีละใบ (ไม่ล้มเหลวยกชุดตามแบบ Champ)
-func (s *Store) ApproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string) ([]BatchApproveItemResult, error) {
-	results := make([]BatchApproveItemResult, 0, len(ids))
-	for _, id := range ids {
-		trimmedID := strings.TrimSpace(id)
-		if trimmedID == "" {
-			continue
-		}
-		_, err := s.ApproveDoc(ctx, db, scope, dt, trimmedID)
-		if err == nil {
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: true,
-			})
-		} else {
-			code := "error"
-			msg := err.Error()
-			if uerr, isUser := gl.AsUserError(err); isUser {
-				code = uerr.Code
-				msg = uerr.Message
-			}
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: false,
-				Code:    code,
-				Message: msg,
-			})
-		}
-	}
-	return results, nil
+func (s *Store) ApproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, lang string) []BatchApproveItemResult {
+	return runBatch(ids, lang, func(id string) error {
+		_, err := s.ApproveDoc(ctx, db, scope, dt, id)
+		return err
+	})
 }
 
 // UnapproveBatchDocs ยกเลิกการอนุมัติเอกสารหลายใบพร้อมกันแบบทีละใบ
-func (s *Store) UnapproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason string) ([]BatchApproveItemResult, error) {
-	results := make([]BatchApproveItemResult, 0, len(ids))
-	for _, id := range ids {
-		trimmedID := strings.TrimSpace(id)
-		if trimmedID == "" {
-			continue
-		}
-		_, err := s.UnapproveDoc(ctx, db, scope, dt, trimmedID, reason)
-		if err == nil {
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: true,
-			})
-		} else {
-			code := "error"
-			msg := err.Error()
-			if uerr, isUser := gl.AsUserError(err); isUser {
-				code = uerr.Code
-				msg = uerr.Message
-			}
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: false,
-				Code:    code,
-				Message: msg,
-			})
-		}
-	}
-	return results, nil
+func (s *Store) UnapproveBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string) []BatchApproveItemResult {
+	return runBatch(ids, lang, func(id string) error {
+		_, err := s.UnapproveDoc(ctx, db, scope, dt, id, reason)
+		return err
+	})
 }
 
 // CancelBatchDocs ยกเลิกเอกสารหลายใบพร้อมกันแบบทีละใบ (คืนค่าสต็อกและกลับรายการบัญชีถ้ามี)
-func (s *Store) CancelBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason string) ([]BatchApproveItemResult, error) {
+func (s *Store) CancelBatchDocs(ctx context.Context, db *sql.DB, scope gl.Scope, dt doctype.DocType, ids []string, reason, lang string) []BatchApproveItemResult {
+	return runBatch(ids, lang, func(id string) error {
+		_, err := s.CancelDoc(ctx, db, scope, dt, id, reason)
+		return err
+	})
+}
+
+// runBatch ทำคำสั่งทีละใบ (ใบหนึ่งพลาดไม่ล้มทั้งชุด แต่ละใบเป็นธุรกรรมของตัวเอง) แล้วคืนผลรายใบ {id, success, code, message}
+func runBatch(ids []string, lang string, act func(id string) error) []BatchApproveItemResult {
 	results := make([]BatchApproveItemResult, 0, len(ids))
 	for _, id := range ids {
 		trimmedID := strings.TrimSpace(id)
 		if trimmedID == "" {
 			continue
 		}
-		_, err := s.CancelDoc(ctx, db, scope, dt, trimmedID, reason)
-		if err == nil {
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: true,
-			})
-		} else {
-			code := "error"
-			msg := err.Error()
-			if uerr, isUser := gl.AsUserError(err); isUser {
-				code = uerr.Code
-				msg = uerr.Message
-			}
-			results = append(results, BatchApproveItemResult{
-				ID:      trimmedID,
-				Success: false,
-				Code:    code,
-				Message: msg,
-			})
-		}
+		results = append(results, batchItemResult(trimmedID, act(trimmedID), lang))
 	}
-	return results, nil
+	return results
+}
+
+// batchItemResult: ความผิดที่ผู้ใช้แก้ได้ (สถานะเอกสาร งวดปิด ...) ส่ง code + ข้อความตามภาษาแบบเดียวกับคำสั่งรายใบ;
+// ไม่พบเอกสาร = erp_err_doc_not_found; ความผิดของระบบส่ง erp_err_internal โดยไม่เปิดรายละเอียดภายใน
+func batchItemResult(id string, err error, lang string) BatchApproveItemResult {
+	if err == nil {
+		return BatchApproveItemResult{ID: id, Success: true}
+	}
+	var ledger *ledgerError
+	if _, isUser := gl.AsUserError(err); isUser || errors.As(err, &ledger) {
+		_, body := glhttp.SessionFailure(err, lang)
+		return BatchApproveItemResult{ID: id, Code: body.Code, Message: body.Message}
+	}
+	key := "erp_err_internal"
+	if errors.Is(err, sql.ErrNoRows) {
+		key = "erp_err_doc_not_found"
+	}
+	return BatchApproveItemResult{ID: id, Code: key, Message: langText(key, lang)}
+}
+
+// เหตุผลของเหตุการณ์ที่ระบบเขียนเอง เก็บเป็น key ของ languages.tsv (+ค่าแทน {0}, {1} คั่นด้วย :) แล้วแปลตามภาษาของผู้ดูตอนอ่าน
+const (
+	eventReasonPrefix   = "erp_event_"
+	eventGRClosed       = "erp_event_gr_closed"
+	eventDueDateChanged = "erp_event_due_date_changed"
+)
+
+func eventReason(key string, args ...string) string {
+	return strings.Join(append([]string{key}, args...), ":")
+}
+
+// eventReasonText แปลเหตุผลที่เก็บเป็น key เฉพาะเหตุการณ์ที่ระบบเขียนเอง (update = เปลี่ยนวันครบกำหนด, adjust_status = ปรับปรุงสถานะใบรับสินค้า);
+// เหตุผลที่ผู้ใช้พิมพ์เอง (ยกเลิก/ยกเลิกอนุมัติ) คืนตามเดิมเสมอ แม้ขึ้นต้นด้วย erp_event_ — กันการปลอมข้อความระบบใน audit trail
+func eventReasonText(action, reason, lang string) string {
+	if (action != "update" && action != "adjust_status") || !strings.HasPrefix(reason, eventReasonPrefix) {
+		return reason
+	}
+	parts := strings.Split(reason, ":")
+	if text := langText(parts[0], lang, parts[1:]...); text != parts[0] {
+		return text
+	}
+	return reason
 }
 
 // GetDocEvents ดึงประวัติการอนุมัติ/ยกเลิกของเอกสาร

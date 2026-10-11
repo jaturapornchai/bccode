@@ -250,3 +250,32 @@ func TestPostingKeysAreTheErpDocumentsThatPostToGL(t *testing.T) {
 		t.Error("orders and stock pickups must not post to GL")
 	}
 }
+
+// จอเฉพาะงานต้องเป็น alias ของประเภทเอกสารจริง และจอยกเลิกอนุมัติต้องไม่ให้สิทธิ์ยกเลิกเอกสาร
+func TestScreenGrantsAreExactAliases(t *testing.T) {
+	aliases := map[string]bool{}
+	for _, list := range screenAliases {
+		for _, screen := range list {
+			aliases[screen] = true
+		}
+	}
+	for screen, grant := range screenGrants {
+		if !aliases[screen] {
+			t.Errorf("grant screen %q is not an alias of any document type", screen)
+		}
+		if grant != "approve" && grant != "unapprove" && grant != "cancel" {
+			t.Errorf("grant screen %q has unknown grant %q", screen, grant)
+		}
+	}
+	for screen, want := range map[string]string{
+		"purchase-requisition-approve-cancel": "unapprove",
+		"purchase-requisition-cancel":         "cancel",
+		"purchase-order-approve":              "approve",
+		"cheque-received-cancel":              "",
+		"purchase-requisition":                "",
+	} {
+		if got := ScreenGrant(screen); got != want {
+			t.Errorf("ScreenGrant(%q) = %q, want %q", screen, got, want)
+		}
+	}
+}

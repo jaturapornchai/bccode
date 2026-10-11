@@ -57,21 +57,26 @@ func TestProcessReceiptAdjustments(t *testing.T) {
 
 	store := &Store{}
 	scope := gl.Scope{
-		Company: "TEST_COMP",
+		Company: testCompany,
 		Actor:   "U01",
 	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`pg_advisory_xact_lock`).
-		WithArgs("TEST_COMP").
+		WithArgs(testCompany).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
+	mock.ExpectQuery(`SELECT docdatetime FROM doc\s+WHERE businesscode = \$1 AND docno = \$2 AND transflag = \$3 AND NOT isdelete AND NOT iscancel FOR UPDATE`).
+		WithArgs(testCompany, "GR001", 401).
+		WillReturnRows(sqlmock.NewRows([]string{"docdatetime"}).AddRow(testDocDate))
+	expectDateOpen(mock, testDocDay, false)
+
 	mock.ExpectExec(`UPDATE doc SET isclosed = true.*`).
-		WithArgs("TEST_COMP", "GR001", "U01", 401).
+		WithArgs(testCompany, "GR001", "U01", 401).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	mock.ExpectExec(`INSERT INTO erp_doc_events .*`).
-		WithArgs("TEST_COMP", 401, "GR001", "ปรับปรุงสถานะปิดใบรับสินค้า (GR Closed)", "U01").
+	mock.ExpectExec(`INSERT INTO erp_doc_events \(businesscode, transflag, docno, action, to_status, reason, actor, created_at\)\s+VALUES \(\$1, \$2, \$3, 'adjust_status', 'closed', \$4, \$5, now\(\)\)`).
+		WithArgs(testCompany, 401, "GR001", "erp_event_gr_closed", "U01").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
@@ -83,5 +88,8 @@ func TestProcessReceiptAdjustments(t *testing.T) {
 
 	if count != 1 {
 		t.Errorf("expected 1 updated, got %d", count)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
 	}
 }

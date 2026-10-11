@@ -61,6 +61,11 @@ func TestSaveDeliveryDates(t *testing.T) {
 		WithArgs(scope.Company).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
+	mock.ExpectQuery(`SELECT docdatetime FROM doc\s+WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3 AND NOT isdelete AND NOT iscancel FOR UPDATE`).
+		WithArgs(scope.Company, si.Flag, "INV001").
+		WillReturnRows(sqlmock.NewRows([]string{"docdatetime"}).AddRow(testDocDate))
+	expectDateOpen(mock, testDocDay, false)
+
 	mock.ExpectExec(`UPDATE doc SET perioddatetime = \$1, modified_at = now\(\), modifier_code = \$2 WHERE businesscode = \$3 AND transflag = \$4 AND docno = \$5 .*`).
 		WithArgs(sqlmock.AnyArg(), scope.Actor, scope.Company, si.Flag, "INV001").
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -73,7 +78,7 @@ func TestSaveDeliveryDates(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`INSERT INTO erp_doc_events .*`).
-		WithArgs(scope.Company, si.Flag, "INV001", "ปรับปรุงวันครบกำหนดเป็น 2026-11-15", scope.Actor).
+		WithArgs(scope.Company, si.Flag, "INV001", "erp_event_due_date_changed:2026-11-15", scope.Actor).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
@@ -93,5 +98,14 @@ func TestSaveDeliveryDates(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("expected 1 updated, got %d", count)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+	if got := eventReasonText("update", "erp_event_due_date_changed:2026-11-15", "th"); got != "เปลี่ยนวันครบกำหนดเป็น 2026-11-15" {
+		t.Errorf("due date event reason in Thai = %q", got)
+	}
+	if got := eventReasonText("update", "erp_event_due_date_changed:2026-11-15", "en"); got != "Due date changed to 2026-11-15" {
+		t.Errorf("due date event reason in English = %q", got)
 	}
 }

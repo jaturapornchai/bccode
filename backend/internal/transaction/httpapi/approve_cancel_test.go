@@ -28,9 +28,9 @@ func TestApproveDocTransitions(t *testing.T) {
 		pr, _ := doctype.ByKey("purchase-requisition")
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR001").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR001", false, "approved"))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR001", false, "approved", testDocDate))
 		mock.ExpectRollback()
 
 		_, err := store.ApproveDoc(ctx, db, testScope(), pr, "PR001")
@@ -43,9 +43,9 @@ func TestApproveDocTransitions(t *testing.T) {
 		pr, _ := doctype.ByKey("purchase-requisition")
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR002").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR002", true, ""))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR002", true, "", testDocDate))
 		mock.ExpectRollback()
 
 		_, err := store.ApproveDoc(ctx, db, testScope(), pr, "PR002")
@@ -63,9 +63,10 @@ func TestApproveDocTransitions(t *testing.T) {
 			"approval_status", "approved_by", "approved_at", "cancelled_by", "cancelled_at", "cancelreason"}
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR003").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR003", false, ""))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR003", false, "", testDocDate))
+		expectDateOpen(mock, testDocDay, false)
 		mock.ExpectExec(`UPDATE doc SET\s+approval_status = 'approved'`).
 			WithArgs(testActor, sqlmock.AnyArg(), testCompany, pr.Flag, "PR003").
 			WillReturnResult(sqlmock.NewResult(1, 1))
@@ -105,9 +106,9 @@ func TestUnapproveDocTransitions(t *testing.T) {
 	t.Run("not approved rejected", func(t *testing.T) {
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR001").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR001", false, ""))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR001", false, "", testDocDate))
 		mock.ExpectRollback()
 
 		_, err := store.UnapproveDoc(ctx, db, testScope(), pr, "PR001", "แก้ไข")
@@ -119,9 +120,9 @@ func TestUnapproveDocTransitions(t *testing.T) {
 	t.Run("has live downstream rejected", func(t *testing.T) {
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR002").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR002", false, "approved"))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR002", false, "approved", testDocDate))
 		mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
 			WithArgs(testCompany, "PR002", pr.Flag).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
@@ -150,9 +151,9 @@ func TestCancelDocTransitions(t *testing.T) {
 		pr, _ := doctype.ByKey("purchase-requisition")
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pr.Flag, "PR001").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PR001", false, "approved"))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PR001", false, "approved", testDocDate))
 		mock.ExpectRollback()
 
 		_, err := store.CancelDoc(ctx, db, testScope(), pr, "PR001", "ไม่ต้องการแล้ว")
@@ -164,9 +165,9 @@ func TestCancelDocTransitions(t *testing.T) {
 	t.Run("PO cancel rejects live downstream", func(t *testing.T) {
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, po.Flag, "PO002").
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow("PO002", false, "approved"))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow("PO002", false, "approved", testDocDate))
 		mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
 			WithArgs(testCompany, "PO002", po.Flag).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
@@ -190,12 +191,13 @@ func TestCancelDocTransitions(t *testing.T) {
 		db, mock, _ := newRecordedMock(t)
 		mock.ExpectBegin()
 		mock.ExpectExec(`pg_advisory_xact_lock`).WithArgs(testCompany).WillReturnResult(sqlmock.NewResult(0, 0))
-		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc .* FOR UPDATE`).
+		mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc .* FOR UPDATE`).
 			WithArgs(testCompany, pur.Flag, docNo).
-			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow(docNo, false, ""))
+			WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow(docNo, false, "", testDocDate))
 		mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
 			WithArgs(testCompany, docNo, pur.Flag).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		expectDateOpen(mock, testDocDay, false)
 		// GL reversal
 		mock.ExpectQuery(`FROM gl_subledger_settlements`).
 			WithArgs(testCompany, "AP-"+docNo, "").WillReturnRows(sqlmock.NewRows([]string{"bound"}).AddRow(0))

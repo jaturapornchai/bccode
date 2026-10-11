@@ -25,6 +25,8 @@ type Http struct {
 	store *Store
 	// session ยืนยัน session + สิทธิ์รายเมนู (ฉีดได้เพื่อทดสอบโดยไม่ต้องมีฐานข้อมูลกลาง)
 	session func(context.Context, microservice.IContext) (glhttp.SessionAccess, error)
+	// connect เปิดฐานข้อมูลของ holding (ฉีดได้เพื่อทดสอบ handler กับ sqlmock)
+	connect func(holding string) (*sql.DB, error)
 }
 
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
@@ -32,6 +34,7 @@ func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 		ms:      ms,
 		store:   NewStore(),
 		session: glhttp.ResolveSessionAccess,
+		connect: mypg.PgSqlFastConnect,
 	}
 }
 
@@ -70,6 +73,8 @@ const (
 	actionDelete  = "delete"
 	actionApprove = "approve"
 	actionCancel  = "cancel"
+	// actionUnapprove ใช้สิทธิ์ approve ของเมนู หรือจอยกเลิกการอนุมัติโดยตรง (doctype.ScreenGrant)
+	actionUnapprove = "unapprove"
 )
 
 // docAccess คือผลของ authorize: ประเภทเอกสารที่ถูกต้อง session ที่ยืนยันแล้ว และฐานข้อมูลของ holding
@@ -88,7 +93,7 @@ func (h *Http) authorize(request microservice.IContext, action string) *docAcces
 
 	dt, ok := lookupDocType(request.Param("module"))
 	if !ok {
-		_ = fail(request, http.StatusBadRequest, fmt.Sprintf("โมดูลไม่ถูกต้อง (%s)", request.Param("module")))
+		_ = fail(request, http.StatusBadRequest, "erp_err_invalid_module", request.Param("module"))
 		return nil
 	}
 	session, err := h.session(ctx, request)
@@ -105,19 +110,23 @@ func (h *Http) authorize(request microservice.IContext, action string) *docAcces
 		_ = forbidden(request, key, lang)
 		return nil
 	}
-	db, err := mypg.PgSqlFastConnect(session.Scope.Holding)
+	db, err := h.connect(session.Scope.Holding)
 	if err != nil {
-		_ = fail(request, http.StatusServiceUnavailable, fmt.Sprintf("เชื่อมต่อฐานข้อมูลล้มเหลว: %v", err))
+		request.Log(fmt.Sprintf("transaction: connect holding database: %v", err))
+		_ = fail(request, http.StatusServiceUnavailable, "erp_err_database_unavailable")
 		return nil
 	}
 	if err := ensureSchema(ctx, db); err != nil {
-		_ = fail(request, http.StatusInternalServerError, fmt.Sprintf("เตรียมตารางเอกสารล้มเหลว: %v", err))
+		request.Log(fmt.Sprintf("transaction: ensure document schema: %v", err))
+		_ = fail(request, http.StatusInternalServerError, "erp_err_internal")
 		return nil
 	}
-	// เอกสารที่ลงบัญชีเขียนใบสำคัญและบัญชีย่อยในธุรกรรมเดียวกัน ตารางบัญชีต้องพร้อมก่อน (อ่านอย่างเดียวไม่ต้อง)
-	if action != actionRead && doctype.PostsToGL(dt.Flag) {
+	// ทุกคำสั่งเขียนตรวจงวดบัญชี (ปีบัญชี/งวดล็อก) ของวันที่เอกสาร และเอกสารที่ลงบัญชีเขียนใบสำคัญ/บัญชีย่อยในธุรกรรมเดียวกัน
+	// ตารางบัญชีจึงต้องพร้อมก่อน (อ่านอย่างเดียวไม่ต้อง)
+	if action != actionRead {
 		if err := gl.EnsureSchema(ctx, db); err != nil {
-			_ = fail(request, http.StatusInternalServerError, fmt.Sprintf("เตรียมตารางบัญชีล้มเหลว: %v", err))
+			request.Log(fmt.Sprintf("transaction: ensure ledger schema: %v", err))
+			_ = fail(request, http.StatusInternalServerError, "erp_err_internal")
 			return nil
 		}
 	}
@@ -131,35 +140,35 @@ type menuAccess interface {
 
 // allowsDocType: สิทธิ์เมนูใดเมนูหนึ่งที่เปิดจอของประเภทนี้ก็พอ (stock-count มี 2 จอ);
 // ประเภทที่ไม่มี menu id = ปฏิเสธ (fail-closed)
+// จอเฉพาะงาน (doctype.ScreenGrant เทียบ menu id ตรงตัว) ให้แค่อ่านรายการและงานของจอนั้นงานเดียว เช่น จอยกเลิกการอนุมัติ
+// purchase-requisition-approve-cancel ให้ยกเลิกการอนุมัติได้ แต่ไม่ให้ยกเลิกเอกสาร; จอทั่วไปใช้สิทธิ์ <เมนู>:<action>
+// (ยกเลิกใช้ delete ได้, อนุมัติ/ยกเลิกอนุมัติใช้ update ได้)
 func allowsDocType(session menuAccess, dt doctype.DocType, action string) bool {
 	for _, screen := range doctype.Screens(dt.Key) {
-		if screen != "" {
-			if session.Allows(screen, action) {
+		if screen == "" {
+			continue
+		}
+		if grant := doctype.ScreenGrant(screen); grant != "" {
+			if (action == actionRead || action == grant) && session.Allows(screen, actionRead) {
 				return true
 			}
-			if action == actionCancel && session.Allows(screen, actionDelete) {
-				return true
-			}
-			if action == actionApprove && session.Allows(screen, actionUpdate) {
-				return true
-			}
-			if action == actionApprove && isApproveScreen(screen) && session.Allows(screen, "") {
-				return true
-			}
-			if action == actionCancel && isCancelScreen(screen) && session.Allows(screen, "") {
-				return true
-			}
+			continue
+		}
+		permission := action
+		if action == actionUnapprove {
+			permission = actionApprove
+		}
+		if session.Allows(screen, permission) {
+			return true
+		}
+		if action == actionCancel && session.Allows(screen, actionDelete) {
+			return true
+		}
+		if (action == actionApprove || action == actionUnapprove) && session.Allows(screen, actionUpdate) {
+			return true
 		}
 	}
 	return false
-}
-
-func isApproveScreen(screen string) bool {
-	return strings.HasSuffix(screen, "-approve") || strings.Contains(screen, "approve")
-}
-
-func isCancelScreen(screen string) bool {
-	return strings.HasSuffix(screen, "-cancel") || strings.Contains(screen, "cancel")
 }
 
 func requestLanguage(request microservice.IContext) string {
@@ -188,19 +197,12 @@ func lookupDocType(module string) (doctype.DocType, bool) {
 	return doctype.ByKey(strings.ToLower(strings.TrimSpace(module)))
 }
 
-func parseTransFlag(module string) (int, string, error) {
-	dt, ok := lookupDocType(module)
-	if !ok {
-		return 0, "", fmt.Errorf("โมดูลไม่ถูกต้อง (%s)", module)
-	}
-	return dt.Flag, dt.Prefix, nil
-}
-
-func fail(request microservice.IContext, status int, message string) error {
+// fail ตอบความผิดพลาดด้วย key ใน languages.tsv (code = key): message ตามภาษาของคำขอ, thai_msg เป็นภาษาไทย
+func fail(request microservice.IContext, status int, key string, args ...string) error {
 	appErr := &apperr.AppError{
-		Code:       "error",
-		Message:    message,
-		ThaiMsg:    message,
+		Code:       key,
+		Message:    langText(key, requestLanguage(request), args...),
+		ThaiMsg:    thText(key, args...),
 		HTTPStatus: status,
 	}
 	request.Response(status, appErr.ToResponse())
@@ -220,14 +222,19 @@ func (h *Http) list(request microservice.IContext) error {
 	ctx, scope, db := access.ctx, access.scope, access.db
 	transflag := access.dt.Flag
 
-	q := request.QueryParam("q")
-	status := request.QueryParam("status")
+	filter := DocListFilter{
+		Q:        request.QueryParam("q"),
+		Status:   request.QueryParam("status"),
+		CustCode: request.QueryParam("custcode"),
+		FromDate: request.QueryParam("fromdate"),
+		ToDate:   request.QueryParam("todate"),
+	}
 	limit, _ := strconv.Atoi(request.QueryParam("limit"))
 	offset, _ := strconv.Atoi(request.QueryParam("offset"))
 
-	docs, total, err := h.store.ListDocs(ctx, db, scope.Company, transflag, q, status, offset, limit)
+	docs, total, err := h.store.ListDocs(ctx, db, scope.Company, transflag, filter, offset, limit)
 	if err != nil {
-		return fail(request, http.StatusInternalServerError, fmt.Sprintf("โหลดข้อมูลไม่สำเร็จ: %v", err))
+		return docFailure(request, err, false)
 	}
 
 	page := 1
@@ -257,15 +264,15 @@ func (h *Http) get(request microservice.IContext) error {
 
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	doc, err := h.store.GetDoc(ctx, db, scope.Company, transflag, id)
 	if err != nil {
-		return fail(request, http.StatusInternalServerError, fmt.Sprintf("ดึงข้อมูลไม่สำเร็จ: %v", err))
+		return docFailure(request, err, false)
 	}
 	if doc == nil {
-		return fail(request, http.StatusNotFound, "ไม่พบเอกสารที่ต้องการ")
+		return fail(request, http.StatusNotFound, "erp_err_doc_not_found")
 	}
 
 	return success(request, DocItemResponse{
@@ -275,18 +282,20 @@ func (h *Http) get(request microservice.IContext) error {
 }
 
 // docFailure ตอบความผิดพลาดของการบันทึก/ลบ: ความผิดจากกฎบัญชี/เอกสาร (ปีบัญชีปิด ตัดหนี้แล้ว เลขซ้ำ ...) ตอบแบบเดียวกับจอบัญชี
-// คือข้อความที่ผู้ใช้แก้ได้ตามภาษาของคำขอ; ไม่พบเอกสาร = 404 (notFound ว่าง = ไม่ใช่กรณีนี้); อื่นๆ = 500
-func docFailure(request microservice.IContext, err error, notFound, generic string) error {
+// คือข้อความที่ผู้ใช้แก้ได้ตามภาษาของคำขอ; ไม่พบเอกสาร = 404 (เมื่อ notFound); อื่นๆ = 500 ข้อความกลาง
+// (รายละเอียดทางเทคนิคเก็บใน log เท่านั้น ไม่ส่งถึงผู้ใช้)
+func docFailure(request microservice.IContext, err error, notFound bool) error {
 	var ledger *ledgerError
 	if _, isUser := gl.AsUserError(err); isUser || errors.As(err, &ledger) {
 		status, body := glhttp.SessionFailure(err, requestLanguage(request))
 		request.Response(status, body)
 		return nil
 	}
-	if notFound != "" && errors.Is(err, sql.ErrNoRows) {
-		return fail(request, http.StatusNotFound, notFound)
+	if notFound && errors.Is(err, sql.ErrNoRows) {
+		return fail(request, http.StatusNotFound, "erp_err_doc_not_found")
 	}
-	return fail(request, http.StatusInternalServerError, fmt.Sprintf("%s: %v", generic, err))
+	request.Log(fmt.Sprintf("transaction: %v", err))
+	return fail(request, http.StatusInternalServerError, "erp_err_internal")
 }
 
 func (h *Http) create(request microservice.IContext) error {
@@ -296,12 +305,12 @@ func (h *Http) create(request microservice.IContext) error {
 	}
 	var doc ErpTransactionDoc
 	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
 	saved, err := h.store.SaveDoc(access.ctx, access.db, access.scope, access.dt, &doc, false)
 	if err != nil {
-		return docFailure(request, err, "", "บันทึกเอกสารไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, DocItemResponse{
@@ -318,12 +327,12 @@ func (h *Http) update(request microservice.IContext) error {
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	var doc ErpTransactionDoc
 	if err := json.NewDecoder(request.Request().Body).Decode(&doc); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 	if doc.DocNo == "" {
 		doc.DocNo = id
@@ -331,7 +340,7 @@ func (h *Http) update(request microservice.IContext) error {
 
 	saved, err := h.store.SaveDoc(access.ctx, access.db, access.scope, access.dt, &doc, true)
 	if err != nil {
-		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการแก้ไข", "แก้ไขเอกสารไม่สำเร็จ")
+		return docFailure(request, err, true)
 	}
 
 	return success(request, DocItemResponse{
@@ -348,11 +357,11 @@ func (h *Http) delete(request microservice.IContext) error {
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	if err := h.store.DeleteDoc(access.ctx, access.db, access.scope, access.dt, id); err != nil {
-		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการลบ", "ลบเอกสารไม่สำเร็จ")
+		return docFailure(request, err, true)
 	}
 
 	return success(request, map[string]any{
@@ -385,12 +394,12 @@ func (h *Http) approve(request microservice.IContext) error {
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	doc, err := h.store.ApproveDoc(access.ctx, access.db, access.scope, access.dt, id)
 	if err != nil {
-		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการอนุมัติ", "อนุมัติเอกสารไม่สำเร็จ")
+		return docFailure(request, err, true)
 	}
 
 	return success(request, DocItemResponse{
@@ -401,13 +410,13 @@ func (h *Http) approve(request microservice.IContext) error {
 }
 
 func (h *Http) unapprove(request microservice.IContext) error {
-	access := h.authorize(request, actionApprove)
+	access := h.authorize(request, actionUnapprove)
 	if access == nil {
 		return nil
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	var payload reasonPayload
@@ -415,7 +424,7 @@ func (h *Http) unapprove(request microservice.IContext) error {
 
 	doc, err := h.store.UnapproveDoc(access.ctx, access.db, access.scope, access.dt, id, payload.Reason)
 	if err != nil {
-		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการยกเลิกการอนุมัติ", "ยกเลิกการอนุมัติไม่สำเร็จ")
+		return docFailure(request, err, true)
 	}
 
 	return success(request, DocItemResponse{
@@ -432,17 +441,17 @@ func (h *Http) cancel(request microservice.IContext) error {
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	var payload reasonPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
 	doc, err := h.store.CancelDoc(access.ctx, access.db, access.scope, access.dt, id, payload.Reason)
 	if err != nil {
-		return docFailure(request, err, "ไม่พบเอกสารที่ต้องการยกเลิก", "ยกเลิกเอกสารไม่สำเร็จ")
+		return docFailure(request, err, true)
 	}
 
 	return success(request, DocItemResponse{
@@ -460,13 +469,10 @@ func (h *Http) approveBatch(request microservice.IContext) error {
 
 	var payload batchActionPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
-	results, err := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs())
-	if err != nil {
-		return docFailure(request, err, "", "อนุมัติเอกสารไม่สำเร็จ")
-	}
+	results := h.store.ApproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), requestLanguage(request))
 
 	return success(request, BatchApproveResponse{
 		Success: true,
@@ -475,20 +481,17 @@ func (h *Http) approveBatch(request microservice.IContext) error {
 }
 
 func (h *Http) unapproveBatch(request microservice.IContext) error {
-	access := h.authorize(request, actionApprove)
+	access := h.authorize(request, actionUnapprove)
 	if access == nil {
 		return nil
 	}
 
 	var payload batchActionPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
-	results, err := h.store.UnapproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), payload.Reason)
-	if err != nil {
-		return docFailure(request, err, "", "ยกเลิกการอนุมัติเอกสารไม่สำเร็จ")
-	}
+	results := h.store.UnapproveBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), payload.Reason, requestLanguage(request))
 
 	return success(request, BatchApproveResponse{
 		Success: true,
@@ -504,17 +507,14 @@ func (h *Http) cancelBatch(request microservice.IContext) error {
 
 	var payload batchActionPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 	reason := strings.TrimSpace(payload.Reason)
 	if reason == "" {
-		return fail(request, http.StatusBadRequest, "erp_err_cancel_reason_required")
+		return docFailure(request, cancelReasonRequiredError(), false)
 	}
 
-	results, err := h.store.CancelBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), reason)
-	if err != nil {
-		return docFailure(request, err, "", "ยกเลิกเอกสารไม่สำเร็จ")
-	}
+	results := h.store.CancelBatchDocs(access.ctx, access.db, access.scope, access.dt, payload.docIDs(), reason, requestLanguage(request))
 
 	return success(request, BatchApproveResponse{
 		Success: true,
@@ -529,12 +529,16 @@ func (h *Http) getEvents(request microservice.IContext) error {
 	}
 	id := request.Param("id")
 	if strings.TrimSpace(id) == "" {
-		return fail(request, http.StatusBadRequest, "กรุณาระบุเลขที่เอกสาร")
+		return fail(request, http.StatusBadRequest, "erp_err_docno_required")
 	}
 
 	events, err := h.store.GetDocEvents(access.ctx, access.db, access.scope.Company, access.dt.Flag, id)
 	if err != nil {
-		return docFailure(request, err, "ไม่พบเอกสาร", "ดึงประวัติเอกสารไม่สำเร็จ")
+		return docFailure(request, err, true)
+	}
+	lang := requestLanguage(request)
+	for i := range events {
+		events[i].Reason = eventReasonText(events[i].Action, events[i].Reason, lang)
 	}
 
 	return success(request, DocEventsResponse{

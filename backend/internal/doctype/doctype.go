@@ -169,6 +169,27 @@ var screenAliases = map[string][]string{
 	"rfq":                    {"rfq-price-table"},
 }
 
+// screenGrants คือจอเฉพาะงาน เทียบ menu id ตรงตัว (ไม่ใช่ส่วนของชื่อ): เข้าจอได้ = ทำงานของจอนั้นได้งานเดียว
+// เช่น purchase-requisition-approve-cancel คือจอยกเลิกการอนุมัติ ไม่ใช่จอยกเลิกเอกสาร
+var screenGrants = map[string]string{
+	"purchase-requisition-approve":        "approve",
+	"purchase-requisition-approve-cancel": "unapprove",
+	"purchase-requisition-cancel":         "cancel",
+	"purchase-order-approve":              "approve",
+	"purchase-order-cancel":               "cancel",
+	"quotation-approve":                   "approve",
+	"quotation-cancel":                    "cancel",
+	"sale-order-approve":                  "approve",
+	"sale-order-cancel":                   "cancel",
+	"stock-issue-request-cancel":          "cancel",
+	"stock-transfer-request-cancel":       "cancel",
+}
+
+// ScreenGrant คืนงานเดียวที่จอเฉพาะงานให้สิทธิ์ ("approve", "unapprove", "cancel") หรือ "" ถ้าเป็นจอทั่วไป
+func ScreenGrant(screen string) string {
+	return screenGrants[screen]
+}
+
 // Screens คืน menu id ที่เปิดประเภทเอกสารนี้ได้ (ตัวแรกคือเมนูหลัก) ถ้าไม่รู้จัก key คืน nil
 func Screens(key string) []string {
 	dt, ok := byKey[key]

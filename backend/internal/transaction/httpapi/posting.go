@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -56,49 +57,63 @@ func ledgerFail(err error) error {
 	return &ledgerError{err}
 }
 
-func erpError(code, field, message string, args ...string) *gl.UserError {
-	return &gl.UserError{Code: code, Message: message, Field: field, Args: args}
+// erpError คือความผิดของเอกสารที่ผู้ใช้แก้ได้: ข้อความไทยมาจากแถว gl_err_<code> ใน languages.tsv แทนค่า {0}, {1}, … ด้วย args
+// (ภาษาอื่น glhttp แปลจากแถวเดียวกัน) — ไม่มีข้อความผู้ใช้ฝังในโค้ด
+func erpError(code, field string, args ...string) *gl.UserError {
+	return &gl.UserError{Code: code, Message: thText("gl_err_"+code, args...), Field: field, Args: args}
 }
 
 func amountInvalidError() *gl.UserError {
-	return erpError("erp_amount_invalid", "totalamount", "ยอดเงินของเอกสารไม่ถูกต้อง ยอดรวมและภาษีต้องไม่ติดลบ และภาษีต้องไม่เกินยอดรวม กรุณาตรวจสอบยอดเงินแล้วบันทึกใหม่")
+	return erpError("erp_amount_invalid", "totalamount")
 }
 
 func settledError(docNo string) *gl.UserError {
-	return erpError("erp_doc_settled", "", fmt.Sprintf("เอกสาร %s มีการตัดหนี้หรือจัดสรรกับเอกสารอื่นแล้ว จึงแก้ไขหรือลบไม่ได้ กรุณายกเลิกการตัดหนี้ที่เกี่ยวข้องก่อน", docNo), docNo)
+	return erpError("erp_doc_settled", "", docNo)
 }
 
 func duplicateDocError(docNo string) *gl.UserError {
-	return erpError("erp_doc_duplicate", "docno", fmt.Sprintf("เลขที่เอกสาร %s ถูกใช้ไปแล้ว (รวมเอกสารที่ลบแล้ว) กรุณาใช้เลขที่อื่น หรือปล่อยว่างให้ระบบออกเลขให้", docNo), docNo)
+	return erpError("erp_doc_duplicate", "docno", docNo)
 }
 
 func docLockedError() *gl.UserError {
-	return erpError("erp_doc_locked", "", "เอกสารนี้ได้รับการอนุมัติหรือยกเลิกแล้ว ไม่สามารถแก้ไขหรือลบได้")
+	return erpError("erp_doc_locked", "")
 }
 
 func docHasDownstreamError() *gl.UserError {
-	return erpError("erp_doc_has_downstream", "", "เอกสารนี้ถูกนำไปอ้างอิงในเอกสารอื่นแล้ว ไม่สามารถยกเลิกได้")
+	return erpError("erp_doc_has_downstream", "")
 }
 
 func docNotPendingError() *gl.UserError {
-	return erpError("erp_doc_not_pending", "", "เอกสารนี้ไม่ได้อยู่ในสถานะรออนุมัติ")
+	return erpError("erp_doc_not_pending", "")
 }
 
 func docNotApprovedError() *gl.UserError {
-	return erpError("erp_doc_not_approved", "", "เอกสารนี้ยังไม่ได้รับการอนุมัติ")
+	return erpError("erp_doc_not_approved", "")
 }
 
 func docAlreadyCancelledError() *gl.UserError {
-	return erpError("erp_doc_already_cancelled", "", "เอกสารนี้ถูกยกเลิกไปแล้ว")
+	return erpError("erp_doc_already_cancelled", "")
 }
 
 func cancelReasonRequiredError() *gl.UserError {
-	return erpError("erp_cancel_reason_required", "reason", "กรุณาระบุเหตุผลในการยกเลิก")
+	return erpError("erp_cancel_reason_required", "reason")
+}
+
+// listDateInvalidError: วันที่ค้นหารายการต้องเป็น YYYY-MM-DD (field = ชื่อพารามิเตอร์ fromdate/todate)
+func listDateInvalidError(field, value string) *gl.UserError {
+	e := erpError("erp_list_date_invalid", field, value)
+	e.Status = http.StatusBadRequest
+	return e
 }
 
 // thText คือข้อความไทยจาก languages.tsv แทนค่า {0}, {1}, … — ใช้กับข้อความที่ลงในใบสำคัญ (ไทยเป็นต้นฉบับของบัญชี)
 func thText(key string, args ...string) string {
-	text := language.Text(key, "th")
+	return langText(key, "th", args...)
+}
+
+// langText คือข้อความของ key ตามภาษาที่ขอ แทนค่า {0}, {1}, … (ไม่มีแถว = คืน key ตามกติกาของ language.Text)
+func langText(key, lang string, args ...string) string {
+	text := language.Text(key, lang)
 	for i, arg := range args {
 		text = strings.ReplaceAll(text, "{"+strconv.Itoa(i)+"}", arg)
 	}
@@ -186,6 +201,12 @@ type postingResult struct {
 
 // postDocument ลงบัญชีเอกสารตามรูปแบบลงบัญชีของประเภทนั้น (สร้างฉบับร่างแล้วผ่านรายการทันที) และลงบัญชีย่อยลูกหนี้/เจ้าหนี้
 func (s *Store) postDocument(ctx context.Context, tx *sql.Tx, scope gl.Scope, dt doctype.DocType, doc *ErpTransactionDoc, docNo string, docDate, now time.Time) (postingResult, error) {
+	// งวดปิด/ปีบัญชีปิดต้องหยุดก่อนทุกทางออก แม้เอกสารที่ยังไม่มีรูปแบบลงบัญชีหรือยอดเป็นศูนย์
+	date := businessDay(docDate)
+	year, err := gl.CheckSourceDateOpen(ctx, tx, scope, date)
+	if err != nil {
+		return postingResult{}, ledgerFail(err)
+	}
 	mapping, found, err := gl.MappingForSourceDoc(ctx, tx, scope, dt.Key)
 	if err != nil {
 		return postingResult{}, ledgerFail(err)
@@ -199,12 +220,6 @@ func (s *Store) postDocument(ctx context.Context, tx *sql.Tx, scope gl.Scope, dt
 	}
 	if amounts.total.IsZero() {
 		return postingResult{status: glStatusNoAmount}, nil
-	}
-
-	date := businessDay(docDate)
-	year, err := gl.SourceFiscalYear(ctx, tx, scope, date)
-	if err != nil {
-		return postingResult{}, ledgerFail(err)
 	}
 
 	var revision int

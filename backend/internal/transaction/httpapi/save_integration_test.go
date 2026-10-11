@@ -290,8 +290,9 @@ func TestIntegrationSettledPurchaseCannotBeEditedOrDeleted(t *testing.T) {
 	if _, err = store.SaveDoc(ctx, db, scope, purchase, purchaseDoc(bought.DocNo, 5, 100), true); userErrorCode(err) != "erp_doc_settled" {
 		t.Fatalf("edit of settled purchase = %v, want erp_doc_settled", err)
 	}
-	if err = store.DeleteDoc(ctx, db, scope, purchase, bought.DocNo); userErrorCode(err) != "erp_doc_settled" {
-		t.Fatalf("delete of settled purchase = %v, want erp_doc_settled", err)
+	// ใบจ่ายอ้างอิงใบซื้อ (docref) — ลบถูกหยุดที่ตรวจเอกสารปลายทางก่อนถึงตรวจการตัดหนี้
+	if err = store.DeleteDoc(ctx, db, scope, purchase, bought.DocNo); userErrorCode(err) != "erp_doc_has_downstream" {
+		t.Fatalf("delete of settled purchase = %v, want erp_doc_has_downstream", err)
 	}
 	after, _ := ledgerSums(t, db)
 	requireDecimal(t, "ledger untouched by refused edit", after, before)
@@ -375,4 +376,117 @@ func TestIntegrationBackDatedStockDocumentRebuildsLaterBalances(t *testing.T) {
 		t.Fatal(err)
 	}
 	requireDecimal(t, "balance after back-dated receipt removed", scalarString(t, db, `SELECT balanceqty::text FROM stock_ledger WHERE businesscode=$1 AND docno='PCK-1'`, testCompany), "6")
+}
+
+// docState อ่านสถานะอนุมัติ/ยกเลิก/ปิดจากฐานจริง (ไม่เชื่อค่าที่ store คืน)
+func docState(t *testing.T, db *sql.DB, flag int, docNo string) string {
+	t.Helper()
+	return scalarString(t, db, `SELECT COALESCE(approval_status, '') || '|' || COALESCE(iscancel, false)::text || '|' || COALESCE(isclosed, false)::text
+		FROM doc WHERE businesscode = $1 AND transflag = $2 AND docno = $3`, testCompany, flag, docNo)
+}
+
+// docEvents อ่านประวัติเอกสารเรียงตามลำดับที่บันทึก เป็น action|from_status|to_status|reason|actor ต่อแถว
+func docEvents(t *testing.T, db *sql.DB, flag int, docNo string) []string {
+	t.Helper()
+	rows, err := db.Query(`SELECT action || '|' || from_status || '|' || to_status || '|' || reason || '|' || actor
+		FROM erp_doc_events WHERE businesscode = $1 AND transflag = $2 AND docno = $3 ORDER BY id`, testCompany, flag, docNo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var events []string
+	for rows.Next() {
+		var row string
+		if err := rows.Scan(&row); err != nil {
+			t.Fatal(err)
+		}
+		events = append(events, row)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return events
+}
+
+func requireEvents(t *testing.T, label string, got, want []string) {
+	t.Helper()
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("%s events = %q, want %q", label, got, want)
+	}
+}
+
+// อนุมัติ → ยกเลิกอนุมัติ → ยกเลิกใบขอซื้อ แต่ละขั้นเปลี่ยนสถานะเอกสารและเขียน erp_doc_events หนึ่งแถว;
+// ปรับปรุงสถานะใบรับสินค้าเขียนแถว adjust_status ผ่าน CHECK ของตารางจริง
+func TestApproveUnapproveCancelWritesEvents(t *testing.T) {
+	db, projection := erpTestDB(t)
+	seedLedger(t, db, projection)
+	ctx := context.Background()
+	store := NewStore()
+	scope := erpScope()
+	pr := mustDocType(t, "purchase-requisition")
+	instant := time.Date(2026, 10, 8, 9, 0, 0, 0, time.UTC).Format(time.RFC3339)
+
+	saved, err := store.SaveDoc(ctx, db, scope, pr, &ErpTransactionDoc{DocDateTime: instant, CustCode: "S101", CustName: "บริษัท สยามวัสดุภัณฑ์ จำกัด",
+		Description: "ขอซื้อกระดาษถ่ายเอกสาร A4", TotalBeforeVat: 1000, TotalVatValue: 70, TotalAmount: 1070,
+		Details: []ErpDetailItem{{ItemCode: "ITM-001", Qty: 10, Price: 100, SumAmount: 1000, WhCode: "WH01"}}}, false)
+	if err != nil {
+		t.Fatalf("save purchase requisition: %v", err)
+	}
+	docNo := saved.DocNo
+	if got := docState(t, db, pr.Flag, docNo); got != "|false|false" {
+		t.Fatalf("new requisition state = %q", got)
+	}
+	requireEvents(t, "after save", docEvents(t, db, pr.Flag, docNo), nil)
+
+	if _, err = store.ApproveDoc(ctx, db, scope, pr, docNo); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	if got := docState(t, db, pr.Flag, docNo); got != "approved|false|false" {
+		t.Fatalf("approved state = %q", got)
+	}
+	approve := "approve||approved||" + testActor
+	requireEvents(t, "after approve", docEvents(t, db, pr.Flag, docNo), []string{approve})
+
+	if _, err = store.UnapproveDoc(ctx, db, scope, pr, docNo, "  ผู้ขอซื้อขอแก้จำนวน  "); err != nil {
+		t.Fatalf("unapprove: %v", err)
+	}
+	if got := docState(t, db, pr.Flag, docNo); got != "|false|false" {
+		t.Fatalf("unapproved state = %q", got)
+	}
+	unapprove := "unapprove|approved||ผู้ขอซื้อขอแก้จำนวน|" + testActor
+	requireEvents(t, "after unapprove", docEvents(t, db, pr.Flag, docNo), []string{approve, unapprove})
+
+	if _, err = store.CancelDoc(ctx, db, scope, pr, docNo, "ฝ่ายจัดซื้อยกเลิกคำขอ"); err != nil {
+		t.Fatalf("cancel: %v", err)
+	}
+	if got := docState(t, db, pr.Flag, docNo); got != "|true|false" {
+		t.Fatalf("cancelled state = %q", got)
+	}
+	if got := scalarString(t, db, `SELECT cancelreason FROM doc WHERE businesscode = $1 AND transflag = $2 AND docno = $3`, testCompany, pr.Flag, docNo); got != "ฝ่ายจัดซื้อยกเลิกคำขอ" {
+		t.Fatalf("cancelreason = %q", got)
+	}
+	requireEvents(t, "after cancel", docEvents(t, db, pr.Flag, docNo), []string{approve, unapprove, "cancel||cancelled|ฝ่ายจัดซื้อยกเลิกคำขอ|" + testActor})
+	// ยกเลิกแล้วอนุมัติซ้ำไม่ได้ และไม่มีแถวประวัติเพิ่ม
+	if _, err = store.ApproveDoc(ctx, db, scope, pr, docNo); err == nil {
+		t.Fatal("approve after cancel succeeded")
+	}
+	if got := len(docEvents(t, db, pr.Flag, docNo)); got != 3 {
+		t.Fatalf("events after refused approve = %d, want 3", got)
+	}
+
+	gr := mustDocType(t, "goodsreceive")
+	receipt, err := store.SaveDoc(ctx, db, scope, gr, &ErpTransactionDoc{DocDateTime: instant, CustCode: "S101", CustName: "บริษัท สยามวัสดุภัณฑ์ จำกัด",
+		TotalBeforeVat: 1000, TotalVatValue: 70, TotalAmount: 1070,
+		Details: []ErpDetailItem{{ItemCode: "ITM-001", Qty: 10, Price: 100, SumAmount: 1000, WhCode: "WH01"}}}, false)
+	if err != nil {
+		t.Fatalf("save goods receipt: %v", err)
+	}
+	count, err := store.ProcessReceiptAdjustments(ctx, db, scope, []string{receipt.DocNo})
+	if err != nil || count != 1 {
+		t.Fatalf("ProcessReceiptAdjustments = %d, %v; want 1", count, err)
+	}
+	if got := docState(t, db, gr.Flag, receipt.DocNo); got != "|false|true" {
+		t.Fatalf("adjusted goods receipt state = %q", got)
+	}
+	requireEvents(t, "after receipt adjustment", docEvents(t, db, gr.Flag, receipt.DocNo), []string{"adjust_status||closed|" + eventGRClosed + "|" + testActor})
 }

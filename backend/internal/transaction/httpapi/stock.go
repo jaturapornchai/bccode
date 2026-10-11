@@ -38,6 +38,11 @@ func businessDay(t time.Time) string {
 	return t.In(authmodels.HoldingLocation("")).Format("2006-01-02")
 }
 
+// dayStart คือเวลาเริ่มของวันที่ YYYY-MM-DD ตามปฏิทินของ holding (คู่กับ businessDay) — ใช้เป็นขอบช่วงค้นหาตาม docdatetime
+func dayStart(day string) (time.Time, error) {
+	return time.ParseInLocation("2006-01-02", day, authmodels.HoldingLocation(""))
+}
+
 // replaceStockMovement ลบแถวสต็อกเดิมของเอกสาร (ถ้ามี) ลงแถวใหม่จาก doc (nil = ลบเอกสาร) แล้วคำนวณสายของทุก (สินค้า, คลัง) ที่เกี่ยวข้องใหม่
 func (s *Store) replaceStockMovement(ctx context.Context, tx *sql.Tx, company string, dt doctype.DocType, doc *ErpTransactionDoc, docNo string, docDate time.Time, now time.Time) error {
 	touched := map[stockKey]bool{}

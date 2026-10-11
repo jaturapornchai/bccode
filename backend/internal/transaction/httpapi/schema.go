@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS erp_doc_events (
 	businesscode text NOT NULL,
 	transflag integer NOT NULL,
 	docno text NOT NULL,
-	action text NOT NULL CHECK (action IN ('approve','unapprove','cancel','update')),
+	action text NOT NULL CHECK (action IN ('approve','unapprove','cancel','update','adjust_status')),
 	from_status text NOT NULL DEFAULT '',
 	to_status text NOT NULL DEFAULT '',
 	reason text NOT NULL DEFAULT '',
@@ -236,7 +236,7 @@ BEGIN
 		SELECT 1 FROM pg_constraint WHERE conname = 'erp_doc_events_action_check'
 	) THEN
 		ALTER TABLE erp_doc_events DROP CONSTRAINT erp_doc_events_action_check;
-		ALTER TABLE erp_doc_events ADD CONSTRAINT erp_doc_events_action_check CHECK (action IN ('approve','unapprove','cancel','update')) NOT VALID;
+		ALTER TABLE erp_doc_events ADD CONSTRAINT erp_doc_events_action_check CHECK (action IN ('approve','unapprove','cancel','update','adjust_status')) NOT VALID;
 	END IF;
 END $$;
 `

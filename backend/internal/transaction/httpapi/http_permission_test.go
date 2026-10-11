@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"smlcloudplatform/internal/doctype"
@@ -184,5 +185,68 @@ func TestAuthorizeSessionFailureIsNeverUnauthorized(t *testing.T) {
 	}
 	if body, ok := request.body.(apperr.Response); !ok || body.Success {
 		t.Fatalf("body = %#v", request.body)
+	}
+}
+
+// จอเฉพาะงานเทียบ menu id ตรงตัว (doctype.ScreenGrant): ให้อ่านรายการ + งานของจอนั้นงานเดียว
+// จอยกเลิกการอนุมัติไม่ให้ยกเลิกเอกสาร; จอที่ชื่อลงท้าย -cancel แต่เป็นจอหลักของเอกสาร (บันทึกยกเลิกเช็ครับ) ไม่ได้สิทธิ์ยกเลิกฟรี
+func TestAllowsDocTypeUsesExactScreenGrants(t *testing.T) {
+	pr, _ := doctype.ByKey("purchase-requisition")
+	po, _ := doctype.ByKey("purchase-order")
+	cheque, ok := doctype.ByKey("chequereceivedcancel")
+	if !ok {
+		t.Fatal("chequereceivedcancel not registered")
+	}
+	scope := gl.Scope{Holding: "H", Company: "C", Actor: "U"}
+	for _, tc := range []struct {
+		name        string
+		dt          doctype.DocType
+		permissions []string
+		action      string
+		want        bool
+	}{
+		{"approve-cancel screen reads", pr, []string{"purchase-requisition-approve-cancel"}, actionRead, true},
+		{"approve-cancel screen unapproves", pr, []string{"purchase-requisition-approve-cancel"}, actionUnapprove, true},
+		{"approve-cancel screen does not cancel", pr, []string{"purchase-requisition-approve-cancel"}, actionCancel, false},
+		{"approve-cancel screen does not approve", pr, []string{"purchase-requisition-approve-cancel"}, actionApprove, false},
+		{"approve-cancel screen does not delete", pr, []string{"purchase-requisition-approve-cancel"}, actionDelete, false},
+		{"approve screen approves", pr, []string{"purchase-requisition-approve"}, actionApprove, true},
+		{"approve screen does not unapprove", pr, []string{"purchase-requisition-approve"}, actionUnapprove, false},
+		{"approve screen does not cancel", pr, []string{"purchase-requisition-approve"}, actionCancel, false},
+		{"cancel screen cancels", pr, []string{"purchase-requisition-cancel"}, actionCancel, true},
+		{"cancel screen does not approve", pr, []string{"purchase-requisition-cancel"}, actionApprove, false},
+		{"po approve screen cannot edit", po, []string{"purchase-order-approve"}, actionUpdate, false},
+		{"po approve screen cannot create", po, []string{"purchase-order-approve"}, actionCreate, false},
+		{"main screen approve permission unapproves", pr, []string{"purchase-requisition", "purchase-requisition:approve"}, actionUnapprove, true},
+		{"main screen update permission unapproves", pr, []string{"purchase-requisition", "purchase-requisition:update"}, actionUnapprove, true},
+		{"main screen entry alone cannot unapprove", pr, []string{"purchase-requisition"}, actionUnapprove, false},
+		{"cheque cancel document screen reads", cheque, []string{"cheque-received-cancel"}, actionRead, true},
+		{"cheque cancel document screen entry does not cancel", cheque, []string{"cheque-received-cancel"}, actionCancel, false},
+		{"cheque cancel document screen cancel permission", cheque, []string{"cheque-received-cancel", "cheque-received-cancel:cancel"}, actionCancel, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			session := glhttp.NewSessionAccess(scope, tc.permissions...)
+			if got := allowsDocType(session, tc.dt, tc.action); got != tc.want {
+				t.Fatalf("allowsDocType(%v, %s, %q) = %v, want %v", tc.permissions, tc.dt.Key, tc.action, got, tc.want)
+			}
+		})
+	}
+}
+
+// ความผิดพลาดของคำขอตอบเป็น key ของ languages.tsv: code = key, ข้อความตามภาษาของคำขอ ไม่ใช่ key ดิบหรือข้อความเทคนิค
+func TestFailRespondsWithLanguageKey(t *testing.T) {
+	request := newPermContext("not-a-module", "?lang=en")
+	if (&Http{}).authorize(request, actionRead) != nil {
+		t.Fatal("unknown module accepted")
+	}
+	body, ok := request.body.(apperr.Response)
+	if !ok || body.Code != "erp_err_invalid_module" {
+		t.Fatalf("body = %#v, want code erp_err_invalid_module", request.body)
+	}
+	if !strings.Contains(body.MessageTH, "not-a-module") || !strings.Contains(body.MessageTH, "ไม่รู้จักประเภทเอกสาร") {
+		t.Errorf("Thai message = %q", body.MessageTH)
+	}
+	if body.Message == "erp_err_invalid_module" || body.Message == "" {
+		t.Errorf("message must be translated text, got %q", body.Message)
 	}
 }

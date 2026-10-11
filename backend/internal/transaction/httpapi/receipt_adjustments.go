@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -243,13 +245,29 @@ func (s *Store) ProcessReceiptAdjustments(ctx context.Context, db *sql.DB, scope
 	}
 	defer tx.Rollback()
 
-	gl.LockCompanyTx(ctx, tx, scope.Company)
+	if err := gl.LockCompanyTx(ctx, tx, scope.Company); err != nil {
+		return 0, ledgerFail(err)
+	}
 
 	updatedCount := 0
 	for _, rawNo := range docNos {
 		docno := strings.TrimSpace(rawNo)
 		if docno == "" {
 			continue
+		}
+
+		var docDate sql.NullTime
+		err := tx.QueryRowContext(ctx, `SELECT docdatetime FROM doc
+			WHERE businesscode = $1 AND docno = $2 AND transflag = $3 AND NOT isdelete AND NOT iscancel FOR UPDATE`,
+			scope.Company, docno, doctype.GoodsReceive).Scan(&docDate)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return 0, fmt.Errorf("lock gr %s: %w", docno, err)
+		}
+		if err := checkDocDates(ctx, tx, scope, docDate); err != nil {
+			return 0, err
 		}
 
 		res, err := tx.ExecContext(ctx, `
@@ -272,11 +290,13 @@ func (s *Store) ProcessReceiptAdjustments(ctx context.Context, db *sql.DB, scope
 		if rowsAff > 0 {
 			updatedCount += int(rowsAff)
 
-			// Record audit event in erp_doc_events
-			_, _ = tx.ExecContext(ctx, `
-				INSERT INTO erp_doc_events (businesscode, transflag, docno, action, reason, actor, created_at)
-				VALUES ($1, $2, $3, 'adjust_status', $4, $5, now())
-			`, scope.Company, doctype.GoodsReceive, docno, "ปรับปรุงสถานะปิดใบรับสินค้า (GR Closed)", scope.Actor)
+			// Record audit event in erp_doc_events (เหตุผลเก็บเป็น key แปลตามภาษาของผู้ดูตอนอ่าน)
+			if _, err := tx.ExecContext(ctx, `
+				INSERT INTO erp_doc_events (businesscode, transflag, docno, action, to_status, reason, actor, created_at)
+				VALUES ($1, $2, $3, 'adjust_status', 'closed', $4, $5, now())
+			`, scope.Company, doctype.GoodsReceive, docno, eventReason(eventGRClosed), scope.Actor); err != nil {
+				return 0, fmt.Errorf("record gr adjustment event %s: %w", docno, err)
+			}
 		}
 	}
 
@@ -307,7 +327,7 @@ func (h *Http) listReceiptAdjustments(request microservice.IContext) error {
 
 	items, err := h.store.ListReceiptAdjustments(access.ctx, access.db, access.scope.Company, filter)
 	if err != nil {
-		return docFailure(request, err, "", "โหลดรายการใบรับสินค้าไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, map[string]any{
@@ -325,21 +345,21 @@ func (h *Http) processReceiptAdjustments(request microservice.IContext) error {
 
 	var payload ProcessReceiptAdjustmentsPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
 	if len(payload.DocNos) == 0 {
-		return fail(request, http.StatusBadRequest, "กรุณาเลือกรายการที่ต้องการปรับปรุง")
+		return fail(request, http.StatusBadRequest, "erp_err_select_items")
 	}
 
 	count, err := h.store.ProcessReceiptAdjustments(access.ctx, access.db, access.scope, payload.DocNos)
 	if err != nil {
-		return docFailure(request, err, "", "ปรับปรุงสถานะใบรับสินค้าไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, map[string]any{
 		"success":        true,
 		"adjusted_count": count,
-		"message":        fmt.Sprintf("ปรับปรุงเสร็จสิ้น %d รายการ", count),
+		"message":        langText("erp_msg_receipt_adjusted", requestLanguage(request), strconv.Itoa(count)),
 	})
 }

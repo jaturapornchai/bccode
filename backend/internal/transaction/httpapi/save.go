@@ -23,6 +23,26 @@ func serialized(dt doctype.DocType) bool {
 	return doctype.PostsToGL(dt.Flag) || movesStock(dt)
 }
 
+// checkDocDates คือการตรวจงวดของเอกสาร (Champ IsPeriodClose) ก่อนเขียนทุกครั้ง ทุกประเภทเอกสาร ไม่ใช่เฉพาะที่ลงบัญชี:
+// วันที่ของเอกสาร (วันตามปฏิทินของ holding) ต้องอยู่ในปีบัญชีที่เปิดและงวดที่ยังไม่ล็อก; วันที่ว่าง (NULL) ข้าม
+func checkDocDates(ctx context.Context, tx *sql.Tx, scope gl.Scope, dates ...sql.NullTime) error {
+	checked := make(map[string]bool, len(dates))
+	for _, date := range dates {
+		if !date.Valid {
+			continue
+		}
+		day := businessDay(date.Time)
+		if checked[day] {
+			continue
+		}
+		checked[day] = true
+		if _, err := gl.CheckSourceDateOpen(ctx, tx, scope, day); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // normalizeLines ให้ทุกบรรทัดมีเลขบรรทัดบวกและไม่ซ้ำกัน — เลขบรรทัดเป็นส่วนหนึ่งของกุญแจแถวสต็อก ซ้ำแล้วบันทึกไม่ได้
 func normalizeLines(details []ErpDetailItem) {
 	used := make(map[int]bool, len(details))
@@ -82,9 +102,10 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 	if isEdit {
 		var currentCancel bool
 		var currentApproval string
-		err := tx.QueryRowContext(ctx, `SELECT COALESCE(iscancel, false), COALESCE(approval_status, '')
+		var storedDate sql.NullTime
+		err := tx.QueryRowContext(ctx, `SELECT COALESCE(iscancel, false), COALESCE(approval_status, ''), docdatetime
 			FROM doc WHERE businesscode = $1 AND transflag = $2 AND docno = $3 AND NOT COALESCE(isdelete, false) FOR UPDATE`,
-			company, transflag, docNo).Scan(&currentCancel, &currentApproval)
+			company, transflag, docNo).Scan(&currentCancel, &currentApproval, &storedDate)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("update doc %s: %w", docNo, sql.ErrNoRows)
 		}
@@ -93,6 +114,10 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 		}
 		if currentCancel || currentApproval == "approved" {
 			return nil, docLockedError()
+		}
+		// แก้ไข = ย้ายเอกสารออกจากวันที่เดิมไปวันที่ใหม่ งวดของทั้งสองวันต้องยังเปิดอยู่
+		if err = checkDocDates(ctx, tx, scope, storedDate, sql.NullTime{Time: docDate, Valid: true}); err != nil {
+			return nil, err
 		}
 
 		if doctype.PostsToGL(transflag) {
@@ -133,6 +158,9 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt doct
 		}
 		if taken {
 			return nil, duplicateDocError(docNo)
+		}
+		if err = checkDocDates(ctx, tx, scope, sql.NullTime{Time: docDate, Valid: true}); err != nil {
+			return nil, err
 		}
 		insertQuery := `INSERT INTO doc (
 			businesscode, transflag, docno, custcode, docdatetime,
@@ -259,8 +287,9 @@ func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	var docNo string
 	var currentCancel bool
 	var currentApproval string
-	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, '') FROM doc %s FOR UPDATE", where)
-	if err = tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &currentCancel, &currentApproval); err != nil {
+	var docDate sql.NullTime
+	query := fmt.Sprintf("SELECT docno, COALESCE(iscancel, false), COALESCE(approval_status, ''), docdatetime FROM doc %s FOR UPDATE", where)
+	if err = tx.QueryRowContext(ctx, query, args...).Scan(&docNo, &currentCancel, &currentApproval, &docDate); err != nil {
 		return err
 	}
 	if currentCancel || currentApproval == "approved" {
@@ -280,6 +309,9 @@ func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, scope gl.Scope, dt do
 	}
 	if hasDownstream {
 		return docHasDownstreamError()
+	}
+	if err = checkDocDates(ctx, tx, scope, docDate); err != nil {
+		return err
 	}
 
 	now := time.Now().UTC()

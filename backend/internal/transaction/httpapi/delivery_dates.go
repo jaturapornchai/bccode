@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -107,7 +108,9 @@ func (s *Store) SaveDeliveryDates(ctx context.Context, db *sql.DB, scope gl.Scop
 	}
 	defer tx.Rollback()
 
-	gl.LockCompanyTx(ctx, tx, scope.Company)
+	if err := gl.LockCompanyTx(ctx, tx, scope.Company); err != nil {
+		return 0, ledgerFail(err)
+	}
 
 	updatedCount := 0
 	for _, item := range items {
@@ -120,6 +123,21 @@ func (s *Store) SaveDeliveryDates(ctx context.Context, db *sql.DB, scope gl.Scop
 		parsedDueDate, err := time.Parse("2006-01-02", newDueDateStr)
 		if err != nil {
 			continue
+		}
+
+		// 0. งวดของวันที่เอกสารต้องยังเปิดอยู่ (เอกสารที่ถูกยกเลิก/ลบ หรือไม่พบ = ข้ามเหมือนเดิม)
+		var docDate sql.NullTime
+		err = tx.QueryRowContext(ctx, `SELECT docdatetime FROM doc
+			WHERE businesscode = $1 AND transflag = $2 AND docno = $3 AND NOT isdelete AND NOT iscancel FOR UPDATE`,
+			scope.Company, dt.Flag, docno).Scan(&docDate)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return 0, fmt.Errorf("lock doc %s: %w", docno, err)
+		}
+		if err := checkDocDates(ctx, tx, scope, docDate); err != nil {
+			return 0, err
 		}
 
 		// 1. ปรับปรุงตาราง doc ฟิลด์ perioddatetime (วันครบกำหนด)
@@ -138,20 +156,26 @@ func (s *Store) SaveDeliveryDates(ctx context.Context, db *sql.DB, scope gl.Scop
 
 		// 2. ปรับปรุงวันครบกำหนดใน gl_subledger_documents เพื่อให้รายงานอายุหนี้ (Aging) แสดงผลถูกต้อง
 		var hasSubledger bool
-		_ = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'gl_subledger_documents')`).Scan(&hasSubledger)
+		if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'gl_subledger_documents')`).Scan(&hasSubledger); err != nil {
+			return 0, fmt.Errorf("check subledger table: %w", err)
+		}
 		if hasSubledger {
-			_, _ = tx.ExecContext(ctx, `
+			if _, err := tx.ExecContext(ctx, `
 				UPDATE gl_subledger_documents
 				SET payload = jsonb_set(COALESCE(payload::jsonb, '{}'::jsonb), '{due_date}', to_jsonb($1::text))
 				WHERE company = $2 AND (id = $3 OR id = 'AR-' || $3 OR id = 'AP-' || $3)
-			`, newDueDateStr, scope.Company, docno)
+			`, newDueDateStr, scope.Company, docno); err != nil {
+				return 0, fmt.Errorf("update subledger due date %s: %w", docno, err)
+			}
 		}
 
-		// 3. บันทึก audit trail
-		_, _ = tx.ExecContext(ctx, `
+		// 3. บันทึก audit trail (เหตุผลเก็บเป็น key + วันที่ แปลตามภาษาของผู้ดูตอนอ่าน)
+		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO erp_doc_events (businesscode, transflag, docno, action, reason, actor, created_at)
 			VALUES ($1, $2, $3, 'update', $4, $5, now())
-		`, scope.Company, dt.Flag, docno, fmt.Sprintf("ปรับปรุงวันครบกำหนดเป็น %s", newDueDateStr), scope.Actor)
+		`, scope.Company, dt.Flag, docno, eventReason(eventDueDateChanged, newDueDateStr), scope.Actor); err != nil {
+			return 0, fmt.Errorf("record due date event %s: %w", docno, err)
+		}
 
 		updatedCount++
 	}
@@ -174,7 +198,7 @@ func (h *Http) listDeliveryDates(request microservice.IContext) error {
 
 	items, err := h.store.ListDeliveryDateInvoices(access.ctx, access.db, access.scope.Company, access.dt.Flag, partner)
 	if err != nil {
-		return docFailure(request, err, "", "โหลดรายการเอกสารไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, map[string]any{
@@ -191,12 +215,12 @@ func (h *Http) saveDeliveryDates(request microservice.IContext) error {
 
 	var payload SaveDeliveryDatesPayload
 	if err := json.NewDecoder(request.Request().Body).Decode(&payload); err != nil {
-		return fail(request, http.StatusBadRequest, "รูปแบบข้อมูลไม่ถูกต้อง")
+		return fail(request, http.StatusBadRequest, "erp_err_invalid_payload")
 	}
 
 	count, err := h.store.SaveDeliveryDates(access.ctx, access.db, access.scope, access.dt, payload.Items)
 	if err != nil {
-		return docFailure(request, err, "", "บันทึกการปรับปรุงวันที่ไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, map[string]any{

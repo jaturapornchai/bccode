@@ -22,13 +22,13 @@ type BillingNotePrintItem struct {
 }
 
 type BillingNotePrintFilter struct {
-	FromDate   string
-	ToDate     string
-	FromDocNo  string
-	ToDocNo    string
-	FromCust   string
-	ToCust     string
-	SaleCode   string
+	FromDate  string
+	ToDate    string
+	FromDocNo string
+	ToDocNo   string
+	FromCust  string
+	ToCust    string
+	SaleCode  string
 }
 
 // ListBillingNotesForPrint ค้นหารายการใบวางบิลเพื่อนำมาพิมพ์เป็นชุด เทียบเท่า OnBttnShowBill ใน ARFrmPrintBillAutoView.cpp
@@ -165,18 +165,18 @@ func (h *Http) listBillingNotesForPrint(request microservice.IContext) error {
 	}
 
 	filter := BillingNotePrintFilter{
-		FromDate:   strings.TrimSpace(request.QueryParam("from_date")),
-		ToDate:     strings.TrimSpace(request.QueryParam("to_date")),
-		FromDocNo:  strings.TrimSpace(request.QueryParam("from_docno")),
-		ToDocNo:    strings.TrimSpace(request.QueryParam("to_docno")),
-		FromCust:   strings.TrimSpace(request.QueryParam("from_cust")),
-		ToCust:     strings.TrimSpace(request.QueryParam("to_cust")),
-		SaleCode:   strings.TrimSpace(request.QueryParam("sale_code")),
+		FromDate:  strings.TrimSpace(request.QueryParam("from_date")),
+		ToDate:    strings.TrimSpace(request.QueryParam("to_date")),
+		FromDocNo: strings.TrimSpace(request.QueryParam("from_docno")),
+		ToDocNo:   strings.TrimSpace(request.QueryParam("to_docno")),
+		FromCust:  strings.TrimSpace(request.QueryParam("from_cust")),
+		ToCust:    strings.TrimSpace(request.QueryParam("to_cust")),
+		SaleCode:  strings.TrimSpace(request.QueryParam("sale_code")),
 	}
 
 	items, err := h.store.ListBillingNotesForPrint(access.ctx, access.db, access.scope.Company, filter)
 	if err != nil {
-		return docFailure(request, err, "", "โหลดรายการใบวางบิลไม่สำเร็จ")
+		return docFailure(request, err, false)
 	}
 
 	return success(request, map[string]any{

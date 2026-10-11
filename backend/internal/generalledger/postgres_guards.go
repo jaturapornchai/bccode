@@ -51,7 +51,7 @@ func (s *PostgresStore) checkOpenDate(ctx context.Context, tx *sql.Tx, scope Sco
 		return err
 	}
 	if locked {
-		return fmt.Errorf("งวดบัญชีนี้ถูกล็อก กรุณาเลือกวันที่ในงวดเปิด")
+		return periodLockedError(date)
 	}
 	return nil
 }

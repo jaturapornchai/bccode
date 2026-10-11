@@ -28,6 +28,23 @@ func (r *statementRecorder) add(query string) {
 	r.statements = append(r.statements, query)
 }
 
+// touchedLedger: ทุกเอกสารอ่านปีบัญชี/งวดล็อกจาก gl_records ได้ (ตรวจว่างวดของวันที่เอกสารยังเปิด)
+// แต่ห้ามเขียนตาราง gl_ ใดๆ หรืออ่านตารางบัญชีอื่น
+func (r *statementRecorder) touchedLedger() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, q := range r.statements {
+		if !strings.Contains(q, "gl_") {
+			continue
+		}
+		if strings.HasPrefix(strings.TrimSpace(q), "SELECT") && strings.Count(q, "gl_") == strings.Count(q, "gl_records") {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func (r *statementRecorder) touched(fragment string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -135,6 +152,7 @@ func expectCreate(mock sqlmock.Sqlmock, flag int) {
 	mock.ExpectQuery(`SELECT EXISTS\(SELECT 1 FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3\)`).
 		WithArgs(testCompany, flag, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	expectDateOpen(mock, testDocDay, false)
 	mock.ExpectQuery(`INSERT INTO doc \(`).
 		WithArgs(withAny([]driver.Value{testCompany, flag}, 17)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
@@ -147,17 +165,17 @@ func firstDocNoPattern(prefix string) *regexp.Regexp {
 	return regexp.MustCompile(`^` + regexp.QuoteMeta(prefix) + `\d{4}-0001$`)
 }
 
-func TestParseTransFlagFollowsRegistry(t *testing.T) {
+func TestLookupDocTypeFollowsRegistry(t *testing.T) {
 	for _, dt := range doctype.All() {
-		flag, prefix, err := parseTransFlag(" " + strings.ToUpper(dt.Key) + " ")
-		if err != nil || flag != dt.Flag || prefix != dt.Prefix {
-			t.Errorf("parseTransFlag(%q) = %d,%q,%v; want %d,%q", dt.Key, flag, prefix, err, dt.Flag, dt.Prefix)
+		got, ok := lookupDocType(" " + strings.ToUpper(dt.Key) + " ")
+		if !ok || got.Flag != dt.Flag || got.Prefix != dt.Prefix {
+			t.Errorf("lookupDocType(%q) = %d,%q,%v; want %d,%q", dt.Key, got.Flag, got.Prefix, ok, dt.Flag, dt.Prefix)
 		}
 	}
 	for _, key := range []string{"", "doc", "receipt", "payment", "bank", "debitnote", "stock-prickup-product",
 		"etax", "withholdingtax", "purchasereceiptadjustment", "petty-cash-limit"} {
-		if flag, _, err := parseTransFlag(key); err == nil {
-			t.Errorf("parseTransFlag(%q) = %d; want error", key, flag)
+		if got, ok := lookupDocType(key); ok {
+			t.Errorf("lookupDocType(%q) = %d; want unknown", key, got.Flag)
 		}
 	}
 }
@@ -205,7 +223,7 @@ func TestSaveDocStoreOnlyTypesTouchNeitherGLNorStock(t *testing.T) {
 			if saved.GLStatus != "" || saved.GLDocNo != "" {
 				t.Errorf("a store-only document must not report a posting result, got %q %q", saved.GLStatus, saved.GLDocNo)
 			}
-			if rec.touched("gl_") || rec.touched("stock_") || rec.touched("erp_doc_journals") || rec.touched("pg_advisory") {
+			if rec.touchedLedger() || rec.touched("stock_") || rec.touched("erp_doc_journals") || rec.touched("pg_advisory") {
 				t.Error("store-only document touched ledger, stock or lock statements")
 			}
 			if err := mock.ExpectationsWereMet(); err != nil {
@@ -286,7 +304,7 @@ func TestSaveDocInfersReferenceTypeFromDocNo(t *testing.T) {
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Error(err)
 			}
-			if rec.touched("gl_") || rec.touched("stock_") {
+			if rec.touchedLedger() || rec.touched("stock_") {
 				t.Error("referenced document must still be store-only")
 			}
 		})
@@ -329,6 +347,11 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 			5350.0, 5000.0, 0.0, 350.0, 5000.0, 5350.0, false, false, testBranch, "บริษัท รุ่งเรืองก่อสร้าง จำกัด", "ซื้อปูนซีเมนต์", "ส่งภายในสัปดาห์นี้", stamp, stamp,
 			"", "", nil, "", nil, "")
 	}
+	listRow := func() *sqlmock.Rows {
+		return sqlmock.NewRows(append(append([]string(nil), docColumns...), "creator_code")).AddRow(7, docNo, "2026-10-08T00:00:00Z", dt.Flag, "C101",
+			5350.0, 5000.0, 0.0, 350.0, 5000.0, 5350.0, false, false, testBranch, "บริษัท รุ่งเรืองก่อสร้าง จำกัด", "ซื้อปูนซีเมนต์", "ส่งภายในสัปดาห์นี้", stamp, stamp,
+			"", "", nil, "", nil, "", testActor)
+	}
 	mock.ExpectQuery(`FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3 LIMIT 1`).
 		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(docRow())
 	mock.ExpectQuery(`SELECT docnoref, docnoreftransflag FROM docref`).
@@ -353,16 +376,17 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	mock.ExpectQuery(`SELECT count\(\*\) FROM doc WHERE businesscode = \$1 AND transflag = \$2`).
 		WithArgs(testCompany, dt.Flag, "%CDP%").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 	mock.ExpectQuery(`FROM doc WHERE businesscode = \$1 AND transflag = \$2 .* LIMIT \$4 OFFSET \$5`).
-		WithArgs(testCompany, dt.Flag, "%CDP%", 20, 0).WillReturnRows(docRow())
-	list, total, err := store.ListDocs(ctx, db, testCompany, dt.Flag, "CDP", "", 0, 20)
-	if err != nil || total != 1 || len(list) != 1 || list[0].DocNo != docNo {
+		WithArgs(testCompany, dt.Flag, "%CDP%", 20, 0).WillReturnRows(listRow())
+	list, total, err := store.ListDocs(ctx, db, testCompany, dt.Flag, DocListFilter{Q: "CDP"}, 0, 20)
+	if err != nil || total != 1 || len(list) != 1 || list[0].DocNo != docNo || list[0].CreatedBy != testActor {
 		t.Fatalf("ListDocs = %+v, %d, %v", list, total, err)
 	}
 
 	// Update
 	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\)\s+FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3 AND NOT COALESCE\(isdelete, false\) FOR UPDATE`).
-		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"iscancel", "approval_status"}).AddRow(false, ""))
+	mock.ExpectQuery(`SELECT COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime\s+FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3 AND NOT COALESCE\(isdelete, false\) FOR UPDATE`).
+		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"iscancel", "approval_status", "docdatetime"}).AddRow(false, "", testDocDate))
+	expectDateOpen(mock, testDocDay, false)
 	mock.ExpectQuery(`UPDATE doc SET docdatetime = \$1`).
 		WithArgs(append(withAny(nil, 14), testCompany, dt.Flag, docNo)...).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(7))
 	mock.ExpectExec(`DELETE FROM docdetail WHERE businesscode = \$1 AND transflag = \$2 AND docno = \$3`).
@@ -379,10 +403,11 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 
 	// Delete (soft delete)
 	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\) FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3 FOR UPDATE`).
-		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status"}).AddRow(docNo, false, ""))
+	mock.ExpectQuery(`SELECT docno, COALESCE\(iscancel, false\), COALESCE\(approval_status, ''\), docdatetime FROM doc WHERE businesscode = \$1 AND transflag = \$2 AND NOT COALESCE\(isdelete, false\) AND docno = \$3 FOR UPDATE`).
+		WithArgs(testCompany, dt.Flag, docNo).WillReturnRows(sqlmock.NewRows([]string{"docno", "iscancel", "approval_status", "docdatetime"}).AddRow(docNo, false, "", testDocDate))
 	mock.ExpectQuery(`SELECT EXISTS\(\s+SELECT 1 FROM docref r`).
 		WithArgs(testCompany, docNo, dt.Flag).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	expectDateOpen(mock, testDocDay, false)
 	mock.ExpectExec(`UPDATE doc SET isdelete = true, modifier_code = \$1, modified_at = \$2\s+WHERE businesscode = \$3 AND transflag = \$4 AND docno = \$5`).
 		WithArgs(testActor, sqlmock.AnyArg(), testCompany, dt.Flag, docNo).WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
@@ -393,7 +418,7 @@ func TestCashDepositCRUDUsesItsOwnFlagAndPrefix(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
 	}
-	if rec.touched("gl_") || rec.touched("stock_") {
+	if rec.touchedLedger() || rec.touched("stock_") {
 		t.Error("cash deposit CRUD must not touch GL or stock tables")
 	}
 }
