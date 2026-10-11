@@ -11,18 +11,18 @@ describe("dimensionPrintRows (Champ 5538 / 5521 code range)", () => {
     const request = vi.fn(async () => page([row("D03"), row("D02")]));
     const result = await dimensionPrintRows("departments", " D02 ", " D03 ", request as never);
     expect(request).toHaveBeenCalledTimes(1);
-    expect(new URL(`http://x/${(request.mock.calls[0] as unknown as [string])[0]}`).searchParams.toString()).toBe("page=1&limit=500&codefrom=D02&codeto=D03");
+    expect(new URL(`http://x/${(request.mock.calls[0] as unknown as [string])[0]}`).searchParams.toString()).toBe("page=1&limit=500&codefrom=D02&codeto=D03&purpose=print");
     expect(result).toEqual({ rows: [row("D03"), row("D02")], complete: true });
   });
   it("sends no range for the whole register and ignores 'to' without 'from' like Champ", async () => {
     const request = vi.fn(async () => page([row("P01")]));
     await dimensionPrintRows("projects", "", "P09", request as never);
-    expect((request.mock.calls[0] as unknown as [string])[0]).toBe("projects?page=1&limit=500");
+    expect((request.mock.calls[0] as unknown as [string])[0]).toBe("projects?page=1&limit=500&purpose=print");
   });
   it("sends 'from' alone as the exact-code filter", async () => {
     const request = vi.fn(async () => page([row("P01")]));
     await dimensionPrintRows("projects", "P01", "", request as never);
-    expect((request.mock.calls[0] as unknown as [string])[0]).toBe("projects?page=1&limit=500&codefrom=P01");
+    expect((request.mock.calls[0] as unknown as [string])[0]).toBe("projects?page=1&limit=500&codefrom=P01&purpose=print");
   });
   it("reads every page until the reported total and flags a short read", async () => {
     const pages = [page([row("D01"), row("D02")], 3), page([row("D03")], 3)];

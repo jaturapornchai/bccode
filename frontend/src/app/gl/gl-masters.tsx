@@ -12,7 +12,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
 import { useGLPrint } from "./gl-print";
-import { BookPrintDialog, ChartPrintDialog } from "./gl-print-conditions";
+import { BookPrintDialog, ChartPrintDialog, ensureReportRight } from "./gl-print-conditions";
 import { AccountReferencesPanel } from "./gl-account-references";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
 import { DimensionCodeMultiSelect, invalidateDimensionRegisters, useDimensionRegisters } from "./gl-dimension-select";
@@ -678,8 +678,14 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
   }, [isAcc, treeAccounts, searchDebounce.query]);
 
   // Champ 5520 ผังบัญชี / 5531 รายละเอียดสมุดบัญชี = ปุ่มพิมพ์ในจอของตัวเอง; ถามเงื่อนไขการพิมพ์ก่อน (gl-print-conditions.tsx)
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     if (!isAcc || !treeAccounts.length) return;
+    try {
+      await ensureReportRight("accounts", "export");
+    } catch (e) {
+      showFormError(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+      return;
+    }
     const csv = chartOfAccountsCsv(treeAccounts, tr);
     downloadText(
       tr("gl_coa_export_filename", "ผังบัญชี-chart-of-accounts.csv"),
@@ -753,7 +759,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
                   type="button"
                   variant="outline"
                   className={actionClass}
-                  onClick={handleExportCsv}
+                  onClick={() => void handleExportCsv()}
                   title={tr("gl_export_csv", "ส่งออก CSV (Excel)")}
                 >
                   <Download className="size-4 mr-1.5" />

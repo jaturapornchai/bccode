@@ -26,7 +26,7 @@ describe("statement set request", () => {
   it("asks for the whole fiscal year with the selected templates and the notes flag", () => {
     const path = statementSetPath(year, ["BS-1", "PL-1"], true);
     expect(path.startsWith("reports/statement-set?")).toBe(true);
-    expect(Object.fromEntries(new URLSearchParams(path.split("?")[1]))).toEqual({ fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", templates: "BS-1,PL-1", notes: "true" });
+    expect(Object.fromEntries(new URLSearchParams(path.split("?")[1]))).toEqual({ fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", templates: "BS-1,PL-1", notes: "true", purpose: "print" });
   });
 
   it("sends an empty template list for a notes-only print (omitting it would ask the backend for the default set)", () => {

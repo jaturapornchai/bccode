@@ -23,9 +23,9 @@ type PreparedSection = { code: string; title: string; statementtype: string; sho
 type PreparedSet = { year: string; sections: PreparedSection[]; notes: { items: StatementNote[]; error: string } | null; error: string };
 type NotesInfo = { loading: boolean; count: number; error: string };
 
-/** คำขอชุดงบของทั้งปีบัญชี: templates ส่งเสมอ (ว่าง = หมายเหตุอย่างเดียว; backend ถือว่าไม่ส่ง = ชุดเริ่มต้น) */
+/** คำขอชุดงบของทั้งปีบัญชี: templates ส่งเสมอ (ว่าง = หมายเหตุอย่างเดียว; backend ถือว่าไม่ส่ง = ชุดเริ่มต้น); purpose=print = backend ตรวจสิทธิ์พิมพ์รายงาน (report:print) */
 export function statementSetPath(year: { code: string; startdate: string; enddate: string }, codes: string[], withNotes: boolean): string {
-  return `reports/statement-set?${new URLSearchParams({ fiscalyear: year.code, from: year.startdate, to: year.enddate, templates: codes.join(","), notes: String(withNotes) })}`;
+  return `reports/statement-set?${new URLSearchParams({ fiscalyear: year.code, from: year.startdate, to: year.enddate, templates: codes.join(","), notes: String(withNotes), purpose: "print" })}`;
 }
 
 /** ผลจาก backend → รายการตรวจก่อนพิมพ์ ตามลำดับที่ backend ส่งมา (ไม่เรียงใหม่ที่ browser) */

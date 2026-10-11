@@ -4,11 +4,11 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit 7c82b8b1 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit 5dbe6273 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
-## frontend/src/app/system-settings/system-settings-screen.tsx (15769 lines)
+## frontend/src/app/system-settings/system-settings-screen.tsx (15766 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -310,59 +310,59 @@ Files indexed: 32
 | 14433 | function | `restaurantBody` |
 | 14443 | function | `filterRecordsByDateTimeScope` |
 | 14460 | function | `defaultForm` |
-| 14520 | function | `formFromRecord` |
-| 14626 | function | `applyCompanyDefaults` |
-| 14636 | function | `applyBranchDefaults` |
-| 14649 | function | `applyCountryDefaultsToForm` |
-| 14674 | function | `syncCompanyLanguageForm` |
-| 14684 | function | `setFormValueIfEmpty` |
-| 14688 | function | `isEmptyFormValue` |
-| 14692 | function | `applyTimezoneMetaToForm` |
-| 14705 | function | `buildPayload` |
-| 14987 | function | `resolveDateTimeScope` |
-| 15032 | function | `localDateToUtcIso` |
-| 15043 | function | `normalizeUtcOffset` |
-| 15050 | function | `productCategoryGuid` |
-| 15055 | function | `productCategoryParentGuid` |
-| 15062 | function | `productCategoryGroupNumber` |
-| 15070 | function | `productCategoryXOrder` |
-| 15077 | function | `productCategoryDisplayName` |
-| 15085 | function | `productCategoryCodelistCount` |
-| 15094 | function | `productCategoryGroupLabel` |
-| 15117 | function | `isEmailLike` |
-| 15121 | function | `isProductUnitOption` |
-| 15129 | function | `productUnitCode` |
-| 15133 | function | `unitDisplayName` |
-| 15152 | function | `uploadUiText` |
-| 15156 | function | `ImageCropDialog` |
-| 15203 | const-arrow | `handler` |
-| 15210 | function | `apply` |
-| 15305 | function | `drawCroppedImage` |
-| 15342 | function | `clampNumber` |
-| 15346 | function | `extractUploadUri` |
-| 15369 | function | `resizeLogoFile` |
-| 15411 | function | `resizeImageFile` |
-| 15446 | function | `makeThumbnailFile` |
-| 15475 | function | `loadImageElement` |
-| 15484 | function | `canvasToBlob` |
-| 15492 | function | `isDecimalSettingField` |
-| 15503 | function | `normalizeDecimalPlaces` |
-| 15509 | function | `comboOptionsForField` |
-| 15526 | function | `timezoneOptions` |
-| 15540 | function | `supportedTimeZones` |
-| 15552 | function | `timezoneMeta` |
-| 15560 | function | `setTimezoneDerivedPayload` |
-| 15573 | function | `timezoneUtcOffset` |
-| 15590 | function | `namesToObject` |
-| 15603 | function | `objectToNames` |
-| 15627 | function | `parseJsonField` |
-| 15643 | function | `setByPath` |
-| 15653 | function | `deleteByPath` |
-| 15662 | function | `shortValue` |
-| 15672 | function | `fieldDisplayValue` |
-| 15729 | function | `masterPickerDisplayValue` |
-| 15742 | function | `isActiveRecord` |
-| 15752 | function | `settingIcon` |
+| 14517 | function | `formFromRecord` |
+| 14623 | function | `applyCompanyDefaults` |
+| 14633 | function | `applyBranchDefaults` |
+| 14646 | function | `applyCountryDefaultsToForm` |
+| 14671 | function | `syncCompanyLanguageForm` |
+| 14681 | function | `setFormValueIfEmpty` |
+| 14685 | function | `isEmptyFormValue` |
+| 14689 | function | `applyTimezoneMetaToForm` |
+| 14702 | function | `buildPayload` |
+| 14984 | function | `resolveDateTimeScope` |
+| 15029 | function | `localDateToUtcIso` |
+| 15040 | function | `normalizeUtcOffset` |
+| 15047 | function | `productCategoryGuid` |
+| 15052 | function | `productCategoryParentGuid` |
+| 15059 | function | `productCategoryGroupNumber` |
+| 15067 | function | `productCategoryXOrder` |
+| 15074 | function | `productCategoryDisplayName` |
+| 15082 | function | `productCategoryCodelistCount` |
+| 15091 | function | `productCategoryGroupLabel` |
+| 15114 | function | `isEmailLike` |
+| 15118 | function | `isProductUnitOption` |
+| 15126 | function | `productUnitCode` |
+| 15130 | function | `unitDisplayName` |
+| 15149 | function | `uploadUiText` |
+| 15153 | function | `ImageCropDialog` |
+| 15200 | const-arrow | `handler` |
+| 15207 | function | `apply` |
+| 15302 | function | `drawCroppedImage` |
+| 15339 | function | `clampNumber` |
+| 15343 | function | `extractUploadUri` |
+| 15366 | function | `resizeLogoFile` |
+| 15408 | function | `resizeImageFile` |
+| 15443 | function | `makeThumbnailFile` |
+| 15472 | function | `loadImageElement` |
+| 15481 | function | `canvasToBlob` |
+| 15489 | function | `isDecimalSettingField` |
+| 15500 | function | `normalizeDecimalPlaces` |
+| 15506 | function | `comboOptionsForField` |
+| 15523 | function | `timezoneOptions` |
+| 15537 | function | `supportedTimeZones` |
+| 15549 | function | `timezoneMeta` |
+| 15557 | function | `setTimezoneDerivedPayload` |
+| 15570 | function | `timezoneUtcOffset` |
+| 15587 | function | `namesToObject` |
+| 15600 | function | `objectToNames` |
+| 15624 | function | `parseJsonField` |
+| 15640 | function | `setByPath` |
+| 15650 | function | `deleteByPath` |
+| 15659 | function | `shortValue` |
+| 15669 | function | `fieldDisplayValue` |
+| 15726 | function | `masterPickerDisplayValue` |
+| 15739 | function | `isActiveRecord` |
+| 15749 | function | `settingIcon` |
 
 ## frontend/src/app/menu/product-screen.tsx (3104 lines)
 
@@ -749,7 +749,7 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1594 lines)
+## frontend/src/app/gl/gl-masters.tsx (1600 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -789,18 +789,18 @@ Files indexed: 32
 | 647 | const-arrow | `toggleCategory` |
 | 651 | const-arrow | `toggleNode` |
 | 681 | const-arrow | `handleExportCsv` |
-| 1208 | function | `CodeInput` |
-| 1225 | function | `AccountFields` |
-| 1231 | const-arrow | `handleTypeChange` |
-| 1241 | const-arrow | `handleParentChange` |
-| 1426 | function | `FiscalYearFields` |
-| 1467 | function | `isChequeMappingDoc` |
-| 1477 | function | `mappingSourceDocPatch` |
-| 1488 | function | `champMasterLabels` |
-| 1495 | function | `MasterFields` |
-| 1521 | function | `UntypedJournalBooksNotice` |
-| 1541 | function | `JournalBookTypeBadge` |
-| 1553 | function | `JournalBookFields` |
+| 1214 | function | `CodeInput` |
+| 1231 | function | `AccountFields` |
+| 1237 | const-arrow | `handleTypeChange` |
+| 1247 | const-arrow | `handleParentChange` |
+| 1432 | function | `FiscalYearFields` |
+| 1473 | function | `isChequeMappingDoc` |
+| 1483 | function | `mappingSourceDocPatch` |
+| 1494 | function | `champMasterLabels` |
+| 1501 | function | `MasterFields` |
+| 1527 | function | `UntypedJournalBooksNotice` |
+| 1547 | function | `JournalBookTypeBadge` |
+| 1559 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
@@ -901,34 +901,35 @@ Files indexed: 32
 | 1425 | function | `listHoldingMembers` |
 | 1445 | function | `createHoldingPayload` |
 
-## frontend/src/app/gl/gl-statement-designer.tsx (1417 lines)
+## frontend/src/app/gl/gl-statement-designer.tsx (1437 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 98 | function | `ensureFontLoaded` |
 | 111 | function | `GLStatementDesigner` |
-| 209 | function | `targetRefFor` |
-| 215 | function | `targetLabelFor` |
-| 218 | function | `targetTitleFor` |
-| 223 | function | `applyFixes` |
-| 244 | function | `pickAccounts` |
-| 251 | function | `acceptSuggestions` |
-| 269 | function | `suggestButton` |
-| 290 | function | `switchMode` |
-| 313 | function | `open` |
-| 343 | function | `applyStarterTemplate` |
-| 371 | function | `save` |
-| 407 | function | `cloneTemplate` |
-| 421 | function | `remove` |
-| 448 | function | `addRow` |
-| 467 | function | `updateRow` |
-| 473 | function | `deleteRow` |
-| 479 | function | `updateColumns` |
-| 484 | function | `updateColumn` |
-| 488 | function | `moveRow` |
-| 499 | function | `runCalculation` |
-| 522 | const-arrow | `updateGlobalStyle` |
-| 531 | function | `statementView` |
+| 210 | function | `targetRefFor` |
+| 216 | function | `targetLabelFor` |
+| 219 | function | `targetTitleFor` |
+| 224 | function | `applyFixes` |
+| 245 | function | `pickAccounts` |
+| 252 | function | `acceptSuggestions` |
+| 270 | function | `suggestButton` |
+| 291 | function | `switchMode` |
+| 314 | function | `open` |
+| 344 | function | `applyStarterTemplate` |
+| 372 | function | `save` |
+| 408 | function | `cloneTemplate` |
+| 422 | function | `remove` |
+| 449 | function | `addRow` |
+| 468 | function | `updateRow` |
+| 474 | function | `deleteRow` |
+| 480 | function | `updateColumns` |
+| 485 | function | `updateColumn` |
+| 489 | function | `moveRow` |
+| 500 | function | `runCalculation` |
+| 526 | function | `statementFor` |
+| 541 | const-arrow | `updateGlobalStyle` |
+| 550 | function | `statementView` |
 
 ## frontend/src/app/gl/gl-journals.tsx (1354 lines)
 

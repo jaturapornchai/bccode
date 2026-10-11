@@ -144,6 +144,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   const [calculating, setCalculating] = useState(false);
   const [calculated, setCalculated] = useState<GLReport | null>(null);
   const [previewError, setPreviewError] = useState("");
+  const calculatedQuery = useRef<ReportFilters | null>(null);
   const language = useGLLanguage();
   const statementPrint = useGLPrint();
 
@@ -511,9 +512,27 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
     setPreviewError("");
     try {
       const query = { ...filters, template: template.code };
-      setCalculated(await fetchReport("statement", query));
+      const report = await fetchReport("statement", query);
+      calculatedQuery.current = query;
+      setCalculated(report);
     } catch (e) {
       setPreviewError((e as Error).message);
+    } finally {
+      setCalculating(false);
+    }
+  }
+
+  // พิมพ์ / ส่งออกงบ = อ่านงบที่คำนวณไว้ซ้ำพร้อม purpose ให้ backend ตรวจสิทธิ์เฉพาะก่อน แบบ Champ (BaseReportView.cpp:733-746, 2402-2416)
+  async function statementFor(purpose: "print" | "export") {
+    const query = calculatedQuery.current;
+    if (!calculated || !query) return null;
+    setCalculating(true);
+    setPreviewError("");
+    try {
+      return await fetchReport("statement", query, 1, 50, undefined, false, purpose);
+    } catch (e) {
+      setPreviewError((e as Error).message);
+      return null;
     } finally {
       setCalculating(false);
     }
@@ -1252,17 +1271,18 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button type="button" variant="outline" className={actionClass} disabled={!calculated} onClick={() => calculated && statementPrint.print(statementView(calculated), statementOrientation(calculated))}>
+                      <Button type="button" variant="outline" className={actionClass} disabled={!calculated || calculating} onClick={() => void statementFor("print").then((report) => report && statementPrint.print(statementView(report), statementOrientation(report)))}>
                         <Printer className="mr-1.5 h-4 w-4" /> {tr("gl_print_financial_statements", "พิมพ์งบการเงิน")}
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         className={actionClass}
-                        disabled={!calculated}
-                        onClick={() => {
-                          if (!calculated) return;
-                          downloadText(tr("gl_financial_statements_csv", "งบการเงิน-{0}-{1}.csv").replace("{0}", String(template.code)).replace("{1}", String(filters.fiscalyear)), reportCsv(calculated), "text/csv;charset=utf-8");
+                        disabled={!calculated || calculating}
+                        onClick={async () => {
+                          const report = await statementFor("export");
+                          if (!report) return;
+                          downloadText(tr("gl_financial_statements_csv", "งบการเงิน-{0}-{1}.csv").replace("{0}", String(template.code)).replace("{1}", String(filters.fiscalyear)), reportCsv(report), "text/csv;charset=utf-8");
                         }}
                       >
                         <Download className="mr-1.5 h-4 w-4" /> {tr("gl_export_csv", "ส่งออก CSV")}

@@ -22,13 +22,13 @@ const PRINT_PAGE_SIZE = 500;
 const PRINT_MAX_PAGES = 20;
 const BUDGET_PRINT_PAGE_ROWS = 1000;
 
-/** Rows of a master in print order, filtered and ordered by the backend list endpoint (codefrom/codeto). `request` is injectable for tests; `complete` is false when the backend reported more rows than were read. */
+/** Rows of a master in print order, filtered and ordered by the backend list endpoint (codefrom/codeto); purpose=print lets the backend refuse without report:print. `request` is injectable for tests; `complete` is false when the backend reported more rows than were read. */
 export async function codeRangePrintRows<T>(resource: GLResource, from: string, to: string, request: <R>(path: string) => Promise<R> = glRequest): Promise<{ rows: T[]; complete: boolean }> {
   const codefrom = from.trim(), codeto = codefrom ? to.trim() : "";
   const rows: T[] = [];
   let total = 0;
   for (let page = 1; page <= PRINT_MAX_PAGES; page += 1) {
-    const query = new URLSearchParams({ page: String(page), limit: String(PRINT_PAGE_SIZE), ...(codefrom ? { codefrom } : {}), ...(codeto ? { codeto } : {}) });
+    const query = new URLSearchParams({ page: String(page), limit: String(PRINT_PAGE_SIZE), ...(codefrom ? { codefrom } : {}), ...(codeto ? { codeto } : {}), purpose: "print" });
     const result = await request<GLPage<T>>(`${resource}?${query}`);
     const items = result.items ?? [];
     total = result.total;
@@ -36,6 +36,11 @@ export async function codeRangePrintRows<T>(resource: GLResource, from: string, 
     if (rows.length >= total || items.length === 0) break;
   }
   return { rows, complete: rows.length >= total };
+}
+
+/** Champ checks สิทธิ์เฉพาะ on click before it prints / exports (BaseReportView.cpp:733-746, 2402-2416). Data already on screen is not read again: one purpose-marked read of the register lets the backend refuse with its own message (thrown). */
+export async function ensureReportRight(resource: GLResource, purpose: "print" | "export", request: <R>(path: string) => Promise<R> = glRequest): Promise<void> {
+  await request(`${resource}?${new URLSearchParams({ page: "1", limit: "1", purpose })}`);
 }
 
 /** "from" empty = no condition (a lone "to" is ignored, like Champ); "from" alone = equals; both = range. A reversed range matches nothing in Champ, so the dialogs refuse it. */
@@ -122,19 +127,28 @@ function PrintDialogShell({ title, onClose, busy = false, onRun, children, error
 
 export function ChartPrintDialog({ accounts, print, onClose }: { accounts: readonly GLAccount[]; print: Print; onClose: () => void }) {
   const tr = useGLText(), language = useGLLanguage();
-  const [c, setC] = useState<ChartPrintConditions>(DEFAULT_CHART_PRINT), [error, setError] = useState("");
+  const [c, setC] = useState<ChartPrintConditions>(DEFAULT_CHART_PRINT), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const patch = (next: Partial<ChartPrintConditions>) => { setC((value) => ({ ...value, ...next })); setError(""); };
-  function run() {
+  async function run() {
+    if (busy) return;
     if (chartPrintReversed(c)) { setError(tr("gl_print_range_reversed", "ค่า “จาก” ต้องไม่มากกว่า “ถึง”")); return; }
     const rows = filterChartForPrint(accounts, c);
     if (!rows.length) { setError(tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")); return; }
-    print(<GLChartOfAccountsPrint accounts={rows} company={printCompanyName()} tr={tr} language={language} conditions={chartPrintConditionLines(c, tr)} nameMode={c.namemode} />, "portrait");
-    onClose();
+    setBusy(true);
+    try {
+      await ensureReportRight("accounts", "print");
+      print(<GLChartOfAccountsPrint accounts={rows} company={printCompanyName()} tr={tr} language={language} conditions={chartPrintConditionLines(c, tr)} nameMode={c.namemode} />, "portrait");
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error && cause.message ? cause.message : tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
+    } finally {
+      setBusy(false);
+    }
   }
   const categoryOptions = CHART_CATEGORY_ORDER.map((value) => ({ value, label: tr(...accountTypeLabels[value]) }));
   return (
-    <PrintDialogShell title={tr("gl_coa_report_title", "รายงานรายละเอียดผังบัญชี")} onClose={onClose} onRun={run} error={error} hint={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ · ใส่เฉพาะช่อง “จาก” = พิมพ์เฉพาะรหัสนั้น")}>
-      <RangeFields fromLabel={tr("gl_print_from_account_code", "จากรหัสบัญชี")} toLabel={tr("gl_print_to_account_code", "ถึงรหัสบัญชี")} from={c.codefrom} to={c.codeto} onFrom={(codefrom) => patch({ codefrom })} onTo={(codeto) => patch({ codeto })} onEnter={run} />
+    <PrintDialogShell title={tr("gl_coa_report_title", "รายงานรายละเอียดผังบัญชี")} onClose={onClose} busy={busy} onRun={() => void run()} error={error} hint={tr("gl_dimension_print_hint", "เว้นว่างทั้งสองช่อง = พิมพ์ทุกรายการ · ใส่เฉพาะช่อง “จาก” = พิมพ์เฉพาะรหัสนั้น")}>
+      <RangeFields fromLabel={tr("gl_print_from_account_code", "จากรหัสบัญชี")} toLabel={tr("gl_print_to_account_code", "ถึงรหัสบัญชี")} from={c.codefrom} to={c.codeto} onFrom={(codefrom) => patch({ codefrom })} onTo={(codeto) => patch({ codeto })} onEnter={() => void run()} />
       <Field label={tr("gl_print_from_category", "จากหมวด")}><Combobox<AccountCategory> aria-label={tr("gl_print_from_category", "จากหมวด")} value={c.categoryfrom} options={categoryOptions} onChange={(categoryfrom) => patch({ categoryfrom })} /></Field>
       <Field label={tr("gl_print_to_category", "ถึงหมวด")}><Combobox<AccountCategory> aria-label={tr("gl_print_to_category", "ถึงหมวด")} value={c.categoryto} options={categoryOptions} onChange={(categoryto) => patch({ categoryto })} /></Field>
       <Field label={tr("gl_print_name_display", "แสดงชื่อบัญชี")}>
@@ -210,10 +224,10 @@ export function budgetPrintConditionLines(c: BudgetPrintConditions, tr: GLTextFn
 
 /** Every row of the report at one snapshot (pages of BUDGET_PRINT_PAGE_ROWS); a change between pages aborts instead of printing a mixed report. */
 export async function budgetPrintReport(filters: ReportFilters, changedMessage: string, request: typeof fetchReport = fetchReport): Promise<Pick<GLReport, "rows" | "totals">> {
-  const first = await request("budgetdetail", filters, 1, BUDGET_PRINT_PAGE_ROWS);
+  const first = await request("budgetdetail", filters, 1, BUDGET_PRINT_PAGE_ROWS, undefined, false, "print");
   const rows = [...(first.rows ?? [])];
   for (let next = 2; rows.length < first.totalrows; next++) {
-    const chunk = await request("budgetdetail", filters, next, BUDGET_PRINT_PAGE_ROWS, first.sequence);
+    const chunk = await request("budgetdetail", filters, next, BUDGET_PRINT_PAGE_ROWS, first.sequence, false, "print");
     if (chunk.totalrows !== first.totalrows || chunk.sequence !== first.sequence || !chunk.rows?.length) throw new Error(changedMessage);
     rows.push(...chunk.rows);
   }

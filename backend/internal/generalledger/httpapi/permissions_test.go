@@ -1,6 +1,9 @@
 package httpapi
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"strings"
 	"testing"
 )
@@ -160,5 +163,48 @@ func TestReportPrintExportNeedSpecialRights(t *testing.T) {
 	}
 	if status, _ := reportPurposeRefusal(map[string]bool{"*": true}, "download", "th"); status != 400 {
 		t.Fatalf("unknown purpose = %d", status)
+	}
+}
+
+// Master-list printouts / CSV files (ผังบัญชี, สมุดรายวัน, แผนก, โครงการ) read through list(), not report(): both
+// handlers must refuse purpose=print|export without the right before they read anything (Champ checks the right
+// before it prints / exports — BaseReportView.cpp:736-745, 2406-2415). The handlers resolve the session straight from
+// PostgreSQL, so this reads the handler source the way tax_error_language_test.go does.
+func TestListAndReportRefusePurposeBeforeReading(t *testing.T) {
+	file, err := parser.ParseFile(token.NewFileSet(), "http.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := map[string]bool{}
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv == nil || (fn.Name.Name != "list" && fn.Name.Name != "report") {
+			continue
+		}
+		refusal, firstRead := token.NoPos, token.NoPos
+		ast.Inspect(fn.Body, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			switch fun := call.Fun.(type) {
+			case *ast.Ident:
+				if fun.Name == "reportPurposeRefusal" && refusal == token.NoPos {
+					refusal = call.Pos()
+				}
+			case *ast.SelectorExpr:
+				if (fun.Sel.Name == "startRead" || fun.Sel.Name == "List" || strings.HasPrefix(fun.Sel.Name, "list")) && firstRead == token.NoPos {
+					firstRead = call.Pos()
+				}
+			}
+			return true
+		})
+		if refusal == token.NoPos || (firstRead != token.NoPos && firstRead < refusal) {
+			t.Errorf("%s() reads GL data without checking purpose=print|export first", fn.Name.Name)
+		}
+		checked[fn.Name.Name] = true
+	}
+	if !checked["list"] || !checked["report"] {
+		t.Fatalf("handlers not found: %v", checked)
 	}
 }

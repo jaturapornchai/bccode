@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLJournalBook, GLPage } from "@/lib/general-ledger";
 import { emptyReportFilters, reportQuery } from "./gl-reports";
-import { DEFAULT_BUDGET_PRINT, DEFAULT_CHART_PRINT, budgetPrintConditionLines, budgetPrintFilters, budgetPrintReport, budgetPrintReversed, chartPrintConditionLines, chartPrintReversed, codeRangeLines, codeRangePrintRows, codeRangeReversed, filterChartForPrint } from "./gl-print-conditions";
+import { DEFAULT_BUDGET_PRINT, DEFAULT_CHART_PRINT, budgetPrintConditionLines, budgetPrintFilters, budgetPrintReport, budgetPrintReversed, chartPrintConditionLines, chartPrintReversed, codeRangeLines, codeRangePrintRows, codeRangeReversed, ensureReportRight, filterChartForPrint } from "./gl-print-conditions";
 
 const tr = (_key: string, fallback: string) => fallback;
 const account = (accountcode: string, accounttype: GLAccount["accounttype"], extra: Partial<GLAccount> = {}): GLAccount =>
@@ -20,7 +20,7 @@ describe("codeRangePrintRows (Champ code-range print conditions)", () => {
   it("sends the trimmed range to the backend list of the given master", async () => {
     const request = vi.fn(async () => page([book("JV"), book("PV")]));
     const result = await codeRangePrintRows<GLJournalBook>("journal-books", " JV ", " PV ", request as never);
-    expect(url(request)).toBe("journal-books?page=1&limit=500&codefrom=JV&codeto=PV");
+    expect(url(request)).toBe("journal-books?page=1&limit=500&codefrom=JV&codeto=PV&purpose=print");
     expect(result.complete).toBe(true);
     expect(result.rows.map((item) => item.code)).toEqual(["JV", "PV"]);
   });
@@ -28,8 +28,8 @@ describe("codeRangePrintRows (Champ code-range print conditions)", () => {
     const request = vi.fn(async () => page([book("JV")]));
     await codeRangePrintRows<GLJournalBook>("journal-books", "JV", "", request as never);
     await codeRangePrintRows<GLJournalBook>("journal-books", "", "PV", request as never);
-    expect(url(request, 0)).toBe("journal-books?page=1&limit=500&codefrom=JV");
-    expect(url(request, 1)).toBe("journal-books?page=1&limit=500");
+    expect(url(request, 0)).toBe("journal-books?page=1&limit=500&codefrom=JV&purpose=print");
+    expect(url(request, 1)).toBe("journal-books?page=1&limit=500&purpose=print");
   });
   it("reads every page and flags a short read", async () => {
     const pages = [page([book("A"), book("B")], 3), page([book("C")], 3)];
@@ -37,6 +37,15 @@ describe("codeRangePrintRows (Champ code-range print conditions)", () => {
     expect(all).toMatchObject({ complete: true, rows: [{ code: "A" }, { code: "B" }, { code: "C" }] });
     const short = await codeRangePrintRows<GLJournalBook>("journal-books", "", "", vi.fn(async () => page([], 5)) as never);
     expect(short).toEqual({ rows: [], complete: false });
+  });
+  // Champ checks the right on click (BaseReportView.cpp:733-746, 2402-2416): a register already on screen is checked
+  // with one purpose-marked read; the backend's refusal reaches the dialog as the thrown message
+  it("checks the print / export right of data already on screen with one purpose-marked read", async () => {
+    const request = vi.fn(async () => page([]));
+    await ensureReportRight("accounts", "export", request as never);
+    expect(url(request)).toBe("accounts?page=1&limit=1&purpose=export");
+    const refused = vi.fn(async () => { throw new Error("ไม่มีสิทธิ์พิมพ์รายงาน"); });
+    await expect(ensureReportRight("accounts", "print", refused as never)).rejects.toThrow("ไม่มีสิทธิ์พิมพ์รายงาน");
   });
 });
 
@@ -123,7 +132,8 @@ describe("budget detail print conditions (Champ 5525)", () => {
     const full = await budgetPrintReport(emptyReportFilters, "changed", request as never);
     expect(full.rows.map((row) => row.budgetcode)).toEqual(["B1", "B2", "B3"]);
     expect(full.totals).toEqual({ amount: "9" });
-    expect(request.mock.calls[1]).toEqual(["budgetdetail", emptyReportFilters, 2, 1000, 7]);
+    expect(request.mock.calls[0]).toEqual(["budgetdetail", emptyReportFilters, 1, 1000, undefined, false, "print"]);
+    expect(request.mock.calls[1]).toEqual(["budgetdetail", emptyReportFilters, 2, 1000, 7, false, "print"]);
     const changed = [report([1, 2], 3), report([3], 4)];
     await expect(budgetPrintReport(emptyReportFilters, "changed", vi.fn(async () => changed.shift()!) as never)).rejects.toThrow("changed");
   });

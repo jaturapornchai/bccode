@@ -506,6 +506,11 @@ func (h *Http) list(request microservice.IContext) error {
 	if err != nil {
 		return failure(request, err)
 	}
+	// master-list printouts / CSV files (ผังบัญชี, สมุดรายวัน, แผนก, โครงการ) read through here with purpose=print|export
+	if status, body := reportPurposeRefusal(scope.Permissions, request.QueryParam("purpose"), getRequestLanguage(request)); status != 0 {
+		request.Response(status, body)
+		return nil
+	}
 	resource := request.Param("resource")
 	if resource == "journal-support" {
 		return h.listJournalSupport(ctx, request, scope)

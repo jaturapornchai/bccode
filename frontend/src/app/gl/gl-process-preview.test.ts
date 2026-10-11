@@ -38,4 +38,19 @@ describe("GL report print / export rights",()=>{
     expect(source.slice(source.indexOf("async function printReport("),source.indexOf("async function exportCsv("))).toMatch(/completeReport\([\s\S]*, "print"\);/);
     expect(source.slice(source.indexOf("async function exportCsv("),source.indexOf("const resultReady"))).toMatch(/completeReport\([\s\S]*, "export"\);/);
   });
+  // print / CSV outside the report screen also go through a purpose-checked read; Champ checks the right on click
+  it("re-reads the financial statement with its purpose before printing or exporting it",()=>{
+    const source=readFileSync(resolve(process.cwd(),"src/app/gl/gl-statement-designer.tsx"),"utf8");
+    expect(source).toContain('fetchReport("statement", query, 1, 50, undefined, false, purpose)');
+    expect(source).toContain('statementFor("print").then((report) => report && statementPrint.print(statementView(report)');
+    expect(source).toContain('const report = await statementFor("export");');
+    expect(source).not.toContain("statementPrint.print(statementView(calculated)");
+    expect(source).not.toContain("reportCsv(calculated)");
+  });
+  it("checks the right before printing or exporting the chart of accounts already on screen",()=>{
+    const masters=readFileSync(resolve(process.cwd(),"src/app/gl/gl-masters.tsx"),"utf8");
+    expect(masters.slice(masters.indexOf("const handleExportCsv"),masters.indexOf("chartOfAccountsCsv(treeAccounts"))).toContain('await ensureReportRight("accounts", "export");');
+    const conditions=readFileSync(resolve(process.cwd(),"src/app/gl/gl-print-conditions.tsx"),"utf8");
+    expect(conditions.slice(conditions.indexOf("export function ChartPrintDialog("),conditions.indexOf("<GLChartOfAccountsPrint"))).toContain('await ensureReportRight("accounts", "print");');
+  });
 });
