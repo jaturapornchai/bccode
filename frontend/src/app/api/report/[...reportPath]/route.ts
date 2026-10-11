@@ -22,9 +22,9 @@ export async function GET(request: Request, context: Context) {
   if (reportPath.length !== 1 || reportPath[0] !== "registry") return bad("ไม่พบรายการที่ต้องการ", 404);
   const incoming = new URL(request.url).searchParams;
   const query = new URLSearchParams();
-  const module = incoming.get("module");
+  const moduleCode = incoming.get("module");
   const lang = incoming.get("lang");
-  if (module !== null) { if (!MODULE.test(module)) return bad("รูปแบบข้อมูลไม่ถูกต้อง"); query.set("module", module); }
+  if (moduleCode !== null) { if (!MODULE.test(moduleCode)) return bad("รูปแบบข้อมูลไม่ถูกต้อง"); query.set("module", moduleCode); }
   if (lang !== null) { if (!LANG.test(lang)) return bad("รูปแบบข้อมูลไม่ถูกต้อง"); query.set("lang", lang); }
   try {
     return await proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/report/v1/registry?${query}`, { method: "GET" }, { userErrorStatusOk: true, timeoutMs: REPORT_TIMEOUT_MS });
