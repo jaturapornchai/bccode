@@ -21,17 +21,22 @@ const SALES_SIDE = new Set([
   'chequereceived', 'otherincome', 'creditcard',
 ]);
 
+// Cheque doctypes are owned by /cheque/v1 and rejected on /transaction/:module (cheque_moved_test.go)
+const CHEQUE_FLAGS = new Set([61, 418, 419, 420, 421, 422, 423, 424, 425, 426]);
+
 /** Parse `{"key", flag|Const, "PREFIX", StockX, "screen"}` rows of backend/internal/doctype/doctype.go. */
 export function readRegistry() {
   const go = fs.readFileSync(new URL('backend/internal/doctype/doctype.go', ROOT), 'utf8');
   const consts = {};
   for (const m of go.matchAll(/^\s+([A-Z][A-Za-z]+)\s*=\s*([0-9]+)\s*$/gm)) consts[m[1]] = Number(m[2]);
-  return [...go.matchAll(/\{"([a-z0-9-]+)",\s*([A-Za-z0-9]+),\s*"([A-Z0-9-]+)",\s*(Stock[A-Za-z]+)/g)].map((m) => ({
-    key: m[1],
-    flag: consts[m[2]] ?? Number(m[2]),
-    prefix: m[3],
-    stock: m[4],
-  }));
+  return [...go.matchAll(/\{"([a-z0-9-]+)",\s*([A-Za-z0-9]+),\s*"([A-Z0-9-]+)",\s*(Stock[A-Za-z]+)/g)]
+    .map((m) => ({
+      key: m[1],
+      flag: consts[m[2]] ?? Number(m[2]),
+      prefix: m[3],
+      stock: m[4],
+    }))
+    .filter((t) => !CHEQUE_FLAGS.has(t.flag));
 }
 
 function payload(t, version, docdate) {
