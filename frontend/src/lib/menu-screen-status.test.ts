@@ -29,7 +29,6 @@ describe("menu screen availability", () => {
   // (docs/kms/champ/design-2026-10-11/facade-screens.md). ลบ route ออกจากรายการนี้ใน commit เดียวกับที่สร้างจอจริง
   const CHAMP_PENDING_ROUTES: string[] = [
     "/ar/billing-note-auto",
-    "/banking/petty-cash-limit",
     "/inventory/product-supplier-update",
     "/inventory/stock-count-handheld",
     "/sale/dispatch",
@@ -143,7 +142,9 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/report/apaging")).toBe(false);
     expect(isMenuDataPending("/report/xbrl")).toBe(true);
 
-    // เครื่องมือ: ยังไม่มีเครื่องมือใดต่อ API (เครื่องมือตรวจ/สร้างยอดสินค้าใหม่ถูกตัดตาม Champ 2026-09-19)
+    // เครื่องมือ: cheque_balances และ bank_balances ต่อ API จริงแล้ว, เครื่องมืออื่นยังเป็น pending
+    expect(isMenuDataPending("/tools/cheque-balances")).toBe(false);
+    expect(isMenuDataPending("/tools/bank-balances")).toBe(false);
     expect(isMenuDataPending("/tools/ar-recalculate")).toBe(true);
     expect(isMenuDataPending("/gl/reprocess")).toBe(false);
 

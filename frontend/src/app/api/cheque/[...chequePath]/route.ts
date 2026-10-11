@@ -7,7 +7,7 @@ type Context = { params: Promise<{ chequePath: string[] }> };
 // ข้อความผิดพลาดของ BFF เป็น key ใน languages.tsv (code = message = key) — จอแปลเป็นภาษาผู้ใช้เอง ไม่ hard-code ข้อความที่นี่
 const rejected = (key: string, status = 400) => NextResponse.json({ success: false, code: key, message: key }, { status });
 
-const COMMAND_RESOURCES = ["codes", "bank-contacts", "registers", "docs", "recalculate"];
+const COMMAND_RESOURCES = ["codes", "bank-contacts", "registers", "docs", "recalculate", "petty-cash", "bank-recalculate"];
 // พารามิเตอร์ที่ส่งต่อได้: รายการรหัส/ผู้ติดต่อ, ตัวกรองทะเบียนเช็ค, รายการเลือกเช็คของเอกสาร, รายการเอกสาร และยอดคงเหลือ
 const ALLOWED_QUERY = [
   "q", "page", "limit", "bank_code", "bank_branch_code", "active",
@@ -28,6 +28,7 @@ function isReadPath(path: string[] | undefined): path is string[] {
       return path.length === 2 && isBankCodeKind(second);
     case "bank-contacts":
     case "recalculate":
+    case "petty-cash":
       return path.length === 1;
     case "registers":
       return path.length === 1 || (path.length === 2 && (second === "selectable" || UUID.test(second)));

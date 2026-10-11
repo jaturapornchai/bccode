@@ -234,6 +234,23 @@ CREATE TABLE IF NOT EXISTS cheque_requests (
 	created_at timestamptz NOT NULL DEFAULT now(),
 	PRIMARY KEY (company, request_id)
 );
+
+-- กำหนดวงเงินสดย่อย (BCPettyCash; จอ Champ 5177 CASHFrmPettyCash)
+CREATE TABLE IF NOT EXISTS bc_petty_cash (
+	company      text           NOT NULL,
+	code         varchar(20)    NOT NULL CHECK (btrim(code) <> ''),
+	name         varchar(100)   NOT NULL CHECK (btrim(name) <> ''),
+	amount       numeric(18,2)  NOT NULL DEFAULT 0 CHECK (amount >= 0),
+	begin_amount numeric(18,2)  NOT NULL DEFAULT 0,
+	balance      numeric(18,2)  NOT NULL DEFAULT 0,
+	version      bigint         NOT NULL DEFAULT 1 CHECK (version > 0),
+	created_at   timestamptz    NOT NULL DEFAULT now(),
+	created_by   text           NOT NULL,
+	updated_at   timestamptz    NOT NULL DEFAULT now(),
+	updated_by   text           NOT NULL,
+	PRIMARY KEY (company, code)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_bc_petty_cash_upper ON bc_petty_cash (company, upper(code));
 `
 
 var (

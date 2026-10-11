@@ -433,3 +433,28 @@ export function chequeErrorText(error: unknown, tr: (key: string, fallback: stri
   }
   return tr("cheque_request_failed", "เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง");
 }
+
+// ---- กำหนดวงเงินสดย่อย (Petty Cash Limit; Champ 5177 CASHFrmPettyCash) ----
+
+export type PettyCashItem = {
+  code: string;
+  name: string;
+  amount: string;
+  begin_amount: string;
+  balance: string;
+  version?: number;
+};
+
+export async function listPettyCash(language: LanguageCode): Promise<PettyCashItem[]> {
+  const result = await request<{ items: PettyCashItem[] }>("/api/cheque/petty-cash", language);
+  return result.items ?? [];
+}
+
+export async function savePettyCash(items: PettyCashItem[], language: LanguageCode): Promise<PettyCashItem[]> {
+  const result = await request<{ items: PettyCashItem[] }>("/api/cheque/command", language, {
+    method: "POST",
+    body: JSON.stringify({ resource: "petty-cash", action: "save", petty_cash_items: items }),
+  });
+  return result.items ?? [];
+}
+

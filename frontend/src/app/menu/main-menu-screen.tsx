@@ -138,6 +138,7 @@ import { ScreenFontSettings } from "@/components/screen-font-settings";
 import { BankCodeScreen } from "@/components/bank-code-screen";
 import { BankContactScreen } from "@/components/bank-contact-screen";
 import { BookBankScreen } from "@/components/book-bank-screen";
+import { PettyCashLimitScreen } from "@/components/petty-cash-limit-screen";
 import { bankCodeKindFromRoute } from "@/lib/bank-code-kinds";
 import { ChequeRegisterScreen } from "@/components/cheque-register-screen";
 import { ChequeStatusDocScreen } from "@/components/cheque-status-doc-screen";
@@ -2347,6 +2348,10 @@ function WorkTabPanel({
 
   if (activeTab.route === "/banking/contacts") {
     return <BankContactScreen language={language} />;
+  }
+
+  if (activeTab.route === "/banking/petty-cash-limit") {
+    return <PettyCashLimitScreen language={language} />;
   }
 
   if (activeTab.route === "/bookbankscreen") {

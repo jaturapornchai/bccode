@@ -45,6 +45,7 @@ func (h *Http) RegisterHttp() {
 	h.ms.GET("/cheque/v1/docs/:transflag/:doc_no", h.getDoc)
 	h.ms.GET("/cheque/v1/docs/:transflag/:doc_no/events", h.listDocEvents)
 	h.ms.GET("/cheque/v1/recalculate", h.checkRecalculate)
+	h.ms.GET("/cheque/v1/petty-cash", h.listPettyCash)
 	h.ms.GET("/cheque/v1/balances/partners", h.partnerBalances)
 	h.ms.GET("/cheque/v1/balances/books", h.bookMovements)
 	h.ms.POST("/cheque/v1/command", h.command)
@@ -60,8 +61,10 @@ const (
 )
 
 const (
-	bankContactScreen = "bank-contact"
-	bookBankScreen    = "book-bank"
+	bankContactScreen  = "bank-contact"
+	bookBankScreen     = "book-bank"
+	pettyCashScreen    = "petty-cash-limit"
+	bankBalancesScreen = "bank-recalculate"
 )
 
 // codeScreens คือเมนูของทะเบียนรหัสแต่ละชนิด (frontend/src/lib/menu-data.ts) — เขียนรหัสได้เฉพาะผู้ที่มีสิทธิ์เมนูของชนิดนั้น
@@ -300,6 +303,16 @@ type commandBody struct {
 	CancelPassed bool           `json:"cancel_passed"`
 	Lines        []docLineBody  `json:"lines"`
 	Totals       *docTotalsBody `json:"totals"`
+
+	// resource petty-cash
+	PettyCashItems []pettyCashRowBody `json:"petty_cash_items"`
+}
+
+type pettyCashRowBody struct {
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Amount      string `json:"amount"`
+	BeginAmount string `json:"begin_amount"`
 }
 
 type docLineBody struct {
@@ -340,6 +353,10 @@ func (h *Http) command(request microservice.IContext) error {
 		return h.docsCommand(request, body)
 	case "recalculate":
 		return h.recalculateCommand(request, body)
+	case "petty-cash":
+		return h.pettyCashCommand(request, body)
+	case "bank-recalculate":
+		return h.bankRecalculateCommand(request, body)
 	}
 	return fail(request, http.StatusBadRequest, "cheque_err_resource_invalid", "resource", body.Resource)
 }
@@ -401,3 +418,57 @@ func (h *Http) bankContactsCommand(request microservice.IContext, body commandBo
 	}
 	return respond(request, map[string]any{"items": saved, "total": len(saved)})
 }
+
+func (h *Http) listPettyCash(request microservice.IContext) error {
+	a := h.authorize(request, false, func(s glhttp.SessionAccess) bool { return s.Allows(pettyCashScreen, actionRead) })
+	if a == nil {
+		return nil
+	}
+	items, err := cheque.ListPettyCash(a.ctx, a.db, a.scope.Company)
+	if err != nil {
+		return failure(request, err)
+	}
+	return respond(request, map[string]any{"items": items, "total": len(items)})
+}
+
+func (h *Http) pettyCashCommand(request microservice.IContext, body commandBody) error {
+	if strings.TrimSpace(body.Action) != "save" {
+		return fail(request, http.StatusBadRequest, "cheque_err_action_invalid", "action", body.Action)
+	}
+	a := h.authorize(request, true, func(s glhttp.SessionAccess) bool { return s.Allows(pettyCashScreen, actionUpdate) })
+	if a == nil {
+		return nil
+	}
+	inputs := make([]cheque.PettyCashInput, len(body.PettyCashItems))
+	for i, item := range body.PettyCashItems {
+		inputs[i] = cheque.PettyCashInput{
+			Code:        item.Code,
+			Name:        item.Name,
+			Amount:      item.Amount,
+			BeginAmount: item.BeginAmount,
+		}
+	}
+	saved, err := cheque.SavePettyCash(a.ctx, a.db, a.scope, inputs)
+	if err != nil {
+		return failure(request, err)
+	}
+	return respond(request, map[string]any{"items": saved, "total": len(saved)})
+}
+
+func (h *Http) bankRecalculateCommand(request microservice.IContext, body commandBody) error {
+	if strings.TrimSpace(body.Action) != "apply" {
+		return fail(request, http.StatusBadRequest, "cheque_err_action_invalid", "action", body.Action)
+	}
+	a := h.authorize(request, true, func(s glhttp.SessionAccess) bool {
+		return s.Allows(bankBalancesScreen, actionUpdate) || s.Allows(bookBankScreen, actionUpdate)
+	})
+	if a == nil {
+		return nil
+	}
+	result, err := cheque.RecalculateBankBalances(a.ctx, a.db, a.scope.Company)
+	if err != nil {
+		return failure(request, err)
+	}
+	return respond(request, map[string]any{"data": result})
+}
+

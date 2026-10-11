@@ -19,6 +19,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/ar/billing-note-auto-print", "/ap/payment-prepare",
   "/settings/font",
   "/banking/contacts",
+  "/banking/petty-cash-limit",
   "/bookbankscreen",
   // จอกำหนดรหัสธนาคาร 5 ชนิด: WorkTabPanel ใช้ bankCodeKindFromRoute() ตัวเดียวแทนการเทียบ route ทีละตัว
   ...BANK_CODE_KINDS.map((kind) => BANK_CODE_ROUTE_PREFIX + kind),

@@ -143,8 +143,10 @@ export interface ErpToolRunResult {
 }
 
 // เครื่องมือที่มี API จริงรองรับแล้วเท่านั้น (ตัวอื่นยังไม่มี endpoint ห้ามแสร้งว่าทำงานสำเร็จ)
-// 2026-09-19: ว่างหลังตัดเครื่องมือตรวจ/สร้างยอดสินค้าใหม่ออกตาม Champ — เพิ่มเมื่อ backend เปิด endpoint ให้เครื่องมือที่เหลือ
-const TOOL_ENDPOINTS: Record<string, string> = {};
+const TOOL_ENDPOINTS: Record<string, string> = {
+  cheque_balances: "/api/cheque/command",
+  bank_balances: "/api/cheque/command",
+};
 
 export function isErpToolApiReady(code: string): boolean {
   return code in TOOL_ENDPOINTS;
@@ -165,7 +167,21 @@ export async function runErpTool(params: {
   if (!endpoint) return { success: false, messageKey: "tool_not_available" };
   if (!holdingcode) return { success: false, messageKey: "holding_required" };
 
-  const body: Record<string, unknown> = { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` };
+  let body: Record<string, unknown>;
+  if (code === "cheque_balances") {
+    body = {
+      resource: "recalculate",
+      action: "apply",
+      reason: "คำนวณยอดคงเหลือของเช็คใหม่ตามระบบอัตโนมัติ (Champ 5400)",
+    };
+  } else if (code === "bank_balances") {
+    body = {
+      resource: "bank-recalculate",
+      action: "apply",
+    };
+  } else {
+    body = { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` };
+  }
 
   try {
     const res = await apiFetch(endpoint, {

@@ -47,8 +47,14 @@ describe("runErpTool", () => {
 
   const scope = { holdingcode: "H01", businesscode: "C01", year: 2026 };
 
-  it("marks no tool as ready until the backend exposes an endpoint", () => {
-    for (const tool of ERP_TOOL_CONFIGS) expect(isErpToolApiReady(tool.code), tool.code).toBe(false);
+  it("marks cheque_balances and bank_balances as ready and others as not ready", () => {
+    expect(isErpToolApiReady("cheque_balances")).toBe(true);
+    expect(isErpToolApiReady("bank_balances")).toBe(true);
+
+    const pendingCodes = ["ar_recalculate", "ar_bill_balances", "ap_recalculate", "ap_bill_balances", "rebuild_stock", "inventory_daily_sequence"];
+    for (const code of pendingCodes) {
+      expect(isErpToolApiReady(code), code).toBe(false);
+    }
   });
 
   it("never calls the backend for tools without an endpoint", async () => {
@@ -59,5 +65,52 @@ describe("runErpTool", () => {
 
     expect(result).toEqual({ success: false, messageKey: "tool_not_available" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("calls /api/cheque/command for cheque_balances recalculation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: { checked: 10, total: 0, mismatches: [] } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runErpTool({ code: "cheque_balances", ...scope });
+
+    expect(result).toEqual({ success: true, messageKey: "process_success" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/cheque/command",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          resource: "recalculate",
+          action: "apply",
+          reason: "คำนวณยอดคงเหลือของเช็คใหม่ตามระบบอัตโนมัติ (Champ 5400)",
+        }),
+      }),
+    );
+  });
+
+  it("calls /api/cheque/command for bank_balances recalculation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: { total_books: 2, books: [] } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runErpTool({ code: "bank_balances", ...scope });
+
+    expect(result).toEqual({ success: true, messageKey: "process_success" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/cheque/command",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          resource: "bank-recalculate",
+          action: "apply",
+        }),
+      }),
+    );
   });
 });
