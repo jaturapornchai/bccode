@@ -67,7 +67,20 @@ func NewCacher(db *sql.DB) (*Cacher, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if _, err := db.ExecContext(ctx, cacheSchemaSQL); err != nil {
+	// CREATE TABLE IF NOT EXISTS is not safe when several callers open a fresh database at
+	// once (pg_type unique violation), so the DDL runs serialized under an advisory lock.
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create cache_entries: %w", err)
+	}
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtext('bc_cache_entries_schema'))`); err != nil {
+		return nil, fmt.Errorf("create cache_entries: %w", err)
+	}
+	if _, err = tx.ExecContext(ctx, cacheSchemaSQL); err != nil {
+		return nil, fmt.Errorf("create cache_entries: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("create cache_entries: %w", err)
 	}
 	return &Cacher{db: db}, nil
