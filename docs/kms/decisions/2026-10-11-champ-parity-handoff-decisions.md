@@ -21,3 +21,12 @@ tags: [bc-account, champ, parity, erp, reports, scope]
 - report registry เป็นงานโครงสร้างครั้งเดียว รายงานถัดไปเพิ่มเป็นนิยามใน backend
 - งานเทคนิค (PKCS#7/HSM/API gateway) ยังพักไว้
 - ลำดับงานบันทึกใน memory `champ-parity-decisions-2026-10-11` และ memory-hub Ff9a6e0cf
+
+## Decision รอบ 2 (2026-10-11) — ลุงจืดเลือก "ทำตาม Champ" ทั้ง 4 ข้อ
+ตัวเลือกที่ผมเสนอให้เบี่ยงจาก Champ เพื่อ "กันยอดเพี้ยน" ถูกปฏิเสธทั้งหมด ความถูกต้องของยอดให้ได้จากการ derive/recalculate + audit event แทนการล็อก
+1. **เช็ค D1** ทำวงจรเช็คครบแบบ Champ เป็นขั้น (CB-1→CB-6 ก่อน แล้วค่อยส่วนที่เหลือ) แม้ `mydocs/specs/gl/ar-ap-bank-design-notes.md:49` เขียนว่า workflow เช็คเป็นของระบบต้นทาง — [`cheque-bank.md`](../champ/design-2026-10-11/cheque-bank.md) §7
+2. **เช็ค D8** เช็คที่ถูกอ้างแล้ว: ถามยืนยันแล้วแก้ฟิลด์หลักได้ และแก้สถานะในจอทะเบียนได้ ตาม Champ (`cqfrmcheqin.cpp:320-336`); ทุกการแก้บันทึก event — `cheque-bank.md` §4.3 ข้อ 7-8
+3. **เตรียมจ่าย D11** ใบที่จ่ายไปบางส่วนแก้ได้จนจ่ายครบ แต่ห้ามลดยอดบรรทัดต่ำกว่าที่จ่ายไปแล้ว — [`ap-payment-prepare.md`](../champ/design-2026-10-11/ap-payment-prepare.md) §7
+4. **รายงาน Q2** รายงานลูกหนี้/เจ้าหนี้ในจอรายงานกลางนับทุกใบที่บันทึกแล้วและไม่ยกเลิก ไม่ดูสถานะผ่านบัญชี (`APRepAgingDlg.cpp:188-214`) — [`report-registry.md`](../champ/design-2026-10-11/report-registry.md) Q2
+
+ผลที่ตามมา: ยอดในรายงานหนี้อาจต่างจากบัญชีคุมได้เท่ากับเอกสารที่ยังไม่ผ่านบัญชี; ทะเบียนเช็คต้องมี event `edit`/`manual_status` และ recalculate ยอดคงเหลือทุกครั้งที่แก้
