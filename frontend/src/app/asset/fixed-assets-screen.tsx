@@ -1137,7 +1137,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
               <table className="w-full text-left text-sm border-collapse">
                 <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
                   <tr>
-                    {taxReportData?.columns.map((col) => (
+                    {(taxReportData?.columns ?? []).map((col) => (
                       <th key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
                         {col.label}
                       </th>
@@ -1145,9 +1145,9 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
-                  {taxReportData?.rows.map((r, i) => (
+                  {(taxReportData?.rows ?? []).map((r, i) => (
                     <tr key={i} className="hover:bg-muted/40 transition-colors">
-                      {taxReportData.columns.map((col) => (
+                      {(taxReportData?.columns ?? []).map((col) => (
                         <td key={col.key} className={`p-3 font-mono text-xs ${col.amount ? "text-right" : ""}`}>
                           {r[col.key]}
                         </td>
@@ -1156,14 +1156,14 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   ))}
                   {taxReportData?.totals && (
                     <tr className="bg-muted/60 font-bold border-t-2 border-border text-xs font-mono">
-                      {taxReportData.columns.map((col) => (
+                      {(taxReportData.columns ?? []).map((col) => (
                         <td key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
                           {taxReportData.totals[col.key] || ""}
                         </td>
                       ))}
                     </tr>
                   )}
-                  {(!taxReportData || taxReportData.rows.length === 0) && !loading && (
+                  {(!taxReportData?.rows?.length) && !loading && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-muted-foreground">
                         {tr("fa_no_data_for_tax_year", "ไม่พบข้อมูลสำหรับปีภาษีนี้")}

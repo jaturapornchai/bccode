@@ -281,7 +281,7 @@ func (r *Reporter) GetAssetScheduleReport(ctx context.Context, scope Scope, fisc
 		dispMap[d.AssetCode] = d
 	}
 
-	var rows []map[string]string
+	rows := []map[string]string{} // empty list, never JSON null
 	totBeginCost := decimal.Zero
 	totAddition := decimal.Zero
 	totDisposalCost := decimal.Zero
@@ -425,7 +425,7 @@ func (r *Reporter) GetTaxReconciliationReport(ctx context.Context, scope Scope, 
 		return nil, err
 	}
 
-	var rows []map[string]string
+	rows := []map[string]string{} // empty list, never JSON null
 	totCost := decimal.Zero
 	totAcct := decimal.Zero
 	totTax := decimal.Zero
