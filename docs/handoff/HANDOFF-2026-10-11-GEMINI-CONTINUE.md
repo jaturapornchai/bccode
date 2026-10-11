@@ -9,17 +9,19 @@
 3. `mydocs/` = ข้อกำหนดของลุงจืด **อ่านอย่างเดียว ห้ามสร้าง/แก้/ลบ** (รวม `mydocs.zip`)
 4. งาน processing ทุกชนิดต้องไล่โค้ด Champ จริงก่อน (`D:\project-champ`) แล้วอ้าง `file:line` ใน design/ADR/commit body — ไม่พบ = ถามลุงจืด ห้ามแต่ง workflow
 5. ต้นทุนสินค้า = ถัวเฉลี่ยอย่างเดียว (ADR `docs/kms/decisions/2026-10-11-stock-cost-average-only.md`) ห้าม FIFO/LIFO/lot/standard ทุกรูปแบบ
-6. คำตอบที่ลุงจืดตัดสินแล้ว: D1 / D8 / D11 / Q2 = **"ทำตาม Champ"** (`docs/kms/decisions/2026-10-11-champ-parity-handoff-decisions.md`)
+6. คำตอบที่ลุงจืดตัดสินแล้ว: D1/D8 (เช็ค), D11 (เตรียมจ่าย), Q2 (รายงาน) = **"ทำตาม Champ"** (`docs/kms/decisions/2026-10-11-champ-parity-handoff-decisions.md`) — รหัส D ซ้ำกันข้ามเอกสาร เช่น **D8 ของเตรียมจ่ายยังค้าง** (§8)
+7. handoff เก่า `HANDOFF-2026-10-11-CHAMP-FULL-PARITY-CRUD.md` ใช้ได้เฉพาะ §0 (ลำดับงาน) — สถานะ/งานค้างให้ยึดไฟล์นี้
 
 ## 1. สถานะ repo ณ ส่งมอบ
 | รายการ | ค่า |
 |---|---|
 | branch | `dev` ใน `D:\bccode` (ไม่ใช่ worktree) |
-| HEAD | commit `docs(handoff)` ของไฟล์นี้ (ถัดจาก `1ae4b95f`) — ดู `git log --oneline -5` |
-| push | **ยังไม่ push** — dev นำหน้า `origin/dev` ราว 70 commit; push เมื่อลุงจืดสั่งเท่านั้น |
+| HEAD | `a7ca30f5` (ไฟล์นี้ฉบับแรก + บันทึกบั๊ก) ตามด้วย commit แก้ไฟล์นี้ตามรีวิว — ดู `git log --oneline -5` |
+| push | **ยังไม่ push** — dev นำหน้า `origin/dev` (`8b543c08`) 70 commit (`git rev-list --count origin/dev..dev`); push เมื่อลุงจืดสั่งเท่านั้น |
 | prod | `https://account.bcaicloud.com` release `r20261011-1` (image สร้าง 2026-10-11 09:02 น.) — น่าจะเท่ากับ dev ที่ `1961f4c8`; **งานตั้งแต่ `8ff8c9cd` ทั้งหมดยังไม่ขึ้น prod** |
 | ไฟล์ค้างที่ไม่ใช่ของงานนี้ | `tools/uat-live-*.mjs` (7 ไฟล์), `mydocs.zip`, `mydocs/` — **อย่าแตะ อย่า add** |
 | งานมิติ (ยังไม่ merge) | branch `worktree-agent-ad74ce45d0d6363c3` tip `4d529581` ที่ worktree `D:\bccode\.claude\worktrees\agent-ad74ce45d0d6363c3` (ดู §5) |
+| worktree/process อื่น | `ao/bccode-orchestrator` (`C:/Users/jatur/.ao/data/worktrees/bccode/orchestrator/bccode-orchestrator`) และ `ao/bccode-devops-orchestrator` (`D:/jeadclaws/.local/ao-trial/...`) ทั้งคู่ที่ `3a598054` — ของระบบอื่น **ห้ามแตะ/ห้ามลบ**. มี process อื่นแก้ tree นี้พร้อมกันได้: `a7ca30f5` ถูก commit โดย process อื่น และ `.git/config` ถูกตั้ง `core.autocrlf=false` เวลา 13:08 (§9.1) → `git status -s` ก่อนทุก commit และ add เฉพาะไฟล์ของตัวเอง |
 
 ## 2. งานที่เสร็จและ commit แล้วในรอบนี้ (`86e5392a..dev`)
 | หมวด | commits | ผล |
@@ -33,7 +35,9 @@
 | เตรียมจ่ายเจ้าหนี้ | `30384f2e`, `1339b31c`, `5dbe6273` | ใบเตรียมจ่าย + การจองยอด + PV ตัดหนี้ (W0–W5), จ่ายตรงได้ไม่เกินยอดที่ไม่ถูกจอง |
 | ต้นทุนเฉลี่ยอย่างเดียว | `0d911846`, `c9912d56` | กฎ + ตัด engine วิธีอื่นออก |
 | แก้จาก verify รอบท้าย | `4867ec72`, `1ae4b95f` | lint ตัวแปร `module` ใน BFF รายงาน; race สร้างตาราง `cache_entries` (advisory lock + test) |
-| อื่น ๆ | `fb942e7f`, `5cac0ed5`, `3231e8fb`, `64f9c91e`, `7084c2e3` | `npm run uat`, แก้ ภ.ง.ด.50 tab, จอสาขา, deadlock session cache |
+| อื่น ๆ | `fb942e7f`, `5cac0ed5`, `3231e8fb`, `64f9c91e`, `7084c2e3` | `npm run uat`, แก้ ภ.ง.ด.50 tab, จอสาขา, deadlock session cache, test TTL session ทนนาฬิกา host/container ไม่ตรงกัน (`7084c2e3`) |
+| เอกสาร/กฎ/i18n | `f109e956`, `ed669325`, `a4386027`, `4dcdfc0a`, `9612ba2c`, `bb802979`, `a6c37f73`, `1961f4c8`, `07c7b2ae`, `8ff8c9cd` | handoff + ADR ตัดสินใจ D1/D8/D11/Q2, กฎ AI (router ย่อ, ลูก 5.5, Champ workflow เป็นแม่แบบ, triage-then-batch), ร่างออกแบบ + CODE-MAP, ลบ key aging ที่ไม่ใช้ |
+| handoff นี้ | `a7ca30f5` + commit แก้ตามรีวิว | ไฟล์นี้ + `docs/kms/bugs/2026-10-11-cache-entries-create-race.md` |
 
 เอกสารออกแบบของรอบนี้: `docs/kms/champ/design-2026-10-11/{facade-screens,cheque-bank,ap-payment-prepare,report-registry,gl-dimensions}.md`
 
@@ -43,51 +47,53 @@
   - postgres: `TestLineLinkCodeOnPostgresCache` ตก `duplicate key ... pg_type_typname_nsp_index` (หลาย package สร้าง `cache_entries` พร้อมกันบน DB ใหม่) → `1ae4b95f` + `TestNewCacherConcurrentOnFreshSchema` (ตกก่อนแก้, ผ่าน 10/10 หลังแก้)
   - เทสต์ `general-ledger.test.ts` ตก 1 ตัวเพราะไฟล์ในเครื่องเป็น CRLF (ดู gotcha §9.1) → คืน EOL แล้วผ่าน 72/72
 - รอบที่สองบน `1ae4b95f`: **ผ่านทั้งหมด** (codemap, frontend lint 0 error + tsc + vitest 154 ไฟล์ 1657 เทสต์, next build, backend unit, postgres integration) — 2026-10-11 13:01–13:04 น.
-- ยังไม่ได้ทำ (ต้องทำก่อน deploy): `npm run uat`, screenshot รอบรวม (โดยเฉพาะจอเช็ค/จอเอกสารสถานะ/จอเตรียมจ่าย ยังไม่เคยเปิดใน browser), review `git diff 86e5392a..dev` รวม (เงิน/สิทธิ์ ใช้ reviewer ที่เก่งสุด)
+- ยังไม่ได้ทำ (ต้องทำก่อน deploy): `npm run uat -- --rebuild`, screenshot รอบรวม (light+dark × 1600/1280/1024/768-portrait + hover/focus/disabled/error, สลับธีมด้วยปุ่มจริง, ต้องไม่มี console error; โดยเฉพาะจอเช็ค/จอเอกสารสถานะ/จอเตรียมจ่าย ยังไม่เคยเปิดใน browser), review `git diff 86e5392a..dev` รวม (เงิน/สิทธิ์ ใช้ reviewer ที่เก่งสุด)
 
 ## 4. งานถัดไปที่แนะนำ (เรียงลำดับ)
 1. **ปิด batch นี้ให้ขึ้น prod** (ก่อนเริ่มงานใหม่)
-   - `npm run uat` (Demo → `rungrueng` → บริษัท `01` → สาขา `00000`, psql หลังทุก operation)
-   - screenshot จอใหม่ light/dark: จอทะเบียนเช็ครับ/จ่าย + จอเอกสารสถานะเช็ค (เปิดจากเมนูเช็ค; ผูกจอที่ `frontend/src/app/menu/main-menu-screen.tsx:2308-2311`), `/bookbankscreen`, จอเตรียมจ่ายเจ้าหนี้, จอรายงานกลาง GL
+   - `npm run uat -- --rebuild` (mainapi ในเครื่องเก่ากว่า commit backend ล่าสุด → preflight `backend-fresh` จะตกถ้าไม่ rebuild; Demo → `rungrueng` → บริษัท `01` → สาขา `00000`, psql หลังทุก operation)
+   - screenshot จอใหม่ตามมาตรฐาน §3: จอทะเบียนเช็ครับ/จ่าย + จอเอกสารสถานะเช็ค (เปิดจากเมนูเช็ค; ผูกจอที่ `frontend/src/app/menu/main-menu-screen.tsx:2308-2311`), `/bookbankscreen`, จอเตรียมจ่ายเจ้าหนี้, จอรายงานกลาง GL
    - review diff รวม → รวบรวม fail ทั้งหมด → จัดกลุ่มตาม root cause → แก้รวดเดียว (fix ละ regression test) → `npm run verify:all` ซ้ำ
    - deploy: ตรวจ chain ก่อน `ssh root@159.223.43.229 "ls -t /opt/bcai-account/releases | head -3"` (ต้องเป็น `r20261011-1` ล่าสุด) แล้ว `PYTHONIOENCODING=utf-8 py tools/fast-deploy.py --all --tag r20261011-2` จาก `D:\bccode` (dev) เท่านั้น → `docker compose ps` + `docker logs --tail 50` + `npm run uat -- --target=prod` (อ่านอย่างเดียว RUNGRUENG/01; ห้ามแตะ TOFFT1)
-2. **merge งานมิติ** (§5) — ใหญ่สุดและเสี่ยงสุด เพราะ base ตามหลัง dev 66 commit
-3. เช็ค CB-8 → CB-9 → CB-10 → CB-12 (รอ D4) → CB-7 → CB-13 → CB-14 (§6.1)
-4. รายงานกลาง R7–R10 (+ CB-13) และ R0 ของโมดูลอื่น (§6.3)
+2. **merge งานมิติ** (§5) — ใหญ่สุดและเสี่ยงสุด เพราะ base `8b543c08` (= `origin/dev`) ตามหลัง dev 70 commit (`git rev-list --count 8b543c08..dev`)
+3. เช็ค CB-8 → CB-9 (รอ D13) → CB-10 → CB-12 (รอ D4) → CB-7 → CB-13 → CB-14 (§6.1)
+4. รายงานกลาง R7–R10 (CB-13 ต่อยอดจาก CB-5 + registry + `frontend/src/lib/erp-reports.ts`) และ R0 ของโมดูลอื่น (§6.3)
 5. ข้อมูลหลักสินค้า (product master) — ยังไม่มีเอกสารออกแบบ ต้องไล่ Champ ก่อน
 
 ## 5. งานมิติวิเคราะห์ (GL dimensions) — WIP ยังไม่ verify
 - ออกแบบ: `docs/kms/champ/design-2026-10-11/gl-dimensions.md` (6 มิติ: แผนก, โครงการ, การจัดสรร, งาน, หน่วยงาน, ฝ่าย + สวิตช์ระดับบริษัท 7 ตัว ค่าเริ่มต้นปิดตาม Champ)
 - branch `worktree-agent-ad74ce45d0d6363c3`: `3ff73794` (backend + frontend lib บางส่วน, 52 ไฟล์) + `4d529581` (คอลัมน์มิติในจอรายวัน/รายงาน/งบประมาณ/พิมพ์, 8 ไฟล์) — agent ถูกหยุดกลางคัน **ยังไม่เคยรัน integration test, tsc, vitest**
-- base `8b543c08` ตามหลัง dev 66 commit; `go build`/`go vet`/unit test ของ `internal/generalledger/...` ผ่านบน branch
+- base `8b543c08` (= `origin/dev`) ตามหลัง dev 70 commit; `go build`/`go vet`/unit test ของ `internal/generalledger/...` ผ่านบน branch
 - เอกสารออกแบบนิยามเฉพาะ W2, W4, W8 — การแบ่ง W1–W7 ด้านล่างเป็นการจัดกลุ่มของผู้ตรวจ ให้ยึดเนื้อหาใน §3 ของเอกสารออกแบบเป็นหลัก
 
 | W | งาน | สถานะ | ที่เหลือ |
 |---|---|---|---|
 | W1 | registry 6 มิติ + schema + model (`dimensions.go`, `models.go`, `schema.sql`, `budget.sql`, `internal/database/{fresh_provision,fresh_provision_all,schema_full}.sql`) | บางส่วน | index `gl_lines_dimension2_idx` (§3.3) ยังไม่มี; ไฟล์ SQL 3 ไฟล์แก้มือ ต้องตรวจให้ตรง `schema.sql` |
-| W2 | projection / reversal / ปิดงวด-ปิดปี / งบประมาณ / "เลือกทั้งหมด" + `dimension_provision.go` + CLI `backend/cmd/gldimensions` (dry-run เป็นค่าเริ่มต้น, `-apply` จึงเขียน) | บางส่วน | รัน integration; ตัดสินว่า holding ใหม่จะ provision อัตโนมัติหรือไม่ (ความเสี่ยง R5/R9 ในเอกสาร: prod rungrueng ที่ใช้แผนก/โครงการอยู่จะเห็นคอลัมน์หายถ้าไม่เปิดสวิตช์) |
+| W2 | projection / reversal / ปิดงวด-ปิดปี / งบประมาณ / "เลือกทั้งหมด" + `dimension_provision.go` + CLI `backend/cmd/gldimensions` (dry-run เป็นค่าเริ่มต้น, `-apply` จึงเขียน) | บางส่วน | รัน integration; ตัดสินว่า holding ใหม่จะ provision อัตโนมัติหรือไม่ (ความเสี่ยง R5/R9 ในเอกสาร: prod rungrueng ที่ใช้แผนก/โครงการอยู่จะเห็นคอลัมน์หายถ้าไม่เปิดสวิตช์); **CLI `backend/cmd/gldimensions` คือ backfill ขัดกฎ forward-only** (DB ทิ้งได้ ห้าม backfill) → ก่อน merge เลือก: ลบ CLI แล้วเปิดสวิตช์ด้วย seed/ค่าเริ่มต้นในโค้ด (แนะนำ) หรือขอยกเว้นจากลุงจืด |
 | W3 | สวิตช์บริษัท `dimension_settings.go` (เก็บ `gl_records` id `default`) + REST | บางส่วน | `mutateDimensionSettings` ยังใช้ `fmt.Errorf` ข้อความไทย → ต้องเป็น key + `language.Text`; permission id `company-defaults` เป็นข้อสมมติ ต้องตรวจ metadata (Demo ต้องใช้ได้) |
 | W4 | รายงานกรอง/จัดกลุ่ม 6 มิติ (`reports_dimensions.go`, `reports.go`, BFF `app/api/gl/[...glPath]/route.ts`) | บางส่วน | **รายงานกลาง `backend/internal/report/*` (จาก `a2436acd`) รู้จักแค่แผนก/โครงการ** (`defs_gl.go`, `source_gl.go`, `errors.go`) — ไม่ขยาย = 4 มิติใหม่หายเงียบในรายงานผ่าน registry; `DimensionExists` ที่ `ap_open_items.go` ต้องรู้จัก 4 ชนิดใหม่ |
 | W5 | frontend: รายวัน รายงาน งบประมาณ พิมพ์ ตัวอย่างปิดงวด drilldown | บางส่วน | `gl-masters.tsx` ยังไม่รู้กฎ "ติ๊กแยกแต่ไม่มีรายการ = ห้ามใส่รหัส"; `gl-journals.tsx` ใช้ key `gl_dim_columns_dropped` ที่ยังไม่มีใน tsv |
-| W6 | จอ `gl-dimensions.tsx` จัดการ 6 ชนิด (จอเดียว Tab/Action) + เมนูตาม `menuconfig.xml` + จอสวิตช์ใน "ค่าเริ่มต้นบริษัท" | **ยังไม่เริ่ม** | มีแค่ `frontend/src/lib/gl-dimension-register.ts`(+test) |
+| W6 | ขยายจอเดิม `frontend/src/app/gl/gl-dimensions.tsx` (123 บรรทัด, 2 tab แผนก/โครงการ) เป็น 6 tab (จอเดียว Tab/Action) + เมนูตาม `menuconfig.xml` + จอสวิตช์ใน "ค่าเริ่มต้นบริษัท" | **ยังไม่เริ่ม** | มีแค่ `frontend/src/lib/gl-dimension-register.ts`(+test) |
 | W7 | `languages.tsv` + tests | บางส่วน | 93 แถวใหม่มี **14 คอลัมน์ (ต้อง 13)**, 36 แถวมีไทยในช่อง en, ขาด ~21 key ตาม §3.10 + `gl_dim_columns_dropped`; integration ปิดงวด/ปิดปี/reversal/in-use/งบประมาณ |
 | W8 | กฎ ERP (`job_no` บนหัวเอกสาร ฯลฯ §1.7, §3.8) | ยังไม่เริ่ม | ทำหลัง W1–W7 |
 
 **conflict ที่คาด** (`git merge-tree --write-tree --name-only dev worktree-agent-ad74ce45d0d6363c3`): `backend/assets/language/languages.tsv` (เก็บทั้งสองฝั่ง), `backend/internal/generalledger/httpapi/http.go` (union `resourceScreens` + คงตัวตรวจ purpose print/export ของ `6050d9f2`), `backend/internal/generalledger/models.go` (คง `fromModule` ของ guard โมดูล + `DimensionSettings`), `frontend/src/app/api/gl/[...glPath]/route.ts`, `frontend/src/app/gl/gl-reports.tsx` (dev เพิ่มรายงานกลาง/purpose)
 
+**auto-merge ที่เสี่ยงความหมายผิด** (git รวมให้เองไม่ conflict แต่ทั้งสองฝั่งแก้ — ต้องอ่าน diff ทีละไฟล์): `backend/internal/generalledger/postgres_store.go`, `backend/internal/generalledger/reports.go`, `backend/internal/generalledger/contracts.go`, `frontend/src/lib/general-ledger.ts`, `frontend/src/app/gl/gl-print-conditions.tsx`
+
 **ขั้นตอน merge ที่แนะนำ**
 1. ทำใน worktree เดิม: `git -C D:/bccode/.claude/worktrees/agent-ad74ce45d0d6363c3 -c core.autocrlf=false merge dev` → แก้ 5 conflict
 2. frontend ใน worktree: `npm ci` ใน `frontend/` ของ worktree (**ห้ามทำ junction** — ดู §9.2) แล้ว `npx tsc --noEmit` + vitest ไฟล์ที่แตะ
 3. แก้ของค้าง W1/W3/W4/W5/W7 ข้างบน แล้วทำ W6 (อ่าน `ui-scale-polish` ก่อน)
-4. integration: `go test -tags=integration -count=1 ./internal/generalledger/... ./internal/report/... ./internal/transaction/...` (DSN §9.3)
+4. integration: `go test -tags=integration -count=1 ./internal/generalledger/... ./internal/report/... ./internal/transaction/... ./internal/cheque/...` (DSN §9.3) หรือ `sh tools/verify.sh postgres` (PG ชั่วคราว ครอบทุก package)
 5. เข้า dev: `git -C D:/bccode -c core.autocrlf=false merge --squash worktree-agent-ad74ce45d0d6363c3` → verify → commit แยกตาม root cause
-6. `npm run verify:all` + `npm run uat` + screenshot Demo
+6. `npm run verify:all` + `npm run uat -- --rebuild` + screenshot Demo ตามมาตรฐาน §3
 
 **ตัดสินใจค้างของมิติ**: OD-2, OD-6, OD-8 (§8)
 
 ## 6. งานค้างตามเอกสารออกแบบ
 ### 6.1 เช็ค/ธนาคาร (`cheque-bank.md` §8 Work items)
-เสร็จ: CB-1, CB-2, CB-3, CB-4, CB-5, CB-6, CB-11, CB-15, CB-16
+เสร็จ: CB-1, CB-2, CB-3, CB-5, CB-11, CB-15, CB-16 · commit แล้ว (unit/integration ผ่าน) **ยังไม่ UAT/screenshot**: CB-4, CB-6
 | id | งาน | รอ |
 |---|---|---|
 | CB-7 | รายละเอียดเช็คใต้รายวัน GL (`details.cheques` → `gl_journal_cheques`) | — |
@@ -95,28 +101,32 @@
 | CB-9 | ใบเตรียมเลขเช็ค + ใช้/คืนเลข (ปุ่ม "เช็คเตรียมจ่าย" ตาม Champ `cqfrmcheqout.cpp:1817-1848`) | D13 |
 | CB-10 | รายละเอียดธนาคาร (บรรทัดข้อความ + log) | — |
 | CB-12 | ตำแหน่งพิมพ์ + พิมพ์ตรวจตำแหน่ง + พิมพ์เช็ค PDF | **D4** |
-| CB-13 | รายงานเช็ค 11 ชื่อ + รายวัน 6 ชื่อ ผ่าน report registry (`menuconfig.xml:329-362`) | R7–R10 |
+| CB-13 | รายงานเช็ค 11 ชื่อ + รายวัน 6 ชื่อ ผ่าน report registry (`menuconfig.xml:329-362`) | R7–R10 + `erp-reports` (ต่อยอด CB-5) |
 | CB-14 | ใบเสร็จ/ใบจ่าย ERP สร้างเช็คในทะเบียน + `cheque_source_links` ใน tx เดียว; แสดงชื่อเอกสารต้นทางแทน `kind_key` ดิบ | CB-9 |
 
 ช่องว่างของจอเช็คที่ทำแล้ว: รหัสคู่ค้าพิมพ์เอง (ควรใช้ picker ลูกหนี้/เจ้าหนี้ที่มีอยู่ `cheque-register-screen.tsx`), เอกสารสถานะบน UI ทำได้แค่สร้าง/ดู/ยกเลิก (backend มี `UpdateDoc` แล้ว), บาทอย่างเดียว (D15), เช็คประเภท 424 ไม่มีสมุด + กฎ mapping `bank_book` → error `cheque_err_book_no_gl_account` (ตั้งใจ); ตรวจรายการ "ยังไม่ได้ตรวจ" §10 ของเอกสาร
 
 ### 6.2 เตรียมจ่ายเจ้าหนี้ (`ap-payment-prepare.md` §8)
-เสร็จ: W0–W5. ค้าง: **B-1** WHT ของ PV (F6) — ต้องตรวจกฎหมาย/อัตราจาก rd.go.th ลง `docs/kms/21-thai-tax-form-references.md` ก่อนเขียนโค้ด · **B-2** ส่วนลด PV · **B-3** บันทึกจ่ายเงิน/เช็ค/โอน (F7, ผูก CB-9) · **W6** UAT CRUD + psql + smoke prod · คำถามค้าง D4, D6, D10, D12, D13
+เสร็จ: W0–W3 · commit แล้ว (unit/integration ผ่าน) **ยังไม่ UAT/screenshot**: W4, W5. ค้าง: **B-1** WHT ของ PV (F6) — ต้องตรวจกฎหมาย/อัตราจาก rd.go.th ลง `docs/kms/21-thai-tax-form-references.md` ก่อนเขียนโค้ด · **B-2** ส่วนลด PV · **B-3** บันทึกจ่ายเงิน/เช็ค/โอน (F7, ผูก CB-9) · **W6** UAT CRUD + psql + smoke prod · คำถามค้าง D4, D6, D8, D10, D12, D13
 
 ### 6.3 รายงานกลาง (`report-registry.md` §13)
 เสร็จ: R1, R2, R3, R5, R6 (GL คลื่น 1), R0 เฉพาะ GL (`docs/kms/champ/report-parity-r0-gl.md`), สิทธิ์พิมพ์/ส่งออก
 ค้าง: R0 ของ AR/AP/เช็ค/สต็อก/ภาษี · **R7** ภาษี #5–#9 · **R8** AR/AP ฐานเดียวจาก `buildAgingQuery` + ลบ endpoint เดิม · **R9** ธนาคาร-เงินสด 5164/5152 · **R10** เมนู planned "รอพัฒนา" · **R11** ลบ `Number()` ใน `frontend/src/app/report/erp-report-viewer.tsx` และ `frontend/src/lib/erp-reports.ts` (Rule 20) · **R12** tests §9 · **R13** xlsx (หลัง Q1) · `gl_statement` ยัง planned ใน `defs_gl.go` · กระทบยอดจำนวนรายงาน PDF 415 vs menuconfig 366
 
 ### 6.4 facade / อื่น ๆ
+- facade D-1..D-4, D-6 ทำตามข้อแนะนำ (ขึ้น "รอพัฒนา") แล้ว **รอลุงจืดยืนยัน** (`facade-screens.md:131-136`)
 - จอ "รอพัฒนา" ที่เหลือ (รายการใน `frontend/src/lib/audit-pending.test.ts`) — เปิดจอได้เมื่อมี backend จริงเท่านั้น; ล็อกรายการตาม Champ `ICDlgLockCostDlg.cpp:132-270`; รับเงินมัดจำต้องมีช่องจำนวนเงิน + posting; คิว e-Tax = ความสามารถใหม่ ต้องเสนอลุงจืด; `help-standard-software` ต้องมีเลขทะเบียนจริงหรือถอด (D-5)
 - ERP: ยกเลิกรายบรรทัด (Tier B) เลื่อนไว้ตาม ADR `2026-10-11-champ-parity-handoff-decisions.md` ข้อ 2; รายการ ERP ที่เหลือดู handoff เดิม §2ก
 - ข้อมูลหลักสินค้า: ยังไม่ออกแบบ
+
+### 6.5 ส่วนเสริมนอก Champ (ต้องรายงานลุงจืดตอนส่งงาน — ถอดออกได้)
+`cheque-bank.md` §9, `ap-payment-prepare.md` §9, `report-registry.md` §12, `gl-dimensions.md` §7 — ทำได้เฉพาะที่เป็น additive/optional ตาม ADR `2026-10-09-champ-parity-purpose-additive-extras.md`
 
 ## 7. หนี้เทคนิค/ช่องว่างที่ตรวจกับโค้ดแล้ว
 | # | เรื่อง | หลักฐาน | ระดับ |
 |---|---|---|---|
 | G1 | GL reconcile ยังแทน WHT/VAT ของใบที่มาจากโมดูลได้ (guard บล็อกแค่ Settlements/Allocations) — ตรวจ Champ ว่า Source≠0 แก้ภาษีได้หรือไม่ แล้วปิดพร้อม test | `backend/internal/generalledger/subledger_reconcile.go:34-35,47` | กลาง |
-| G2 | engine ต้นทุนสต็อกใช้ `float64` ~60 จุด ทั้งที่ DB เป็น `NUMERIC(18,4)` (ผิด Rule 20) — เปลี่ยนเป็น decimal = เปลี่ยน API contract (R1 บอก why ก่อน) | `backend/internal/goapi/inventory/models/models.go` (50), `service.go` (7), `costing/*.go` | สูง |
+| G2 | engine ต้นทุนสต็อกใช้ `float64` ~60 จุด ทั้งที่ DB เป็น `NUMERIC(18,4)` (ผิด Rule 20) — เปลี่ยนเป็น decimal = เปลี่ยน API contract (R1 บอก why ก่อน) | `backend/internal/goapi/inventory/models/models.go` (50), `service.go` (7), `costing/*.go`, `backend/internal/goapi/process/stockengine/calc.go` (27) | สูง |
 | G3 | agent ต้นทุนใน `c9912d56` ตัดสินเอง: ลบนโยบายสต็อกติดลบแบบ 4, ลบโหมด BOM standard, คง `fixedcost` — ขอลุงจืดยืนยัน | `backend/internal/goapi/process/stockengine/calc.go` | ถามเจ้าของ |
 | G4 | `/organization/role-permission/me` คืนสิทธิ์ดิบ ไม่ผ่าน `report.GrantChampDefaults` → frontend อาจเห็นปุ่มพิมพ์ต่างจาก backend | `backend/internal/report/run.go:50`, ใช้แค่ `generalledger/httpapi/scope.go:97` | กลาง |
 | G5 | กลุ่มสิทธิ์ที่เคยติ๊กออกผ่านเว็บก่อน `99fed30d` จะอ่านเป็น "ให้สิทธิ์" (dev DB ทิ้งได้ จึงไม่ migrate) | `99fed30d` | ต่ำ |
@@ -132,15 +142,22 @@
 | D4 (เช็ค) | วิธีพิมพ์เช็คจ่าย | (a) ตั้งตำแหน่ง มม. ต่อสมุด + พิมพ์ตรวจตำแหน่ง | `cheque-bank.md` §7 |
 | D13 (เช็ค) | การรันเลขเตรียมจ่าย | ตัวเลขล้วน รันทีละ 1 คงความกว้าง | `cheque-bank.md` §7 |
 | D15 (เช็ค) | เช็คสกุลเงินต่างประเทศ | ดูเอกสาร (กระทบ Rule 20/FX) | `cheque-bank.md` §7 |
+| D8 (AP) | ช่อง "การจัดสรร"/"กลุ่มของบิล" ก่อนมีทะเบียนรหัส | ดูเอกสาร | `ap-payment-prepare.md:632` |
 | D4/D6/D10/D12/D13 (AP) | ส่วนลดยกไป PV, ปุ่ม Info/F1/Recur, ดึงจากใบรับวางบิล, ประเภท "เจ้าหนี้อื่นๆ", เปิดใช้ก่อน PV มี WHT | ดูคอลัมน์ "แนะนำ" ในเอกสาร | `ap-payment-prepare.md` §7 |
 | Q1 / Q3 (รายงาน) | ทำ xlsx ไหม / รายงานที่ BC มีแต่ Champ ไม่มี | ดูเอกสาร | `report-registry.md` §11 |
-| D-5 | เมนูซอฟต์แวร์มาตรฐานต้องมีเลขทะเบียนจริง | ให้เลขหรือถอดเมนู | `facade-screens.md` |
+| D-1..D-4, D-6 | ยืนยันจอ facade ที่ขึ้น "รอพัฒนา" ตามข้อแนะนำ | ยืนยัน | `facade-screens.md:131-136` |
+| D-5 | เมนูซอฟต์แวร์มาตรฐานต้องมีเลขทะเบียนจริง | ให้เลขหรือถอดเมนู | `facade-screens.md:135` |
+| W2-CLI (มิติ) | CLI backfill `backend/cmd/gldimensions` ขัด forward-only | ลบ CLI ใช้ seed/ค่าเริ่มต้นในโค้ด | §5 |
 | G3 | ยืนยันการตัดสินใจของ agent ต้นทุน | — | §7 |
 
 ## 9. Gotchas (เจอจริงในรอบนี้)
-1. **CRLF หลัง merge**: เครื่องนี้ `core.autocrlf=true` แต่ไฟล์ใน git เป็น LF — `git merge --squash` เขียนไฟล์ที่ merge เป็น CRLF → เทสต์ที่อ่าน source ตรง ๆ (เช่น `frontend/src/lib/general-ledger.test.ts`) ตก. ป้องกัน: ใส่ `-c core.autocrlf=false` ทุกครั้งที่ merge/checkout. ตรวจ/แก้หลังเกิด (คืนเป็น blob เดิมเฉพาะไฟล์ที่เนื้อหาตรง HEAD):
+1. **CRLF / `core.autocrlf`**: ระบบตั้ง `true` (`C:/Program Files/Git/etc/gitconfig`) แต่ `.git/config` ของ repo นี้ถูกตั้ง `false` แล้ว (process อื่น, 2026-10-11 13:08 — ตรวจ `git config --show-origin --get-all core.autocrlf`). ไฟล์ใน git เป็น LF; ถ้าค่า `false` ใน repo หาย `git merge --squash`/checkout จะเขียนไฟล์เป็น CRLF → เทสต์ที่อ่าน source ตรง ๆ (เช่น `frontend/src/lib/general-ledger.test.ts`) ตก. ป้องกัน: ใส่ `-c core.autocrlf=false` ทุกครั้งที่ merge/checkout. main (387 ไฟล์) และ worktree มิติ (1403 ไฟล์) normalize แล้ว. ตรวจ/แก้หลังเกิด — คืนเป็น blob ใน index เฉพาะไฟล์ที่ตัด CR แล้วเนื้อหาตรง index:
    ```bash
-   git diff --name-only 86e5392a HEAD | while read p; do [ -f "$p" ] && [ "$(tr -cd '\r' < "$p" | wc -c)" -gt 0 ] && [ "$(git show HEAD:"$p" | tr -cd '\r' | wc -c)" -eq 0 ] && [ "$(git hash-object "$p")" = "$(git rev-parse HEAD:"$p")" ] && git show HEAD:"$p" > "$p"; done
+   git ls-files --eol | grep -E '^i/lf[[:space:]]+w/(crlf|mixed)[[:space:]]' | cut -f2 | while read -r p; do [ "$(tr -d '\r' < "$p" | git hash-object --stdin)" = "$(git rev-parse :"$p")" ] && git cat-file blob :"$p" > "$p"; done
+   ```
+   หลังคืนไฟล์ `git status` อาจยังขึ้น `M` ทั้งที่เนื้อหาเท่าเดิม (index จำขนาดไฟล์เก่า, `git update-index --refresh` ไม่หาย) → stage เฉพาะไฟล์ที่ hash ตรง index แล้ว `git diff --cached` ต้องว่าง:
+   ```bash
+   git diff --name-only | while read -r p; do [ "$(git hash-object "$p")" = "$(git rev-parse :"$p")" ] && echo "$p"; done | git add --pathspec-from-file=-
    ```
 2. **worktree + node_modules**: ห้ามทำ junction `frontend/node_modules` ไปที่ main checkout — `git worktree remove`/`rm -rf` จะตามเข้าไปลบแพ็กเกจของ main (เกิดจริง ต้อง `npm ci` ใหม่) และ Turbopack ใช้ junction ไม่ได้. ใน worktree ให้ `npm ci` แยก; ก่อนลบ worktree ตรวจ `[ -L <wt>/frontend/node_modules ]` และใช้ `cmd //c "rmdir <junction>"`. ถ้า `npm ci` ใน main ติด EPERM ให้หยุด dev server :3000 ก่อน (ล็อกไฟล์ `.node` ของ lightningcss)
 3. **DSN integration test** (รันจาก `backend/`, ห้ามพิมพ์รหัสผ่านลงแชท/log):
@@ -149,9 +166,9 @@
    ```
    `npm run verify:all` ขั้น postgres ใช้ PostgreSQL 18 ชั่วคราวแยกของมันเอง (ไม่ต้องตั้ง DSN)
 4. **CODE-MAP**: ไฟล์ ≥950 บรรทัดหรือที่อยู่ใน map ต้องรัน `pwsh -NoProfile -File tools/gen-code-map.ps1` แล้ว add `docs/reference/CODE-MAP.md` ใน commit เดียวกัน (pre-commit ตรวจ); ข้ามครั้งเดียวได้ด้วย `SKIP_CODE_MAP_CHECK=1 git commit ...` เมื่อ commit ถัดไปจะรวม map
-5. **languages.tsv**: 13 คอลัมน์ `key th en cn ja km ko lo my vi ms id fil`; th ต้นฉบับ, en แปลจริง, อื่น ๆ ใส่อังกฤษ ห้ามว่าง; merge แบบเก็บทั้งสองฝั่งแล้วตรวจ `awk -F'\t' 'NF!=13' backend/assets/language/languages.tsv`
+5. **languages.tsv**: 13 คอลัมน์ `key th en cn ja km ko lo my vi ms id fil`; th ต้นฉบับ, en แปลจริง, อื่น ๆ ใส่อังกฤษ ห้ามว่าง; merge แบบเก็บทั้งสองฝั่งแล้วตรวจ `awk -F'\t' 'NF && NF!=13' backend/assets/language/languages.tsv` (ต้องไม่มีผล) + `tr -cd '\r' < backend/assets/language/languages.tsv | wc -c` (ต้องเป็น 0)
 6. **แก้ไฟล์ด้วย Node**: ใช้ function replacer `s.replace(a, () => b)` (กัน `$1`/`$&` ใน string แทนที่); `frontend/src/app/globals.css` เป็น EOL ผสม ต้องแก้แบบ byte-preserving
-7. **commit**: `git add <path>` เฉพาะไฟล์ของงาน (ห้าม `-A`/`.`), สแกน `git diff --cached` หา `sk-|Bearer |password=|api_key=|AIza|BEGIN .*PRIVATE KEY` เจอ = หยุดถามลุงจืด; บรรทัดแรกอังกฤษ conventional, body ไทย; ห้าม `--no-verify`, ห้าม `--amend`, ห้าม `git pull`/`reset --hard origin`
+7. **commit**: `git add <path>` เฉพาะไฟล์ของงาน (ห้าม `-A`/`.`), สแกนบรรทัดที่เพิ่มใน `git diff --cached` ด้วย `grep -E 's[k]-|Beare[r] |passwor[d]=|api_ke[y]=|AI[z]a|BEGI[N] .*PRIVATE KEY|mongod[b]\+srv:[/]/|:[/]/[^/]*:[^@]*@|secre[t]=|toke[n]='` เจอ = หยุดถามลุงจืด; บรรทัดแรกอังกฤษ conventional, body ไทย; ห้าม `--no-verify`, ห้าม `--amend`, ห้าม `git pull`/`reset --hard origin`
 8. **ทดสอบหน้าจอ**: ใช้ปุ่ม "ทดลองใช้ระบบ(Demo)" เท่านั้น ห้ามพิมพ์รหัสผ่านจริง; dev server หลักอยู่ที่ :3000
 9. **ห้ามใส่ชื่อแบรนด์คู่แข่ง** ในโค้ด/docs/commit (pre-commit จับ)
 
