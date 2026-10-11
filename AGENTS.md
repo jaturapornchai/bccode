@@ -1,137 +1,127 @@
 # BC Ai Account — Codex Router (ฉบับย่อ)
 
-ฉบับเต็ม (เหตุผล ตัวอย่าง ประวัติ) อยู่ที่ `docs/kms/rules/agents-full.md` — เปิดอ่านเฉพาะหัวข้อที่ต้องใช้
+Full version (reasons, examples, history): `docs/kms/rules/agents-full.md` — open only the section you need
 
 ## Router (`D:\bccode`)
-- ความรู้ระบบ=`docs/kms/` (`00`–`22` ไม่มี `12`;`README.md` ดัชนี;`decisions/` ADR;`bugs/`;`architecture/`;`snippets/`)(โค้ดทำอะไร ไม่ใช่ business rule);requirement ไม่ชัด→ถามลุงจืด ห้ามเดา;code=truth(docs ขัดโค้ด→แก้ docs ใน commit เดียวกัน)
-- อ่านเฉพาะไฟล์ที่จำเป็น(ผัง `docs/README.md`)ห้ามกวาดทั้งโฟลเดอร์/เปิด handoff ล่วงหน้า;`docs/kms/00-source-router.md` หาหลักฐานโค้ดเท่านั้น;`mydocs/` อ่านอย่างเดียว
+- KMS `docs/kms/` (`00`-`22` no `12`; `README.md` index; `decisions/` ADR; `bugs/`; `architecture/`; `snippets/`) = what code does, not business rules; unclear requirement→ask ลุงจืด, no guessing; code=truth (docs≠code→fix docs in same commit)
+- Read only needed files (map `docs/README.md`); no sweeping folders/opening handoff early; `docs/kms/00-source-router.md` only to locate code evidence
 
-## กฎ/skill อยู่ที่เดียว (2026-09-07,09-20)—ADR `2026-09-20-single-source-ai-rules-skills.md`
-- กฎ=`AGENTS.md` (Claude ผ่าน `CLAUDE.md` `@AGENTS.md`;Gemini CLI ผ่าน `.gemini/settings.json` `context.fileName`);skill=`.agents/skills/<name>/SKILL.md` (Claude:junction `.claude/skills` จาก `npm run ai:link`)
-- ห้ามไฟล์กฎแยกต่อเครื่องมือ(`GEMINI.md`,`.agents/rules/*`,`.cursorrules`,`.codex/AGENTS.md`,กฎซ้ำใน `CLAUDE.md`)→ทำเป็น pointer/import;ห้ามคัดลอก skill ไป `.claude/skills/` จริง,`.gemini/skills/`,`docs/skills/`,`~/.agents/skills/`
-- กฎเครื่อง=`~/.agents/AGENTS.md` (สำเนา `node ~/.agents/sync-rules.mjs`)ห้ามฝังกฎโปรเจ็กต์ใน global
-- อ่าน SKILL.md จาก disk ห้าม cache:UI→`ui-scale-polish`;บัญชี/ภาษี→`thai-accounting-tax`+`docs/kms/21-thai-tax-form-references.md` (ห้ามเดา ต้องอ้างอิงทางการ,2026-09-23);แก้ skill→commit พร้อมงาน;บทเรียน→`docs/kms/` หัวข้อละไฟล์ อ้าง `file:line`+เพิ่มใน `docs/kms/README.md`
+## Rules/skills in one place — ADR `2026-09-20-single-source-ai-rules-skills.md`
+- Rules=`AGENTS.md` (Claude: `CLAUDE.md` `@AGENTS.md`; Gemini CLI: `.gemini/settings.json` `context.fileName`); skills=`.agents/skills/<name>/SKILL.md` (Claude: junction `.claude/skills` via `npm run ai:link`)
+- No per-tool rule files (`GEMINI.md`, `.agents/rules/*`, `.cursorrules`, `.codex/AGENTS.md`, rules in `CLAUDE.md`)→pointer/import only; no skill copies in real `.claude/skills/`, `.gemini/skills/`, `docs/skills/`, `~/.agents/skills/`
+- Machine rules=`~/.agents/AGENTS.md` (copies: `node ~/.agents/sync-rules.mjs`); no project rules in global
+- Read SKILL.md from disk, no cache: UI→`ui-scale-polish`; accounting/tax→`thai-accounting-tax`+`docs/kms/21-thai-tax-form-references.md` (official refs only, no guessing); skill edits commit with the work; lessons→`docs/kms/` one topic/file, cite `file:line`, list in `docs/kms/README.md`
 
-## mydocs/ Read-Only (2026-09-20)
-- `mydocs/`=ข้อกำหนดของลุงจืด(`mydocs/specs/rules.md` ฯลฯ)อ่านใหม่เมื่อเปลี่ยน;AI ทุกตัวห้ามสร้าง/แก้/ลบไฟล์หรือโฟลเดอร์ใน `mydocs/`;ข้อเสนอ→แชท/เอกสารนอก `mydocs/`;GL:md `mydocs/specs/gl/`,SQL `mydocs/datamodels/gl/`
+## mydocs/ read-only
+- `mydocs/`=ลุงจืด specs (`mydocs/specs/rules.md` …): re-read when changed; no AI may create/edit/delete files/folders inside; suggestions→chat/docs outside; GL: md `mydocs/specs/gl/`, SQL `mydocs/datamodels/gl/`
 
-## Deploy อัตโนมัติ (2026-09-12)
-- จบงาน+verify ผ่าน(test/tsc/build 100%)→deploy production(https://account.bcaicloud.com/)ไม่ถาม
-- Frontend only→ไม่ rebuild `mainapi` (tag จาก image เดิม);`docker save`|`ssh -C root@159.223.43.229 "docker load"` ไม่เขียน `images.tar`
-- Preflight backup `release.env.before`+DB;สลับ `release.env` atomic+`docker compose up -d --no-deps frontend` (หรือ mainapi);ตรวจ HTTP(200/401)+smoke test URL จริง
+## Auto deploy
+- Done+verify pass (test/tsc/build 100%)→deploy prod (https://account.bcaicloud.com/) unasked
+- Frontend-only→no `mainapi` rebuild (retag old image); `docker save`|`ssh -C root@159.223.43.229 "docker load"`, no `images.tar`
+- Preflight backup `release.env.before`+DB; atomic `release.env` switch+`docker compose up -d --no-deps frontend` (or mainapi); check HTTP 200/401+smoke-test real URL
 
-## ยึด `D:\project-champ` เป็นต้นแบบ (2026-09-15,09-19,10-09,10-11)
-- เป้าหมาย(2026-10-09):ทำงานเหมือน Champ เพื่อให้ผู้ใช้เดิมไม่ต้องปรับตัวมาก—เมนู/จอ/ลำดับฟิลด์/ปุ่ม/คีย์ลัด/ถ้อยคำ/ขั้นตอน/ผลคำนวณตรง Champ เป็นค่าตั้งต้น;เสริมของใหม่ได้บ้างเมื่อเป็นส่วนเพิ่มเล็กที่ไม่ขวางทาง Champ(ไม่แทนที่/ไม่เปลี่ยนขั้นตอนเดิม,ไม่บังคับกรอก,ไม่เพิ่มเมนูระดับบนสุด,มีประโยชน์ชัด เช่น ค้นหา/กรอง,Smart Paste,ข้อความช่วย,ไฟล์แนบ,ประวัติแก้ไข,Export)=ทำได้เลยแต่ต้องรายงานท้ายงานว่าเสริมอะไร(ลุงจืดสั่งถอดได้);เล็กหรือใหญ่ไม่แน่ใจ=ถือเป็นใหญ่;ของใหญ่(เมนู/จอ/โมดูลใหม่,เปลี่ยน workflow,ฟิลด์บังคับใหม่,เปลี่ยนสูตร)→เสนอข้อดี-ข้อเสียให้ลุงจืดอนุมัติก่อน—ADR `2026-10-09-champ-parity-purpose-additive-extras.md`
-- Upgrade Windows→Web ไม่บวม:ฟังก์ชัน/workflow/logic/ฟิลด์/การคำนวณ/เมนู(`champ/champ/menuconfigxml/menuconfig.xml`,`BC5Account.rc`,C++/MFC,DDL,รายงาน)ต้องเทียบเท่า ห้ามตัด เว้นลุงจืดสั่งเป็นลายลักษณ์อักษร(เช่น payroll);ตรวจโค้ดจริงก่อนออกแบบจอ/เมนู/ฟิลด์/API
-- **ประมวลผล/workflow ยึด Champ เป็นต้นแบบเสมอ (2026-10-11)**:ก่อนออกแบบ/แก้งานประมวลผลทุกชนิด(บันทึก→ตรวจ→อนุมัติ→ผ่านรายการ/ลง GL→ตัดหนี้/ตัดสต็อก→ยกเลิก/กลับรายการ→ล็อกงวด/ปิดงวด/สิ้นปี→ต้นทุน→รายงาน)ต้องไล่โค้ดประมวลผลจริงของ Champ(`champ-lib/BC5PROCESS` เช่น `gltlsprocess.cpp`/`glautoprocess.cpp`,`.cpp` ของจอนั้น,`champ/champ/Script/SQLSERVER_Script.sql`)ให้ได้ ลำดับขั้น/สถานะ-flag/เงื่อนไขตรวจ+ข้อความเตือน/ตารางและยอดที่กระทบ/การย้อนกลับ แล้วทำตามนั้น;อ้าง Champ `file:line` ใน design/ADR/commit body;ต่างจาก Champ ได้เฉพาะกลไกเทคนิคที่ผลลัพธ์เท่ากัน(เช่น `BEGIN…COMMIT` synchronous แทน batch)หรือข้อบังคับกฎหมาย/คำสั่งลุงจืด และต้องรายงานท้ายงาน;หาใน Champ ไม่เจอ/อ่านไม่ออก→ถามลุงจืด ห้ามคิด workflow เอง—ADR `2026-10-11-champ-processing-workflow-template.md`
-- Strict Parity:ห้ามคิดฟังก์ชัน/เมนู/จอใหม่เอง—Champ ไม่มี+ไม่มีคำสั่งลุงจืด+ไม่ใช่ข้อบังคับกฎหมายบัญชี/ภาษีไทย=ห้ามเพิ่มเป็นเมนู/จอ/ฟังก์ชันหลักเอง(ส่วนเสริมเล็กตามข้อเป้าหมายทำได้);Champ แยกจอซ้ำ→ยุบเป็นจอเดียวมี Tab/Action;ความสามารถใหม่(ตลาดออนไลน์,AI ผู้ช่วย,LINE OA,e-Tax Invoice,Dashboard ผู้บริหาร)→เสนอข้อดี-ข้อเสียให้ลุงจืดอนุมัติก่อน
-- เมนูตาม `menuconfig.xml`;`goods-inspection`,`low-stock-alert`,`sale-reservation-flow` มีใน Champ ห้ามตัด;ห้าม engine คำนวณฝั่ง browser—ADR `2026-09-19-champ-parity-menu-cut.md`
+## Champ (`D:\project-champ`) = template
+ADR `2026-10-09-champ-parity-purpose-additive-extras.md`, `2026-10-11-champ-processing-workflow-template.md`, `2026-09-19-champ-parity-menu-cut.md`
+- Behave like Champ: menus/screens/functions/fields+order/buttons/shortcuts/wording/steps/workflow/logic/calc results equivalent to Champ (`champ/champ/menuconfigxml/menuconfig.xml`, `BC5Account.rc`, C++/MFC, DDL, reports); no cuts unless ordered in writing (e.g. payroll); read Champ code before designing screen/menu/field/API
+- Processing/workflow always=Champ: before designing/changing any processing (record/check/approve, post/GL, settle, stock, cancel/reverse, period lock/close, year-end, cost, reports) trace real Champ code (`champ-lib/BC5PROCESS` e.g. `gltlsprocess.cpp`/`glautoprocess.cpp`, the screen `.cpp`, `champ/champ/Script/SQLSERVER_Script.sql`) for step order, status/flags, checks+warnings, affected tables/balances, reversal, then follow it; cite Champ `file:line` in design/ADR/commit body; differ only for equal-result technique (e.g. synchronous `BEGIN…COMMIT` vs batch), law, or owner order, and report it; not found/unreadable→ask ลุงจืด, never invent workflow
+- Champ lacks it+no order+not required by Thai accounting/tax law→never add a menu/screen/main function yourself; Champ duplicate screens→one screen with Tab/Action; menus follow `menuconfig.xml`; `goods-inspection`, `low-stock-alert`, `sale-reservation-flow` are Champ, keep
+- Small extras OK unasked if additive (Champ steps/results unchanged), optional, no new top-level menu, clearly useful (e.g. search/filter, Smart Paste, Export); report at end (removable); unsure=big; big (new menu/screen/module, workflow change, new mandatory field, formula change, new capability e.g. LINE OA/e-Tax/AI assistant)→propose pros/cons, approval first
 
-## Backend-first+REST API+MCP Server (2026-09-15)
-- Business logic/คำนวณบัญชี-ภาษี/aggregation/ปิดงวด/year-end/ปันส่วนต้นทุน/งบ-รายงาน→Backend(Go+PostgreSQL) 100%;Frontend=presentation/input/validation เบื้องต้น ห้าม business logic/heavy calc
-- ทุกธุรกรรม/ฟังก์ชัน/การสืบค้นมี REST API+schema+error contract
-- Backend มี MCP Server ให้ AI agent/Vibe Coding:Read(ผังบัญชี,ยอดคงเหลือ,สมุดรายวัน,งวด,รายงาน),Write(journal,post/unpost,งวด,ประมวลผล),Knowledge & Schema;ใช้ได้ทั้ง MCP และ REST
+## Backend-first+REST+MCP
+- Business logic/accounting-tax calc/aggregation/period close/year-end/cost allocation/statements-reports→Backend (Go+PostgreSQL) 100%; Frontend=presentation/input/basic validation, no business logic/calc engine
+- Every transaction/function/query: REST API+schema+error contract; Backend MCP Server (Read/Write/Knowledge & Schema), usable via MCP and REST
 
-## PostgreSQL อย่างเดียว (2026-09-19,09-20,09-23)
-- ห้ามเพิ่ม Kafka,Zookeeper,Worker,MongoDB,Redis,ClickHouse กลับ;Go Pure `CGO_ENABLED=0` ไร้ `librdkafka`/CGO
-- ธุรกรรมบัญชี(GL,Journals,Invoices,Receipts,Master Data)=synchronous ACID `BEGIN ... COMMIT` ผ่าน `sql.Tx` ไม่ใช้ eventual consistency/queue;pagination `LIMIT $1 OFFSET $2`+`ORDER BY` เสมอ
-- Prod:`postgres` (`postgres:18-alpine` ตาม `deploy/account/compose.yml`),`minio`;session/token ตาราง `cache_entries`;จอที่ API เดิมบน Mongo="รอพัฒนา"—ADR `2026-09-23-remove-mongo-kafka-redis-clickhouse.md`
+## PostgreSQL only — ADR `2026-09-23-remove-mongo-kafka-redis-clickhouse.md`
+- Never re-add Kafka/Zookeeper/Worker/MongoDB/Redis/ClickHouse; pure Go `CGO_ENABLED=0`, no `librdkafka`/CGO
+- Accounting transactions (GL, journals, invoices, receipts, master data)=synchronous ACID `BEGIN ... COMMIT` via `sql.Tx`, no eventual consistency/queue; pagination always `LIMIT $1 OFFSET $2`+`ORDER BY`
+- Prod: `postgres` (`postgres:18-alpine`, `deploy/account/compose.yml`), `minio`; session/token in table `cache_entries`; screens whose old API was Mongo="รอพัฒนา"
 
-## ชื่อใน PostgreSQL lowercase (2026-09-19)
-- ทุกชื่อ(database `bcai_projection`,schema,table `gl_records`,column `holding_code`,index,FK,PK,sequence)=`[a-z0-9_]` ห้าม uppercase/camelCase และ quoted identifiers(`holding_code` ไม่ใช่ `"holdingCode"`);Go tag `db:`/`json:` และ TS API/DTO ตรง snake_case
+## PG names lowercase
+- All names (database, schema, table, column, index, FK, PK, sequence)=`[a-z0-9_]`, e.g. `bcai_projection`, `gl_records`; no uppercase/camelCase/quoted identifiers (`holding_code` not `"holdingCode"`); Go `db:`/`json:` tags+TS API/DTO=same snake_case
 
-## ขอบเขต:ไม่ทำ payroll (2026-09-08)
-- ห้ามเพิ่มเมนู/จอ/สเปก/API:ระบบเงินเดือน,ภ.ง.ด.1/ภ.ง.ด.1ก,ไฟล์สมทบประกันสังคม(สปส./กท.20 ก)
-- ยังอยู่ในขอบเขต:ภ.ง.ด.2(เมนู `vat-pnd2`→`/report/vatpnd2` ใน `frontend/src/lib/menu-data.ts` ห้ามลบ),ภ.ง.ด.3/53,50 ทวิ,เงินทดรองจ่ายพนักงาน,ทะเบียนพนักงาน `/employee`
-- อ้างอิง `docs/kms/19-menu-coverage-market-standard.md`,ADR `2026-09-08-menu-parity-market-standard.md` (ห้ามเขียนว่า "ครบ 100%")
+## No payroll
+- No menu/screen/spec/API for payroll, ภ.ง.ด.1/ภ.ง.ด.1ก, social-security files (สปส./กท.20 ก)
+- In scope: ภ.ง.ด.2 (menu `vat-pnd2`→`/report/vatpnd2` in `frontend/src/lib/menu-data.ts`, never delete), ภ.ง.ด.3/53, 50 ทวิ, employee cash advances, employee register `/employee`
+- Ref `docs/kms/19-menu-coverage-market-standard.md`, ADR `2026-09-08-menu-parity-market-standard.md`; never write "ครบ 100%"
 
-## ขอบเขต GL (2026-09-20,09-23)
-- ภาษีทุกเมนูอยู่ในหมวด "บัญชีแยกประเภท";ผู้ใช้ GL ตัวเดียว ใช้ได้เลย ระบบอื่นยังไม่ต้องทำ—ADR `2026-09-23-tax-inside-general-ledger.md`
-- ระบบห้องบัญชี:รับข้อมูล ตรวจสอบ กระทบยอด ปิดงบ ไม่ใช่ระบบหน้าบ้าน/workflow ระบบอื่น;สเปกหลัก `mydocs/specs/gl/spec.md`
-- รายวันครั้งเดียวเชื่อมลูกหนี้/เจ้าหนี้/Statement ธนาคารแบบ many-to-many(เก็บยอดจัดสรรในตารางเชื่อม);AR/AP/Statement=รายละเอียดตรวจสอบ ไม่ใช่คำสั่งรับจ่ายเงินจริง
+## GL scope — ADR `2026-09-23-tax-inside-general-ledger.md`
+- All tax menus under "บัญชีแยกประเภท"; GL-only user must work right away, other systems later; accounting-office system (receive, check, reconcile, close), not front-office/other-system workflow; main spec `mydocs/specs/gl/spec.md`
+- One journal↔AR/AP/bank Statement many-to-many (allocations in link table); AR/AP/Statement=audit detail, not payment orders
 
-## บทบาท DevOps/Product Engineer+นักบัญชีไทย (2026-09-18)
-- ห้ามเชื่อแค่ HTTP 200/401/build ผ่าน—ตรวจ payload จริง(ไม่ใช่ empty JSON/จอขาว/stale chunks);หลัง deploy `docker compose ps`+`docker logs --tail 50`;เทียบ local vs prod(timezone `Asia/Bangkok`,env,`X-Forwarded-For`);ผิดปกติ→สืบด้วย evidence
-- ประเมิน blast radius;backup ก่อน switch;เก็บ release เก่า rollback ได้ ≥72 ชม.;ทุกฟังก์ชันมี evidence(test,DDL,API response,log)
-- Defensive:fallback null/undefined(`?? ""`,`|| []`);ปุ่มบันทึก enabled ทันทีที่แก้จริง+dirty guard;ปัดเศษ/หาร 0/ติดลบ/`trim()`;ดัก `ChunkLoadError`
-- ปลอดภัย:OWASP,HttpOnly Secure cookies,parameterized SQL 100%,sanitize input
-- บัญชี:TFRS,ประมวลรัษฎากร,DBD;Debit=Credit 100%;VAT(ภ.พ.30/36)แยกฐาน+ภาษีซื้อต้องห้าม;WHT(ภ.ง.ด.2/3/53,50 ทวิ)ตามอัตราจริง;ทุกธุรกรรมมี audit trail ลง GL;audit log เหตุผลยกเลิก/แก้ไข;ห้ามเดากฎหมาย/ภาษี/สูตร—ค้นข้อกฎหมาย/ประกาศสรรพากร/เทียบ Champ/SML
-- คีย์งานลื่น(Tab/Enter/Numpad,Smart Paste);error ไทยบอกวิธีแก้;จบงานสรุปสถานะ+เสนอ 2–3 ข้อขั้นต่อไป
+## DevOps+Thai accountant
+- Never trust HTTP 200/401/build alone; check real payload (no empty JSON/white screen/stale chunks); after deploy `docker compose ps`+`docker logs --tail 50`; compare local vs prod (`Asia/Bangkok`, env, `X-Forwarded-For`); investigate anomalies with evidence
+- Assess blast radius; backup before switch; keep old release ≥72 h for rollback; evidence per function (test, DDL, API response, log)
+- Defensive: `?? ""`/`|| []` fallbacks; save enabled on real edit+dirty guard; rounding/÷0/negatives/`trim()`; catch `ChunkLoadError`; OWASP, HttpOnly Secure cookies, parameterized SQL 100%, sanitized input
+- Accounting: TFRS, Revenue Code, DBD; Debit=Credit 100%; VAT (ภ.พ.30/36) separate base+non-creditable input VAT; WHT (ภ.ง.ด.2/3/53, 50 ทวิ) real rates; GL audit trail per transaction; log cancel/edit reasons; never guess law/tax/formulas, check law/Revenue Dept notices/Champ/SML
+- Fast keying (Tab/Enter/Numpad, Smart Paste); Thai errors that say how to fix
 
-## รูปแบบนำเสนอ `[1]`,`[2]`,`[3]` (2026-09-18)
-- สรุป/แนะนำขั้นต่อไป ห้ามพรรณนายาว→จัดเป็น `[1]`,`[2]`,`[3]` ลุงจืดตอบเลขเดียว(`1`,`1,2,3`)ทำต่อได้ทันที
-- แต่ละข้อ:Action+ปัญหาที่แก้/คุณค่า+Scope(ไฟล์/โมดูล);ตัวแนะนำสุดก่อน ระบุ `(แนะนำ)`;แยกหมวด Bug/Fix,Enhancement UX,Value Add
+## Present as `[1]`,`[2]`,`[3]`
+- End with status+2-3 next steps as `[1]`,`[2]`,`[3]`, no long prose (reply `1`/`1,2,3`); each=Action+problem/value+Scope (files/modules); best first marked `(แนะนำ)`; group Bug/Fix, Enhancement UX, Value Add
 
-## ข้อมูลสมจริง SMEs ไทย ห้ามคำว่า demo (2026-09-19)
-- ข้อมูลทุกชนิด(seed/test/ผังบัญชี/สมุดรายวัน/สินค้า/ลูกค้า/เจ้าหนี้/องค์กร)เหมือนใช้งานจริง 100%;ห้าม "demo","ข้อมูลตัวอย่าง","(สาธิต)","Mock","Dummy","Test" ในข้อมูลที่ผู้ใช้เห็น
-- ผังบัญชี multi-level ตาม TFRS/DBD ห้าม flat;JSON มี `"level"`+`"parentaccountcode"`:L1 `10000`–`50000` (สินทรัพย์/หนี้สิน/ส่วนของเจ้าของ/รายได้/ค่าใช้จ่าย);L2 `11000`/`12000`/`21000`/`22000`;L3 บัญชีคุม `11100`/`11200`/`11300`/`12100`;L4 ลงรายการ `11110`–`12120`;L1–L3 `allowposting:false`,L4 `true`
-- ชื่อธุรกิจ/สาขา/รายการค้าไทยจริง
+## Realistic Thai SME data
+- All data (seed/test/master/journals) real-world-like, real Thai business/branch/transaction names; no "demo", "ข้อมูลตัวอย่าง", "(สาธิต)", "Mock", "Dummy", "Test" in user-visible data
+- Chart of accounts multi-level (TFRS/DBD), never flat; JSON `"level"`+`"parentaccountcode"`: L1 `10000`-`50000`, L2 e.g. `11000`, L3 control e.g. `11100`, L4 posting e.g. `11110`; L1-L3 `allowposting:false`, L4 `true`
 
-## ห้ามชื่อแบรนด์คู่แข่ง (2026-09-09)
-- ห้ามชื่อ/อ้างอิง FlowAccount หรือ PEAK Account(หรือบุคคลภายนอกใด)ในโค้ด(คอมเมนต์,ชื่อไฟล์/ตัวแปร,routes,UI,commit message)และเอกสาร `docs/`;ใช้คำกลาง เช่น "มาตรฐานโปรแกรมบัญชีไทยทั่วไป";`.githooks/pre-commit` สแกน staged→พบ=reject
+## No competitor brands
+- Never name FlowAccount, PEAK Account (or any outside party) in code (comments, file/var names, routes, UI, commit messages) or `docs/`; use neutral words e.g. "มาตรฐานโปรแกรมบัญชีไทยทั่วไป"; `.githooks/pre-commit` rejects staged hits
 
-## ภาษา: key อังกฤษ+th/en เท่านั้น (2026-09-14,09-16,09-19)
-- ห้าม hard-code ข้อความไทย/ภาษาใดในโค้ด:key snake_case(`gl_post_journal`)+`backendText(dictionary,key,fallback)` (`frontend/src/lib/backend-language.ts`);ข้อความอยู่ `backend/assets/language/languages.tsv` (13 คอลัมน์ `key th en cn ja km ko lo my vi ms id fil`)
-- ทุกจอรับ prop `language`+`useBackendLanguage(language,backendUrl)`;ห้ามอ่าน `localStorage` เมิน prop;component กลาง(`confirm-dialog`,`numeric-input`)รับป้ายเป็น prop;ห้าม `t(th,en)`
-- เพิ่มข้อความ=เพิ่ม 1 แถวครบ 13 คอลัมน์ใน commit เดียวกัน(ไม่ครบ→ถูกข้าม คืน key ดิบ—`docs/kms/17-dev-gotchas.md`);th=ต้นฉบับ,en=คำแปลจริง,ภาษาอื่นใส่อังกฤษ placeholder ห้ามว่าง
-- Backend คืนข้อความผ่าน key+`language.Text(key,lang)` ตาม `Accept-Language`/`lang` ไม่ใช่ `fmt.Errorf("ข้อความไทย")`
-- เปิดแค่ th+en:`ACTIVE_LANGUAGE_CODES = ["th", "en"]` (`frontend/src/lib/i18n.ts`);ห้ามเปิดภาษาที่ 3/เริ่มรอบแปล/เพิ่ม-ลดคอลัมน์ tsv จนลุงจืดสั่ง;คงโครง 12 ภาษา(`src/locales/*.json`)ซ่อนไม่ลบ;ตรวจรับ th+en(ไทยค้างตอนเลือก en=bug)
+## Language: key+th/en
+- No hard-coded Thai/any-language text: snake_case key (`gl_post_journal`)+`backendText(dictionary,key,fallback)` (`frontend/src/lib/backend-language.ts`); text in `backend/assets/language/languages.tsv` (13 cols `key th en cn ja km ko lo my vi ms id fil`); new text=one full row in same commit (incomplete→raw key, `docs/kms/17-dev-gotchas.md`); th=source, en=real translation, others=English placeholder, never empty
+- Screens: prop `language`+`useBackendLanguage(language,backendUrl)`, never `localStorage` over the prop; shared components (`confirm-dialog`, `numeric-input`) take labels as props; no `t(th,en)`; Backend: key+`language.Text(key,lang)` per `Accept-Language`/`lang`, not `fmt.Errorf("ข้อความไทย")`
+- Only th+en: `ACTIVE_LANGUAGE_CODES = ["th", "en"]` (`frontend/src/lib/i18n.ts`); no 3rd language/translation round/tsv column change until ordered; keep 12-language skeleton (`src/locales/*.json`) hidden; accept th+en (Thai left in en=bug)
 
-## UX/UI (2026-08-30,09-02,09-06)
-**40+**—ผู้ใช้หลัก=คนไทยอายุ 40+ มาก่อนความสวย
-- ตัวอักษร ≥0.9rem(ห้าม <0.8rem กับข้อความสำคัญ);ไทยเป็นหลัก;line-height ≥1.45 ห้ามตัดกลางคำ `overflow-wrap: anywhere`
-- ปุ่ม action หลัก ≥2.6em(≈44px+);ห้าม icon เปล่ากับ action สำคัญ(ต้องมีข้อความไทยหรือ `aria-label`+`title`);WCAG AA 4.5:1(ใหญ่/UI 3:1)ห้ามสื่อสถานะด้วยสีอย่างเดียว
-- หนึ่งจอ CTA เดียว;ลบ/ทับ→dialog ไทยอธิบายผล+validate+dirty guard;feedback ไทยง่าย ไม่โชว์รหัสเทคนิค;ห้าม auto-scroll ฉับพลัน;transition ≤300ms เคารพ `prefers-reduced-motion`
+## UX/UI
+**40+** (users=Thai 40+; beats beauty)
+- Font ≥0.9rem (key text never <0.8rem); line-height ≥1.45; no mid-word Thai breaks, long tokens `overflow-wrap: anywhere`
+- Primary buttons ≥2.6em (≈44px+); key actions never icon-only (Thai text or `aria-label`+`title`); WCAG AA 4.5:1 (large/UI 3:1); state never by color alone
+- One CTA per screen; delete/overwrite→Thai dialog explaining effect+validate+dirty guard; plain Thai feedback, no tech codes; no sudden auto-scroll; transitions ≤300ms, honor `prefers-reduced-motion`
 
-**พรีเมี่ยม**—เท่าหน้า login/holding
-- accent จาก `--primary` ผ่าน `color-mix` ห้าม hard-code สี;light/dark สวยเท่ากัน;card มุม 16–28px ขอบ hairline เงาย้อมสี primary นุ่ม;hover ยก ≤1px;focus ring 3–4px
-- Motion:ambient glow ≥15s+stagger ≤0.5s เท่านั้น ห้าม `filter: blur()` เคลื่อนไหว;hero=รูปถ่ายธุรกิจไทยจริง webp ≥1600px ห้าม SVG/clipart;ห้าม `overflow: hidden` บน panel ที่มี popover
-- ตรวจรับครั้งเดียวตอนจบชุดงาน:screenshot light+dark×1600/1280/1024/768-portrait+hover/focus/disabled/error,ไม่มี console error;dark กดปุ่มสลับธีมจริง
-- CSS skin pass=block เดียวท้าย `frontend/src/app/globals.css` (มี comment วันที่+เหตุผล);แก้ด้วย Node byte-preserving(EOL ผสม)ไม่ใช้ Edit tool
+**Premium** (match login/holding)
+- Accent from `--primary` via `color-mix`, no hard-coded colors; light/dark equally good; cards radius 16-28px, hairline border, soft primary-tinted shadow; hover lift ≤1px; focus ring 3-4px
+- Motion: ambient glow ≥15s+stagger ≤0.5s only; no animated `filter: blur()`; hero=real Thai business photo webp ≥1600px, no SVG/clipart; no `overflow: hidden` on panels with popovers
+- Accept once at end of batch: screenshots light+dark×1600/1280/1024/768-portrait+hover/focus/disabled/error, no console errors; dark via real theme toggle
+- CSS skin pass=one block at end of `frontend/src/app/globals.css` (comment date+reason); edit via byte-preserving Node (mixed EOL), not Edit tool
 
-**Upgrade skill**—ก่อนแตะ UI อ่าน `ui-scale-polish`;มาตรฐานกลาง(icon ปุ่ม,`!pl-10`,ความสูงปุ่ม,palette,density)→อัปเดต `.agents/skills/ui-scale-polish/SKILL.md` ทันที(แบบแผนใหม่,anti-pattern,root cause,ไฟล์:บรรทัด)commit พร้อมโค้ด;AGENTS.md ขัด skill→AGENTS.md ชนะ;ห้ามลอกโค้ดเก่าที่ยังไม่อัปเกรด
+**Upgrade skill**: read `ui-scale-polish` before UI work; shared standards (button icons, `!pl-10`, button height, palette, density)→update `.agents/skills/ui-scale-polish/SKILL.md` at once (pattern, anti-pattern, root cause, file:line), commit with code; AGENTS.md beats skill; never copy old un-upgraded code
 
-## UAT: CRUD+PostgreSQL ทีละ step (2026-08-30,09-23)
-- CRUD ครบ Create→Read→Update→Delete+edge cases(ว่าง,ซ้ำ,อักขระพิเศษ,double-click);ตรวจ PostgreSQL ทันทีหลังแต่ละ operation(`psql` ใน container `postgres` ฐานของ holding นั้น):Create→แถว/ค่าถูก;Update→แถวเดิมเปลี่ยน(ไม่ใช่แถวใหม่/orphan);Delete→หายจริง;ห้ามรอจบชุดแล้วตรวจรวด
-- record อื่นต้องรอด;เคลียร์ข้อมูลทดสอบด้วย id/code เป้าหมายเท่านั้น ห้าม regex กว้าง;สุ่มมี seed ตาม `tests/uat-crud.spec.ts`;รายงานผ่าน/ไม่ผ่าน+หลักฐาน
+## UAT: CRUD+PostgreSQL
+- Full CRUD+edge cases (empty, duplicate, special chars, double-click); `psql` (container `postgres`, that holding DB) right after each operation: Create→row/values right; Update→same row changed (no new row/orphan); Delete→gone; never batch-check at end
+- One command `npm run uat` (`tools/uat/`): Demo login→GL+ERP CRUD with psql after every step→UI smoke of every implemented screen (console/API errors, screenshots)→cleanup by exact id; `--rebuild` rebuilds local mainapi, `--target=prod` = read-only UI smoke on RUNGRUENG/01
+- Other records must survive; clean test data by target id/code only, no broad regex; seeded randomness per `tests/uat-crud.spec.ts`; report pass/fail+evidence
 
-## ทดสอบจอด้วยปุ่ม Demo สิทธิ์ all (2026-09-23)
-- ปุ่ม "ทดลองใช้ระบบ(Demo)" เปิดทุก env ช่วง dev:`/api/auth/demo-login`→backend `/demo-login`;env `BCAI_DEMO_LOGIN_ENABLED=true`+`BCAI_DEMO_USERNAME` (ค่าเริ่มต้น `demo`)
-- Demo=owner holding `rungrueng` `permission_sets`=`["*"]` `access_scopes`=`{}` ใน `holding_members` ของ `bcai_projection`;จอปฏิเสธ Demo=bug metadata สิทธิ์ ต้องแก้ ห้ามเลี่ยงไปบัญชีอื่น
-- AI ทดสอบเองหลังแก้ UI/API(Browser pane/Playwright):Demo→`rungrueng`→บริษัท `01`→สาขา `00000`→ตรวจ payload จริงใน network,console error,screenshot;ห้ามขอลุงจืดทดสอบแทน ห้ามกรอกรหัสผ่านจริง
-- ก่อน go-live ปิด(`BCAI_DEMO_LOGIN_ENABLED=false`)หรือย้าย Demo ไป holding แยก;ห้าม Demo เป็นสมาชิก holding ที่มีข้อมูลลูกค้าจริง
+## Demo button (all permissions)
+- "ทดลองใช้ระบบ(Demo)" on in every env during dev: `/api/auth/demo-login`→backend `/demo-login`; env `BCAI_DEMO_LOGIN_ENABLED=true`+`BCAI_DEMO_USERNAME` (default `demo`)
+- Demo=owner of holding `rungrueng` (`permission_sets`=`["*"]`, `access_scopes`=`{}` in `holding_members` of `bcai_projection`); screen refusing Demo=permission-metadata bug→fix, never use another account
+- After UI/API changes test yourself (Browser pane/Playwright): Demo→`rungrueng`→company `01`→branch `00000`→real network payload, console errors, screenshot; never ask ลุงจืด to test; never type real passwords (Demo only)
+- Before go-live: `BCAI_DEMO_LOGIN_ENABLED=false` or Demo to its own holding; never in a holding with real customer data
 
-## รูปภาพ:S3/MinIO+thumbnail (2026-08-31)
-- ห้ามเก็บรูป(binary/base64)ใน PostgreSQL—เก็บแค่ URI/object key;อัปโหลด `POST /api/upload/image`→`/goapi/image/upload`→PutObject bucket จาก env `S3_*`
-- ต้องมี thumbnail เสมอ เก็บใน `<field>thumb`;จอ list ใช้ thumb
+## Images: S3/MinIO
+- No image binary/base64 in PostgreSQL, only URI/object key; upload `POST /api/upload/image`→`/goapi/image/upload`→PutObject to bucket from env `S3_*`; always thumbnail `<field>thumb`, list screens use it
 
-## ความเร็ว+ประหยัด token (2026-09-07)
-- ห้ามอ่านทั้งไฟล์ >300 บรรทัดโดยไม่จำเป็น;ไฟล์ >1,000 บรรทัดดู `docs/reference/CODE-MAP.md` ก่อน—เก่าได้:เทียบ `wc -l` ไม่ตรง→`grep -n` หรือ `pwsh -NoProfile -File tools/gen-code-map.ps1`
-- `.githooks/pre-commit` รัน `tools/gen-code-map.ps1 -Check` เมื่อแตะไฟล์ ≥950 บรรทัด/ในแผนที่;ทุก clone `npm run hooks:install` (ห้าม `git config core.hooksPath` เพราะปิด `post-commit`);ข้ามรอบเดียว `SKIP_CODE_MAP_CHECK=1 git commit ...`
-- patch เฉพาะจุด ห้าม rewrite ทั้งไฟล์;ห้ามรัน full test suite(`npm test -- <path>.test.ts`);output >50 บรรทัดครอบ `| head -n 30`;สำรวจ >5 ไฟล์→delegate subagent(`research`)รับสรุป 5–10 บรรทัด
+## Speed+tokens
+- No whole-file reads >300 lines unless needed; >1,000 lines→`docs/reference/CODE-MAP.md` first (stale if `wc -l` differs→`grep -n` or `pwsh -NoProfile -File tools/gen-code-map.ps1`)
+- Patch in place, no whole-file rewrites; no full test suite (`npm test -- <path>.test.ts`); output >50 lines→`| head -n 30`; exploring >5 files→subagent, read-only→`subagent_type:"Explore"` (loads no rules), 5-10 line summary
 
-## GitHub เก็บโค้ดอย่างเดียว ไม่มี CI (2026-09-09)
-- `.github/workflows/ci.yml` ลบถาวร(กู้จาก commit `1799b069`);ห้ามสร้าง workflow ใหม่ใน `.github/` หรือเสนอเปิด CI โดยไม่ถามลุงจืด;ห้ามย้าย `backend/.github/workflows/*.yaml` ขึ้น root
-- ตัวตรวจ(ทุก clone `npm run hooks:install`):`.githooks/pre-commit`;`.githooks/pre-push` รัน `tools/verify.sh codemap`+`frontend` เมื่อแตะ `frontend/` (ข้าม `SKIP_VERIFY=1 git push`);`npm run verify` ก่อน push ทุกครั้ง;`npm run verify:all` (+backend)ก่อน deploy
-- ห้ามเขียนว่า "CI จะจับให้";ไม่ได้รัน verify=บอกตรง ๆ;แก้คำสั่งทดสอบที่ `tools/verify.sh` ที่เดียว+อัปเดต `docs/kms/11-testing-quality.md` §5 ใน commit เดียวกัน
+## No CI (GitHub stores code only)
+- `.github/workflows/ci.yml` deleted for good (restore from `1799b069`); no new `.github/` workflows or CI proposals without asking ลุงจืด first; never move `backend/.github/workflows/*.yaml` to root
+- Every clone `npm run hooks:install` (never `git config core.hooksPath`: kills `post-commit`); `.githooks/pre-commit` runs `tools/gen-code-map.ps1 -Check` on files ≥950 lines/in map (skip once `SKIP_CODE_MAP_CHECK=1 git commit ...`); `.githooks/pre-push` runs `tools/verify.sh codemap`+`frontend` when `frontend/` changed (skip `SKIP_VERIFY=1 git push`)
+- `npm run verify` before every push, `npm run verify:all` (+backend) before deploy; never write "CI จะจับให้"; verify not run=say so; edit test commands only in `tools/verify.sh` + update `docs/kms/11-testing-quality.md` §5 in the same commit
 
-## ประวัติแก้ไข=git log ไม่ใช่ README (2026-09-23)
-- ห้ามเพิ่ม Activity Log ใน `README.md` (แก้เมื่อภาพรวมระบบเปลี่ยนจริง);commit บรรทัดแรกอังกฤษ conventional(`feat(gl): ...`)+body สรุปไทย(แก้อะไร ได้อะไร ผลทดสอบ);เหตุผล→ADR;บั๊ก→`docs/kms/bugs/`
+## History=git log, not README
+- No Activity Log in `README.md` (edit only when system overview changes); commit line 1 English conventional (`feat(gl): ...`)+Thai body (what changed, result, tests); reasons→ADR; bugs→`docs/kms/bugs/`
 
-## commit อัตโนมัติ (2026-09-25)
-- จบงาน verify ผ่าน→commit ไม่ถาม(ก่อนสรุป/ก่อน deploy);งานคนละเรื่องแยก commit;verify ไม่ผ่าน/ไม่จบ=ห้าม commit เป็นงานเสร็จ รายงานตรง ๆ
-- `git add <path>` เฉพาะไฟล์ของงาน ห้าม `git add -A`/`git add .` (AI อื่นแก้ tree เดียวกัน);ดู `git status -s`+`git diff --cached --stat`;grep secret(`sk-`,`Bearer `,`password=`,`api_key=`)ใน diff—เจอ=หยุดถาม
-- commit≠push(push เมื่อลุงจืดสั่ง);ห้าม `--no-verify`;hook ไม่ผ่าน→แก้แล้ว commit ใหม่ ห้าม `--amend` commit เดิม
-- ใน worktree(`.claude/worktrees/*`)commit บน branch ของ worktree ไม่แตะ `dev`;ท้ายรายงานบอก hash+branch+สิ่งที่ยังไม่ commit
+## Auto commit
+- Done+verify pass→commit unasked (before summary/deploy); unrelated work→separate commits; verify failed/unfinished→never commit as done, say so
+- `git add <path>` task files only, never `git add -A`/`git add .`; check `git status -s`+`git diff --cached --stat`; grep diff for `sk-`/`Bearer `/`password=`/`api_key=`→hit=stop+ask
+- Push only when ordered; never `--no-verify`; hook fails→fix+new commit, never `--amend`; in worktree (`.claude/worktrees/*`) commit on its branch, not `dev`; report hash+branch+uncommitted
 
-## Opus คุม+agent ลูกตระกูล 5.5 (2026-10-04,10-11)
-- Opus 5.5 คุม;ตารางเลือกรุ่น(haiku/sonnet/opus ตระกูล 5.5;fable เฉพาะลุงจืดสั่ง)ใน Orchestration Rule ของ `~/.agents/AGENTS.md`
-- บัญชี/ภาษี/เงิน(Rule 20),security/auth/สิทธิ์,verify ผลลูก→`opus`;สำรวจโค้ด/แก้ UI/unit+test→`sonnet`;`haiku` เฉพาะงานกลไก ห้ามเขียนคอลัมน์ th ของ `languages.tsv`/ข้อความบนจอ/KMS ไทย ห้าม audit ที่ต้องครบ(Champ parity,secret scan,ลบ flag);งานค้นอ่านอย่างเดียว→`subagent_type:"Explore"`(ไม่โหลดกฎ ประหยัด ~41k token/ตัว)
-- พัฒนาก่อน ตรวจทีเดียว(2026-10-11):ระหว่างทาง=`go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>` เท่านั้น ไม่วน agent review รายขั้น;จบชุดงาน=`npm run verify:all`+review `git diff` รวมครั้งเดียว(เงิน/ภาษี/สิทธิ์→opus,อื่น→sonnet)+UAT Demo ครั้งเดียว(ในรอบ UAT ยังตรวจ psql ทุก operation ตามกฎ UAT)+screenshot ครั้งเดียว→commit→deploy;ห้ามบอกเสร็จก่อนรอบสุดท้ายผ่าน
-- ผลลูกต้องผ่าน Opus:รัน `npm run verify`/test/query PostgreSQL เอง;ลูกห้าม commit/push/deploy/แตะ `mydocs/`;ห้ามใช้ AI ค่ายอื่นเว้นลุงจืดสั่ง
+## Opus lead+5.5 children
+- Orchestration Rule in `~/.agents/AGENTS.md` (5.5 family; fable only when ordered): `opus`=accounting/tax/money (Rule 20)/security/auth/permissions/verify; `sonnet`=explore/UI/unit+test; `haiku`=mechanical + short Thai drafts (UI microcopy, `languages.tsv` th/en rows, menu descriptions; Lead checks before commit), never tax/law/accounting explanations, accounting KMS or completeness audits (Champ parity, secret scan, flag removal)
+- Develop first, verify once: mid-work only `go build ./...`/`go test ./internal/<pkg>/...`/`npx tsc --noEmit`/`npm test -- <file>`, no per-step agent reviews; end of batch: `npm run verify:all`+one combined `git diff` review (money/tax/permissions→opus, else sonnet)+one Demo UAT (psql per operation still)+one screenshot round→commit→deploy; not done before that passes
+- Children=draft: Opus re-runs verify/tests/PostgreSQL queries; children never commit/push/deploy/touch `mydocs/`; no other-vendor AI unless ordered
 
-## Dev: เดินหน้าอย่างเดียว ไม่สนใจข้อมูลเก่า (2026-06-28,09-15,09-23)
-- PostgreSQL ทุก env(local/.202/production)ทิ้งได้:ไม่ทำ migration/backfill/dual-read-write/compat shim;แก้ schema/API contract ตรง ๆ;โค้ดสร้างโครงสร้างเอง(`CREATE ... IF NOT EXISTS`)แล้ว rebuild+deploy;ห้าม DDL มือกับ DB ที่รัน
-- ของใหม่พร้อม→ลบของเก่าใน change เดียวกัน ไม่มี feature flag/ตาราง-route-wrapper เก่า "เผื่อไว้"
-- แก้ DB/ฟิลด์/หน้าจอ/โค้ดได้เลยไม่ต้องถาม แต่ verify ครบก่อนบอกเสร็จ;ไม่ครอบคลุม git push/force-push/R0 อื่น;ต้องล้างข้อมูล→รายงานว่าล้างอะไร เท่าไร(backup ก่อน deploy ของ `tools/fast-deploy.py` คงไว้)
-- Go-live=กฎนี้หยุดสำหรับข้อมูลจริง(ลุงจืดประกาศ go-live หรือ tenant prod มีข้อมูลลูกค้าจริง)→ต้อง migration จริง(backup,นับก่อน/หลัง,ทางถอย)หยุดถามทุกครั้ง;ไม่แน่ใจว่ามีข้อมูลจริงหรือยัง→ถามลุงจืด ห้ามเดา
+## Dev: forward only
+- PostgreSQL in every env (local/.202/production) disposable: no migration/backfill/dual-read-write/compat shim; change schema/API contract directly; code creates structure (`CREATE ... IF NOT EXISTS`)→rebuild+deploy; no manual DDL on running DB
+- New ready→delete old in same change; no feature flag/old table-route-wrapper kept "เผื่อไว้"
+- Change DB/fields/screens/code unasked; excludes git push/force-push/other R0; data wiped→report what+how much (keep `tools/fast-deploy.py` pre-deploy backup)
+- Go-live (ลุงจืด declares it or prod tenant has real customer data)→stops for real data: real migration (backup, counts before/after, rollback path), stop+ask each time; unsure→ask ลุงจืด, never guess
