@@ -213,8 +213,9 @@ func (m *subledgerMutation) bankAccount(b *SubledgerBankAccount) error {
 		if given != old.Version {
 			return fmt.Errorf("ข้อมูลบัญชีธนาคารถูกแก้ไขแล้ว")
 		}
+		// นับการใช้แบบเดียวกับจอสมุดเงินฝาก (รวมทะเบียน/เอกสารเช็ค) ไม่เช่นนั้นเลขบัญชีของสมุดที่เช็คอ้างอยู่เปลี่ยนผ่านใบสำคัญได้
 		var used bool
-		if err = m.tx.QueryRowContext(m.ctx, `SELECT EXISTS(SELECT 1 FROM gl_subledger_bank_lines WHERE company=$1 AND bank_account_code=$2 UNION ALL SELECT 1 FROM gl_subledger_statements WHERE company=$1 AND bank_account_code=$2)`, m.scope.Company, b.Code).Scan(&used); err != nil {
+		if used, err = bankBookUsed(m.ctx, m.tx, m.scope.Company, b.Code); err != nil {
 			return err
 		}
 		if used && (old.AccountNumber != b.AccountNumber || old.Currency != b.Currency) { // บัญชี GL เปลี่ยนได้ตาม Champ CASHFrmBankBookNew.cpp:164-184

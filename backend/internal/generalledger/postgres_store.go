@@ -11,6 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+
+	"smlcloudplatform/internal/cheque"
 )
 
 // PostgresStore implements a 100% PostgreSQL-based General Ledger Store.
@@ -111,6 +113,11 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 
 	db, err := s.pg.database(ctx, scope.Holding)
 	if err != nil {
+		return Result{}, err
+	}
+	// รายละเอียดบัญชีธนาคารในใบสำคัญตรวจการใช้สมุดที่ทะเบียนเช็คด้วย (bankBookUsed) — สร้างตารางเช็คก่อนเปิด tx
+	// เหมือน executeBankAccount เพื่อให้กลุ่มกิจการที่ยังไม่เคยเปิดโมดูลเช็คบันทึกใบสำคัญได้
+	if err = cheque.EnsureSchema(ctx, db); err != nil {
 		return Result{}, err
 	}
 

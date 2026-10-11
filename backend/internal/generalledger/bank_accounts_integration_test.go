@@ -253,6 +253,55 @@ func TestPostgresBankBookKeepsAnInactiveBankItAlreadyUses(t *testing.T) {
 	f.bankBookError(Command{Resource: BankAccountKind, Action: "create", BankAccount: &fresh}, "bank_book_ref_inactive")
 }
 
+// รายละเอียดบัญชีธนาคารในใบสำคัญต้องนับสมุดที่ทะเบียนเช็คอ้างอยู่ว่า "มีรายการแล้ว" เหมือนจอสมุดเงินฝาก (bankBookUsed)
+// — เปลี่ยนเลขที่บัญชีผ่านใบสำคัญไม่ได้ ไม่เช่นนั้นเลขบนเช็คที่ออกไปแล้วจะไม่ตรงกับสมุด
+func TestPostgresJournalBankDetailsKeepNumberOfBookUsedByCheques(t *testing.T) {
+	f := bankBookFixture(t)
+	book := bankBookInput("KBANK-01", "123-4-56789-0", "1100")
+	f.run(Command{Resource: BankAccountKind, Action: "create", BankAccount: &book})
+	if _, err := f.db.Exec(`INSERT INTO cheque_registers (company, id, cheque_type, doc_no, doc_date, due_date, partner_code, cheque_no, bank_code, bank_branch_code,
+		book_code, amount, home_amount, created_by, updated_by) VALUES ($1, $2, 1, 'CHQOUT6901-0001', '2026-01-05', '2026-01-20', 'AP-0007', '50001234', 'KBANK', '0123',
+		'KBANK-01', 12500.00, 12500.00, 'tester', 'tester')`, f.scope.Company, uuid.NewString()); err != nil {
+		t.Fatal(err)
+	}
+	details := book
+	details.BankName, details.AccountNumber, details.Version = "ธนาคารกสิกรไทย", "999-9-99999-9", 1
+	journal := Journal{DocNo: "JV-CQ1", Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "โอนเงินระหว่างบัญชีธนาคาร", Kind: "manual",
+		Details: &JournalDetails{BankAccounts: []SubledgerBankAccount{details}}, Lines: []Line{
+			{AccountCode: "1100", Debit: Amount("500.00"), Credit: Amount("0")},
+			{AccountCode: "1110", Debit: Amount("0"), Credit: Amount("500.00")},
+		}}
+	_, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &journal})
+	if err == nil || !strings.Contains(err.Error(), "ห้ามเปลี่ยนเลขบัญชีหรือสกุลเงิน") {
+		t.Fatalf("journal changing the number of a book used by cheques: %v", err)
+	}
+	if rows := f.bankBooks("KBANK-01"); len(rows) != 1 || rows[0]["account_number"] != "123-4-56789-0" {
+		t.Fatalf("book after the refused journal: %v", rows)
+	}
+}
+
+// กลุ่มกิจการที่ยังไม่เคยเปิดโมดูลเช็ค: สมุดที่เกิดจากรายละเอียดในใบสำคัญต้องแก้ผ่านใบสำคัญได้ (ตรวจการใช้ที่ทะเบียนเช็คต้องไม่ error เพราะไม่มีตาราง)
+func TestPostgresJournalBankDetailsBeforeChequeTablesExist(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	bank := SubledgerBankAccount{Code: "BANK", BankName: "ธนาคารกสิกรไทย", AccountNumber: "123-4-56789-0", AccountName: "บริษัท รุ่งเรืองการค้า จำกัด", GLAccountCode: "1000", IsActive: true}
+	journal := func(docNo string, b SubledgerBankAccount) error {
+		j := Journal{DocNo: docNo, Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "รับเงินโอนจากลูกค้า", Kind: "manual",
+			Details: &JournalDetails{BankAccounts: []SubledgerBankAccount{b}}, Lines: []Line{
+				{AccountCode: "1000", Debit: Amount("500.00"), Credit: Amount("0")},
+				{AccountCode: "3000", Debit: Amount("0"), Credit: Amount("500.00")},
+			}}
+		_, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &j})
+		return err
+	}
+	if err := journal("JV-B1", bank); err != nil {
+		t.Fatal(err)
+	}
+	bank.AccountNumber, bank.Version = "999-9-99999-9", 1
+	if err := journal("JV-B2", bank); err != nil {
+		t.Fatalf("change details of an unused book: %v", err)
+	}
+}
+
 func TestPostgresBankBookScopedPerCompany(t *testing.T) {
 	f := bankBookFixture(t)
 	book := bankBookInput("KBANK-01", "123", "1100")
