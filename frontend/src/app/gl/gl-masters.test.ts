@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, canLoadStandardChart, confirmSubject, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, canLoadStandardChart, isChequeMappingDoc, mappingSourceDocPatch, confirmSubject, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -753,5 +753,26 @@ describe("ผังบัญชี: ปุ่มใช้ผังบัญช�
     expect(canLoadStandardChart({ ...ready, total: 1 })).toBe(false);
     expect(canLoadStandardChart({ ...ready, search: "เงินสด" })).toBe(false); // nothing found for a search is not an empty chart
     expect(canLoadStandardChart({ ...ready, search: "   " })).toBe(true);
+  });
+});
+
+describe("posting patterns of cheque status documents", () => {
+  it("knows the seven cheque documents that post (cheque.MappingSourceDocs) and nothing else", () => {
+    for (const key of ["chequereceivedclear", "chequereceivedreturn", "chequeredeposit", "chequereceivedcancel", "chequediscount", "chequeissuedclear", "chequeissuedcancel"]) {
+      expect(isChequeMappingDoc(key)).toBe(true);
+    }
+    for (const key of ["chequedeposit", "paid", "", undefined]) expect(isChequeMappingDoc(key)).toBe(false);
+  });
+
+  it("keeps rules when the document family stays the same", () => {
+    const rules = [{ accountcode: "", side: "debit", source: "cheque_net", accountfrom: "bank_book" }];
+    expect(mappingSourceDocPatch({ sourcedoc: "chequereceivedclear", rules }, "chequediscount")).toEqual({ sourcedoc: "chequediscount" });
+  });
+
+  it("clears amounts and the bank-book choice when switching between ERP and cheque documents", () => {
+    const rules = [{ accountcode: "11320", side: "credit", source: "cheque_total", accountfrom: "bank_book" }];
+    expect(mappingSourceDocPatch({ sourcedoc: "chequereceivedclear", rules }, "paid")).toEqual({ sourcedoc: "paid", rules: [{ accountcode: "11320", side: "credit", source: "" }] });
+    expect(mappingSourceDocPatch({ sourcedoc: "paid", rules: [{ accountcode: "11320", side: "debit", source: "total" }] }, "chequeissuedclear"))
+      .toEqual({ sourcedoc: "chequeissuedclear", rules: [{ accountcode: "11320", side: "debit", source: "" }] });
   });
 });

@@ -207,8 +207,8 @@ func (m *subledgerMutation) bankAccount(b *SubledgerBankAccount) error {
 		if err = m.tx.QueryRowContext(m.ctx, `SELECT EXISTS(SELECT 1 FROM gl_subledger_bank_lines WHERE company=$1 AND bank_account_code=$2 UNION ALL SELECT 1 FROM gl_subledger_statements WHERE company=$1 AND bank_account_code=$2)`, m.scope.Company, b.Code).Scan(&used); err != nil {
 			return err
 		}
-		if used && (old.GLAccountCode != b.GLAccountCode || old.AccountNumber != b.AccountNumber || old.Currency != b.Currency) {
-			return fmt.Errorf("บัญชีธนาคารมีรายการแล้ว ห้ามเปลี่ยนเลขบัญชีหรือบัญชี GL")
+		if used && (old.AccountNumber != b.AccountNumber || old.Currency != b.Currency) { // บัญชี GL เปลี่ยนได้ตาม Champ CASHFrmBankBookNew.cpp:164-184
+			return fmt.Errorf("บัญชีธนาคารมีรายการแล้ว ห้ามเปลี่ยนเลขบัญชีหรือสกุลเงิน")
 		}
 		b.Version++
 	} else if errors.Is(err, sql.ErrNoRows) {

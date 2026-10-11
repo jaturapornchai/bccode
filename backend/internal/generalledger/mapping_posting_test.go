@@ -16,6 +16,10 @@ func TestMappingBalances(t *testing.T) {
 		{"vat line missing on credit side", []MappingRule{rule("debit", "total"), rule("credit", "goods")}, false},
 		{"goods twice on one side", []MappingRule{rule("debit", "total"), rule("credit", "goods"), rule("credit", "goods"), rule("credit", "vat")}, false},
 		{"only one side", []MappingRule{rule("debit", "total"), rule("debit", "total")}, false},
+		// เอกสารเช็ค: ยอดเช็ค = ยอดสุทธิ + ค่าธรรมเนียม (เช็ครับผ่าน: Dr ธนาคาร net + Dr ค่าธรรมเนียม / Cr เช็ครับ total)
+		{"cheque clear: Dr net + Dr fee / Cr cheque total", []MappingRule{rule("debit", "cheque_net"), rule("debit", "cheque_fee"), rule("credit", "cheque_total")}, true},
+		{"cheque return: Dr cheque total / Cr cheque total", []MappingRule{rule("debit", "cheque_total"), rule("credit", "cheque_total")}, true},
+		{"cheque fee missing", []MappingRule{rule("debit", "cheque_net"), rule("credit", "cheque_total")}, false},
 		{"empty", nil, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

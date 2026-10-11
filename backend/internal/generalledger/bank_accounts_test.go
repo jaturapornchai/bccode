@@ -75,7 +75,7 @@ func TestBankBookErrorRowsAreCompleteAndConsistent(t *testing.T) {
 		"bank_book_number_too_long": 1, "bank_book_bank_required": 0, "bank_book_currency_not_supported": 0, "bank_book_gl_account_invalid": 1,
 		"bank_book_ref_not_found": 1, "bank_book_ref_inactive": 1, "bank_book_branch_bank_mismatch": 1, "bank_book_duplicate": 1,
 		"bank_book_account_number_duplicate": 2, "bank_book_number_use_change": 0, "bank_book_number_unchanged": 0,
-		"bank_book_gl_account_locked": 1, "bank_book_in_use": 1, "bank_book_balance_not_zero": 1,
+		"bank_book_in_use": 1, "bank_book_balance_not_zero": 1,
 	}
 	if len(bankBookErrorCodes) != len(wantArgs) {
 		t.Fatalf("bankBookErrorCodes has %d codes, expected %d", len(bankBookErrorCodes), len(wantArgs))
@@ -449,25 +449,60 @@ func TestUpdateBankBookRejections(t *testing.T) {
 		}
 		finish(t, mock)
 	})
-	t.Run("account number cannot be edited here", func(t *testing.T) {
+	// Champ CASHFrmBankBookNew.cpp:276-281 ปิดช่องเลขที่บัญชีเฉพาะสมุดที่ถูกอ้างแล้ว
+	t.Run("account number of a used book changes only through the change-number action", func(t *testing.T) {
 		tx, mock := bankTx(t)
 		expectBookRow(mock, storedBankBook(3))
+		expectUsed(mock, "KBANK-01", true)
 		book := validBankBook()
 		book.AccountNumber = "999-9-99999-9"
 		_, err := runBankAccount(t, tx, Command{Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &book})
 		expectBankBookError(t, err, "bank_book_number_use_change", "account_number", http.StatusBadRequest)
 		finish(t, mock)
 	})
-	t.Run("GL account locked once the book has movements", func(t *testing.T) {
+	t.Run("unused book takes a new account number directly", func(t *testing.T) {
+		tx, mock := bankTx(t)
+		expectBookRow(mock, storedBankBook(3))
+		expectUsed(mock, "KBANK-01", false)
+		expectNumberFree(mock, "KBANK-01", "999-9-99999-9", "")
+		expectValidReferences(mock)
+		var saved, audit savedBook
+		expectSave(mock, "KBANK-01", 4, &saved)
+		expectAudit(mock, "KBANK-01", "bank_account.update", &audit)
+		book := validBankBook()
+		book.AccountNumber = "999-9-99999-9"
+		result, err := runBankAccount(t, tx, Command{Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &book})
+		if err != nil || result.Version != 4 || saved.decode(t).AccountNumber != "999-9-99999-9" {
+			t.Fatalf("result %+v err %v", result, err)
+		}
+		finish(t, mock)
+	})
+	t.Run("unused book cannot take another book's number", func(t *testing.T) {
+		tx, mock := bankTx(t)
+		expectBookRow(mock, storedBankBook(3))
+		expectUsed(mock, "KBANK-01", false)
+		expectNumberFree(mock, "KBANK-01", "999-9-99999-9", "SCB-01")
+		book := validBankBook()
+		book.AccountNumber = "999-9-99999-9"
+		_, err := runBankAccount(t, tx, Command{Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &book})
+		expectBankBookError(t, err, "bank_book_account_number_duplicate", "account_number", http.StatusConflict)
+		finish(t, mock)
+	})
+	// Champ CASHFrmBankBookNew.cpp:164-184,238,247 แก้บัญชี GL ได้แม้สมุดถูกอ้างแล้ว จึงไม่ตรวจการใช้งานเลย
+	t.Run("GL account changes even after the book has movements", func(t *testing.T) {
 		tx, mock := bankTx(t)
 		expectBookRow(mock, storedBankBook(3))
 		expectValidReferences(mock)
 		expectGLAccount(mock, "11121", &Account{AccountType: "asset", AllowPosting: true, IsActive: true})
-		expectUsed(mock, "KBANK-01", true)
+		var saved, audit savedBook
+		expectSave(mock, "KBANK-01", 4, &saved)
+		expectAudit(mock, "KBANK-01", "bank_account.update", &audit)
 		book := validBankBook()
 		book.GLAccountCode = "11121"
-		_, err := runBankAccount(t, tx, Command{Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &book})
-		expectBankBookError(t, err, "bank_book_gl_account_locked", "gl_account_code", http.StatusConflict)
+		result, err := runBankAccount(t, tx, Command{Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &book})
+		if err != nil || result.Version != 4 || saved.decode(t).GLAccountCode != "11121" {
+			t.Fatalf("result %+v err %v", result, err)
+		}
 		finish(t, mock)
 	})
 	t.Run("a bank that became inactive cannot be picked for another book", func(t *testing.T) {

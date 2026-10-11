@@ -7,25 +7,53 @@ type Context = { params: Promise<{ chequePath: string[] }> };
 // ข้อความผิดพลาดของ BFF เป็น key ใน languages.tsv (code = message = key) — จอแปลเป็นภาษาผู้ใช้เอง ไม่ hard-code ข้อความที่นี่
 const rejected = (key: string, status = 400) => NextResponse.json({ success: false, code: key, message: key }, { status });
 
-const COMMAND_RESOURCES = ["codes", "bank-contacts"];
-// พารามิเตอร์ที่ส่งต่อได้: รายการรหัส (q/page/limit/bank_code/active) และผู้ติดต่อ (bank_code/bank_branch_code)
-const ALLOWED_QUERY = ["q", "page", "limit", "bank_code", "bank_branch_code", "active"];
+const COMMAND_RESOURCES = ["codes", "bank-contacts", "registers", "docs", "recalculate"];
+// พารามิเตอร์ที่ส่งต่อได้: รายการรหัส/ผู้ติดต่อ, ตัวกรองทะเบียนเช็ค, รายการเลือกเช็คของเอกสาร, รายการเอกสาร และยอดคงเหลือ
+const ALLOWED_QUERY = [
+  "q", "page", "limit", "bank_code", "bank_branch_code", "active",
+  "type", "status", "book", "partner", "due_from", "due_to", "transflag", "cancel_type", "doc_date", "date_from", "date_to",
+];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// เอกสารสถานะเช็ค 419-426 (นำฝาก ผ่าน คืน นำเข้าใหม่ ยกเลิก ขายลด เช็คจ่ายผ่าน ยกเลิกเช็คจ่าย)
+const DOC_FLAG = /^(419|42[0-6])$/;
+// เลขที่เอกสาร varchar(30) ของ backend; กันส่วน path พิเศษ/อักขระควบคุมก่อนต่อ URL
+const isDocNo = (value: string) => value.trim() !== "" && value.length <= 30 && value !== "." && value !== ".." && !/[\u0000-\u001f\u007f/\\?#]/.test(value);
+
+// isReadPath: เส้นทาง GET ที่ backend มีจริง (/cheque/v1/...) — ที่เหลือปฏิเสธโดยไม่เรียก backend
+function isReadPath(path: string[] | undefined): path is string[] {
+  if (!path?.length) return false;
+  const [head, second, third, fourth] = path;
+  switch (head) {
+    case "codes":
+      return path.length === 2 && isBankCodeKind(second);
+    case "bank-contacts":
+    case "recalculate":
+      return path.length === 1;
+    case "registers":
+      return path.length === 1 || (path.length === 2 && (second === "selectable" || UUID.test(second)));
+    case "docs":
+      if (path.length < 2 || path.length > 4 || !DOC_FLAG.test(second)) return false;
+      return path.length === 2 || (isDocNo(third) && (path.length === 3 || fourth === "events"));
+    case "balances":
+      return path.length === 2 && (second === "partners" || second === "books");
+    default:
+      return false;
+  }
+}
 
 export async function GET(request: Request, context: Context) {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
 
   const { chequePath } = await context.params;
-  const isCodes = chequePath?.length === 2 && chequePath[0] === "codes" && isBankCodeKind(chequePath[1]);
-  const isContacts = chequePath?.length === 1 && chequePath[0] === "bank-contacts";
-  if (!isCodes && !isContacts) return rejected("cheque_err_resource_invalid", 404);
+  if (!isReadPath(chequePath)) return rejected("cheque_err_resource_invalid", 404);
 
   try {
     const query = new URLSearchParams();
     new URL(request.url).searchParams.forEach((value, key) => {
       if (ALLOWED_QUERY.includes(key)) query.set(key, value);
     });
-    const targetPath = `/cheque/v1/${chequePath.join("/")}?${query.toString()}`;
+    const targetPath = `/cheque/v1/${chequePath.map(encodeURIComponent).join("/")}?${query.toString()}`;
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), targetPath, { method: "GET" }, { userErrorStatusOk: true });
   } catch {
     return rejected("cheque_err_connection_invalid");

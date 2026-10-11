@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit 5238571c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit f521f67f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -749,7 +749,7 @@ Files indexed: 32
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1569 lines)
+## frontend/src/app/gl/gl-masters.tsx (1591 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -794,11 +794,13 @@ Files indexed: 32
 | 1231 | const-arrow | `handleTypeChange` |
 | 1241 | const-arrow | `handleParentChange` |
 | 1426 | function | `FiscalYearFields` |
-| 1463 | function | `champMasterLabels` |
-| 1470 | function | `MasterFields` |
-| 1496 | function | `UntypedJournalBooksNotice` |
-| 1516 | function | `JournalBookTypeBadge` |
-| 1528 | function | `JournalBookFields` |
+| 1464 | function | `isChequeMappingDoc` |
+| 1474 | function | `mappingSourceDocPatch` |
+| 1485 | function | `champMasterLabels` |
+| 1492 | function | `MasterFields` |
+| 1518 | function | `UntypedJournalBooksNotice` |
+| 1538 | function | `JournalBookTypeBadge` |
+| 1550 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
@@ -1380,92 +1382,92 @@ Files indexed: 32
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
 
-## frontend/src/lib/general-ledger.ts (1060 lines)
+## frontend/src/lib/general-ledger.ts (1061 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 22 | function | `budgetPeriodStarts` |
 | 37 | function | `periodRangeDates` |
 | 47 | function | `budgetPeriodsTotal` |
-| 146 | function | `isGeneralLedgerRoute` |
-| 150 | function | `labelText` |
-| 154 | function | `fillText` |
-| 157 | function | `thaiLabels` |
-| 174 | function | `isDimensionResource` |
-| 176 | function | `activeDimensions` |
-| 180 | function | `accountDimensionCodes` |
-| 185 | function | `normalizeDimensionCodes` |
-| 190 | function | `reportCodeList` |
-| 192 | function | `dimensionOptions` |
-| 200 | function | `lineDimensionsAfterAccountChange` |
-| 209 | function | `dimensionPayload` |
-| 212 | function | `isJournalBookType` |
-| 213 | function | `emptyJournalBook` |
-| 215 | function | `journalBookPayload` |
-| 220 | function | `validateJournalBook` |
-| 235 | function | `untypedJournalBooks` |
-| 239 | function | `activeJournalBooks` |
-| 243 | function | `findJournalBook` |
-| 245 | function | `journalBookName` |
-| 250 | function | `defaultJournalBookCode` |
-| 255 | function | `journalBookProblem` |
-| 263 | function | `accountName` |
-| 264 | function | `emptyAccount` |
-| 274 | function | `getEffectiveAccountLevel` |
-| 289 | function | `sortAccountsHierarchically` |
-| 343 | function | `addSubtree` |
-| 374 | function | `emptyFiscalYear` |
-| 375 | function | `emptyAllocationRule` |
-| 376 | function | `emptyMaster` |
-| 378 | function | `accountEntriesText` |
-| 382 | function | `replaceAccountGroupSingles` |
-| 389 | function | `accountGroupPayload` |
-| 398 | function | `emptyLine` |
-| 399 | function | `localDate` |
-| 401 | function | `fiscalYearForDate` |
-| 404 | function | `emptyJournal` |
-| 407 | function | `workspaceBranchCode` |
-| 417 | function | `amountUnits` |
-| 422 | function | `displayAmountUnits` |
-| 426 | function | `decimalUnits` |
-| 432 | function | `amountString` |
-| 441 | function | `formatAmount` |
-| 463 | function | `blankAmountAsZero` |
-| 464 | function | `normalizeJournalLines` |
-| 465 | function | `journalTotals` |
-| 470 | function | `validateJournal` |
-| 499 | function | `csvCell` |
-| 503 | function | `reportCsv` |
-| 507 | function | `chartOfAccountsCsv` |
-| 618 | function | `newStatementNoteId` |
-| 623 | function | `starterStatementNotes` |
-| 629 | function | `newStatementNote` |
-| 635 | function | `statementNotesFromRecord` |
-| 647 | function | `statementNotesAfterReload` |
-| 652 | function | `statementNotesNeedReload` |
-| 657 | function | `statementNoteHasText` |
-| 671 | function | `statementIsPeriodic` |
-| 680 | function | `statementSetRank` |
-| 685 | function | `statementSetTemplates` |
-| 691 | function | `statementSetDefaultSelection` |
-| 723 | function | `isStatementSuggestKey` |
-| 752 | function | `statementEngineTargets` |
-| 771 | function | `statementTargetKey` |
-| 776 | function | `statementSuggestSignature` |
-| 787 | function | `withKnownSuggestKeys` |
-| 797 | function | `uniqueCodes` |
-| 801 | function | `applyStatementAccountFix` |
-| 808 | function | `applyStatementTemplateFixes` |
-| 819 | function | `statementFixesToApply` |
-| 838 | function | `addStatementAccounts` |
-| 842 | function | `withSuggestKeys` |
-| 846 | function | `emptyStatementTemplate` |
-| 866 | function | `statementStarterReplaceNeedsConfirm` |
-| 874 | function | `statementTemplateFromStarter` |
-| 886 | function | `statementStarterReplacedCode` |
-| 895 | function | `starterRows` |
-| 906 | function | `withShowZero` |
-| 909 | function | `generateStarterTemplates` |
+| 147 | function | `isGeneralLedgerRoute` |
+| 151 | function | `labelText` |
+| 155 | function | `fillText` |
+| 158 | function | `thaiLabels` |
+| 175 | function | `isDimensionResource` |
+| 177 | function | `activeDimensions` |
+| 181 | function | `accountDimensionCodes` |
+| 186 | function | `normalizeDimensionCodes` |
+| 191 | function | `reportCodeList` |
+| 193 | function | `dimensionOptions` |
+| 201 | function | `lineDimensionsAfterAccountChange` |
+| 210 | function | `dimensionPayload` |
+| 213 | function | `isJournalBookType` |
+| 214 | function | `emptyJournalBook` |
+| 216 | function | `journalBookPayload` |
+| 221 | function | `validateJournalBook` |
+| 236 | function | `untypedJournalBooks` |
+| 240 | function | `activeJournalBooks` |
+| 244 | function | `findJournalBook` |
+| 246 | function | `journalBookName` |
+| 251 | function | `defaultJournalBookCode` |
+| 256 | function | `journalBookProblem` |
+| 264 | function | `accountName` |
+| 265 | function | `emptyAccount` |
+| 275 | function | `getEffectiveAccountLevel` |
+| 290 | function | `sortAccountsHierarchically` |
+| 344 | function | `addSubtree` |
+| 375 | function | `emptyFiscalYear` |
+| 376 | function | `emptyAllocationRule` |
+| 377 | function | `emptyMaster` |
+| 379 | function | `accountEntriesText` |
+| 383 | function | `replaceAccountGroupSingles` |
+| 390 | function | `accountGroupPayload` |
+| 399 | function | `emptyLine` |
+| 400 | function | `localDate` |
+| 402 | function | `fiscalYearForDate` |
+| 405 | function | `emptyJournal` |
+| 408 | function | `workspaceBranchCode` |
+| 418 | function | `amountUnits` |
+| 423 | function | `displayAmountUnits` |
+| 427 | function | `decimalUnits` |
+| 433 | function | `amountString` |
+| 442 | function | `formatAmount` |
+| 464 | function | `blankAmountAsZero` |
+| 465 | function | `normalizeJournalLines` |
+| 466 | function | `journalTotals` |
+| 471 | function | `validateJournal` |
+| 500 | function | `csvCell` |
+| 504 | function | `reportCsv` |
+| 508 | function | `chartOfAccountsCsv` |
+| 619 | function | `newStatementNoteId` |
+| 624 | function | `starterStatementNotes` |
+| 630 | function | `newStatementNote` |
+| 636 | function | `statementNotesFromRecord` |
+| 648 | function | `statementNotesAfterReload` |
+| 653 | function | `statementNotesNeedReload` |
+| 658 | function | `statementNoteHasText` |
+| 672 | function | `statementIsPeriodic` |
+| 681 | function | `statementSetRank` |
+| 686 | function | `statementSetTemplates` |
+| 692 | function | `statementSetDefaultSelection` |
+| 724 | function | `isStatementSuggestKey` |
+| 753 | function | `statementEngineTargets` |
+| 772 | function | `statementTargetKey` |
+| 777 | function | `statementSuggestSignature` |
+| 788 | function | `withKnownSuggestKeys` |
+| 798 | function | `uniqueCodes` |
+| 802 | function | `applyStatementAccountFix` |
+| 809 | function | `applyStatementTemplateFixes` |
+| 820 | function | `statementFixesToApply` |
+| 839 | function | `addStatementAccounts` |
+| 843 | function | `withSuggestKeys` |
+| 847 | function | `emptyStatementTemplate` |
+| 867 | function | `statementStarterReplaceNeedsConfirm` |
+| 875 | function | `statementTemplateFromStarter` |
+| 887 | function | `statementStarterReplacedCode` |
+| 896 | function | `starterRows` |
+| 907 | function | `withShowZero` |
+| 910 | function | `generateStarterTemplates` |
 
 ## frontend/src/components/system-settings/utils.ts (1050 lines)
 

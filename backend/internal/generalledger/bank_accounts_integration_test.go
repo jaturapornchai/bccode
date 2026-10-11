@@ -189,7 +189,7 @@ func TestPostgresBankBookLifecycle(t *testing.T) {
 	f.bankBookError(Command{Resource: BankAccountKind, Action: ChangeAccountNumberAction, ID: "KBANK-01", Version: 2, NewAccountNumber: "999-9-99999-9"}, "bank_book_account_number_duplicate")
 	f.bankBookError(Command{Resource: BankAccountKind, Action: ChangeAccountNumberAction, ID: "KBANK-01", Version: 2, NewAccountNumber: "888-8-88888-8"}, "bank_book_number_unchanged")
 
-	// แก้ไข: ชื่อบัญชี/ปิดใช้งานได้ แต่ห้ามแก้เลขที่บัญชีในหน้าแก้ และห้ามย้ายบัญชีผังบัญชีเมื่อมีรายการแล้ว
+	// แก้ไขตาม Champ CASHFrmBankBookNew.cpp: ชื่อบัญชี/ปิดใช้งาน/บัญชี GL แก้ได้แม้สมุดมีรายการแล้ว (:164-184,238,247); เลขที่บัญชีของสมุดที่ถูกอ้างแก้ตรงไม่ได้ (:276-281)
 	edit := bankBookInput("KBANK-01", "888-8-88888-8", "1100")
 	edit.AccountName = "บริษัท รุ่งเรืองการค้า จำกัด (สำนักงานใหญ่)"
 	if updated := f.run(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-01", Version: 2, BankAccount: &edit}); updated.Version != 3 {
@@ -199,21 +199,27 @@ func TestPostgresBankBookLifecycle(t *testing.T) {
 	renumber.AccountNumber = "111"
 	f.bankBookError(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &renumber}, "bank_book_number_use_change")
 	move := edit
-	move.GLAccountCode = "1110"
-	f.bankBookError(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &move}, "bank_book_gl_account_locked")
+	move.GLAccountCode = "1130"
+	if moved := f.run(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-01", Version: 3, BankAccount: &move}); moved.Version != 4 {
+		t.Fatalf("move used book to another GL account %+v", moved)
+	}
 	f.bankBookError(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-01", Version: 2, BankAccount: &edit}, CodeStaleVersion)
 	f.deny(f.scope, Command{Resource: BankAccountKind, Action: "update", ID: "NOPE", Version: 1, BankAccount: ptr(bankBookInput("NOPE", "1", "1100"))})
 
 	// ลบ: สมุดที่ถูกใช้แล้ว (KBANK-01) หรือยังมียอด (KBANK-02, Champ MSG_891) ลบไม่ได้; สมุดว่างลบได้และแถวหายจริง
-	f.bankBookError(Command{Resource: BankAccountKind, Action: "delete", ID: "KBANK-01", Version: 3}, "bank_book_in_use")
+	f.bankBookError(Command{Resource: BankAccountKind, Action: "delete", ID: "KBANK-01", Version: 4}, "bank_book_in_use")
 	f.bankBookError(Command{Resource: BankAccountKind, Action: "delete", ID: "KBANK-02", Version: 1}, "bank_book_balance_not_zero")
 	if got := len(f.bankBooks("")); got != 2 {
 		t.Fatalf("refused delete changed rows: %d", got)
 	}
-	// สมุดที่ยังไม่ถูกใช้ย้ายรหัสผังบัญชีได้ (ใช้ตรวจว่ากฎล็อกมีผลเฉพาะสมุดที่ถูกใช้แล้ว) แล้วลบได้
+	// สมุดที่ยังไม่ถูกใช้แก้เลขที่บัญชีตรงในหน้าแก้ได้ (เลขซ้ำสมุดอื่นยังห้าม) ย้ายรหัสผังบัญชีได้ แล้วลบได้
 	empty := bankBookInput("KBANK-03", "333-3-33333-3", "1120")
 	f.run(Command{Resource: BankAccountKind, Action: "create", BankAccount: &empty})
+	taken := empty
+	taken.AccountNumber = "999-9-99999-9"
+	f.bankBookError(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-03", Version: 1, BankAccount: &taken}, "bank_book_account_number_duplicate")
 	empty.GLAccountCode = "1130"
+	empty.AccountNumber = "333-3-33333-4"
 	if moved := f.run(Command{Resource: BankAccountKind, Action: "update", ID: "KBANK-03", Version: 1, BankAccount: &empty}); moved.Version != 2 {
 		t.Fatalf("move unused book %+v", moved)
 	}
@@ -228,7 +234,7 @@ func TestPostgresBankBookLifecycle(t *testing.T) {
 	if actions := strings.Join(f.auditActions("KBANK-03"), ","); actions != "bank_account.create,bank_account.update,bank_account.delete" {
 		t.Fatalf("audit of deleted book: %s", actions)
 	}
-	if actions := strings.Join(f.auditActions("KBANK-01"), ","); actions != "bank_account.create,bank_account.change_account_number,bank_account.update" {
+	if actions := strings.Join(f.auditActions("KBANK-01"), ","); actions != "bank_account.create,bank_account.change_account_number,bank_account.update,bank_account.update" {
 		t.Fatalf("audit of kept book: %s", actions)
 	}
 }

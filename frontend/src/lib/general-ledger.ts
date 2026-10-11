@@ -51,7 +51,8 @@ export type GLFiscalYear = GLIdentity & {
 };
 /** Read-only profit columns of the period screen (backend period_profit.go); amounts are decimal strings, loss is negative. */
 export type GLPeriodProfit = { code: string; netprofitloss: string; summprofitloss: string };
-export type GLRule = { accountcode: string; side: string; source: string };
+/** accountfrom: "" = the rule's account, "bank_book" = GL account of the cheque document's deposit book (accountcode = fallback). */
+export type GLRule = { accountcode: string; side: string; source: string; accountfrom?: string };
 export type GLAllocationRule = { branchcode: string; departmentcode: string; projectcode: string; accountcode: string; rate: string };
 /** One line of a chart-of-accounts group (Champ BCAccGroup.AccGroup): no `to` = a single code, otherwise every account whose code
  *  sorts between `from` and `to` (byte order, backend statement_groups.go). `to: ""` only exists in the form for a range row whose end is not filled yet. */

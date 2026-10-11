@@ -40,9 +40,12 @@ func ValidCodeKind(kind string) bool {
 	return false
 }
 
-// Scope คือบริษัทและผู้ทำรายการ ที่ผ่านการยืนยัน session แล้ว (ผู้เรียกต้องตรวจสิทธิ์ก่อน)
+// Scope คือ holding/บริษัท/สาขา และผู้ทำรายการ ที่ผ่านการยืนยัน session แล้ว (ผู้เรียกต้องตรวจสิทธิ์ก่อน);
+// Holding และ Branch ใช้ตอนลงบัญชีเอกสารเปลี่ยนสถานะเช็ค
 type Scope struct {
+	Holding string
 	Company string
+	Branch  string
 	Actor   string
 }
 
@@ -369,7 +372,7 @@ var codeUsage = map[string][]usage{
 		{"bank_codes", "kind = 'bank_branch' AND bank_code = $2"},
 		{"bank_contacts", "bank_code = $2"},
 		{"gl_subledger_bank_accounts", "payload->>'bank_code' = $2"},
-		{"cheque_registers", "bank_code = $2"},
+		{"cheque_registers", "bank_code = $2 AND deleted_at IS NULL"},
 		{"cheque_prepare_docs", "bank_code = $2"},
 		{"bank_service_notes", "bank_code = $2"},
 		{"gl_journal_cheques", "bank_code = $2"},
@@ -377,7 +380,7 @@ var codeUsage = map[string][]usage{
 	KindBankBranch: {
 		{"bank_contacts", "bank_branch_code = $2"},
 		{"gl_subledger_bank_accounts", "payload->>'bank_branch_code' = $2"},
-		{"cheque_registers", "bank_branch_code = $2"},
+		{"cheque_registers", "bank_branch_code = $2 AND deleted_at IS NULL"},
 		{"cheque_prepare_docs", "bank_branch_code = $2"},
 		{"gl_journal_cheques", "bank_branch_code = $2"},
 	},
@@ -385,7 +388,7 @@ var codeUsage = map[string][]usage{
 		{"gl_subledger_bank_accounts", "payload->>'account_type_code' = $2"},
 	},
 	KindChequeExtStatus: {
-		{"cheque_registers", "ext_status_code = $2"},
+		{"cheque_registers", "ext_status_code = $2 AND deleted_at IS NULL"},
 	},
 }
 

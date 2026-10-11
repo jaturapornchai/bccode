@@ -10,7 +10,9 @@ import (
 	"strings"
 
 	"smlcloudplatform/internal/cheque"
+	"smlcloudplatform/internal/cheque/glposting"
 	"smlcloudplatform/internal/config"
+	gl "smlcloudplatform/internal/generalledger"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
@@ -25,15 +27,26 @@ type Http struct {
 	session func(context.Context, microservice.IContext) (glhttp.SessionAccess, error)
 	// connect เปิดฐานข้อมูลของ holding (ฉีดได้เพื่อทดสอบ handler กับ sqlmock)
 	connect func(holding string) (*sql.DB, error)
+	// ledger ลงบัญชีเอกสารเปลี่ยนสถานะเช็ค (ฉีดได้เพื่อทดสอบ)
+	ledger cheque.Ledger
 }
 
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
-	return &Http{ms: ms, session: glhttp.ResolveSessionAccess, connect: mypg.PgSqlFastConnect}
+	return &Http{ms: ms, session: glhttp.ResolveSessionAccess, connect: mypg.PgSqlFastConnect, ledger: glposting.Ledger{}}
 }
 
 func (h *Http) RegisterHttp() {
 	h.ms.GET("/cheque/v1/codes/:kind", h.listCodes)
 	h.ms.GET("/cheque/v1/bank-contacts", h.listBankContacts)
+	h.ms.GET("/cheque/v1/registers", h.listRegisters)
+	h.ms.GET("/cheque/v1/registers/selectable", h.listSelectable)
+	h.ms.GET("/cheque/v1/registers/:id", h.getRegister)
+	h.ms.GET("/cheque/v1/docs/:transflag", h.listDocs)
+	h.ms.GET("/cheque/v1/docs/:transflag/:doc_no", h.getDoc)
+	h.ms.GET("/cheque/v1/docs/:transflag/:doc_no/events", h.listDocEvents)
+	h.ms.GET("/cheque/v1/recalculate", h.checkRecalculate)
+	h.ms.GET("/cheque/v1/balances/partners", h.partnerBalances)
+	h.ms.GET("/cheque/v1/balances/books", h.bookMovements)
 	h.ms.POST("/cheque/v1/command", h.command)
 }
 
@@ -43,6 +56,7 @@ const (
 	actionCreate = "create"
 	actionUpdate = "update"
 	actionDelete = "delete"
+	actionCancel = "cancel"
 )
 
 const (
@@ -106,7 +120,22 @@ func (h *Http) authorize(request microservice.IContext, write bool, allowed func
 		_ = fail(request, http.StatusInternalServerError, "cheque_err_internal", "")
 		return nil
 	}
-	return &access{ctx: ctx, scope: cheque.Scope{Company: session.Scope.Company, Actor: session.Scope.Actor}, session: session, db: db}
+	scope := cheque.Scope{Holding: session.Scope.Holding, Company: session.Scope.Company, Branch: session.Scope.Branch, Actor: session.Scope.Actor}
+	return &access{ctx: ctx, scope: scope, session: session, db: db}
+}
+
+// authorizeLedger คือ authorize ของทะเบียนเช็ค/เอกสารสถานะ ซึ่งอ่านผู้ติดต่อจากบัญชีย่อยและลงบัญชี จึงต้องมีตาราง GL ด้วย
+func (h *Http) authorizeLedger(request microservice.IContext, write bool, allowed func(glhttp.SessionAccess) bool) *access {
+	a := h.authorize(request, write, allowed)
+	if a == nil {
+		return nil
+	}
+	if err := gl.EnsureSchema(a.ctx, a.db); err != nil {
+		request.Log(fmt.Sprintf("cheque: ensure ledger schema: %v", err))
+		_ = fail(request, http.StatusInternalServerError, "cheque_err_internal", "")
+		return nil
+	}
+	return a
 }
 
 func requestLanguage(request microservice.IContext) string {
@@ -147,6 +176,12 @@ func fail(request microservice.IContext, status int, key, field string, args ...
 func failure(request microservice.IContext, err error) error {
 	if e, ok := cheque.AsError(err); ok {
 		return fail(request, e.Status, e.Key, e.Field, e.Args...)
+	}
+	// ความผิดจากเครื่องบัญชี (งวดปิด ปีบัญชีไม่พบ บัญชีลงรายการไม่ได้ ฯลฯ) ตอบด้วยข้อความของ GL
+	if _, ok := gl.AsUserError(err); ok {
+		status, body := glhttp.SessionFailure(err, requestLanguage(request))
+		request.Response(status, body)
+		return nil
 	}
 	request.Log(fmt.Sprintf("cheque: %v", err))
 	return fail(request, http.StatusInternalServerError, "cheque_err_internal", "")
@@ -217,14 +252,18 @@ func (h *Http) listBankContacts(request microservice.IContext) error {
 	return respond(request, map[string]any{"items": items, "total": len(items)})
 }
 
-// maxCommandBodyBytes: ขนาดคำขอเขียนสูงสุด — ผู้ติดต่อ 200 คนเต็มทุกช่องยังไม่ถึงครึ่ง
+// maxCommandBodyBytes: ขนาดคำขอเขียนสูงสุด — ผู้ติดต่อ 200 คนเต็มทุกช่อง หรือเอกสารเช็คหลายพันแถว ยังไม่ถึงครึ่ง
 const maxCommandBodyBytes = 1 << 20
 
 // commandBody คือโครงคำสั่งเขียนทั้งหมด {resource, action, <payload>} — ฟิลด์ของแต่ละ resource อยู่ระดับเดียวกัน
 type commandBody struct {
-	Resource string `json:"resource"`
-	Action   string `json:"action"`
-	Version  int64  `json:"version"`
+	Resource  string `json:"resource"`
+	Action    string `json:"action"`
+	Version   int64  `json:"version"`
+	RequestID string `json:"requestid"`
+	ID        string `json:"id"`
+	Confirm   bool   `json:"confirm"`
+	Reason    string `json:"reason"`
 
 	// resource codes
 	Kind      string `json:"kind"`
@@ -237,6 +276,41 @@ type commandBody struct {
 	// resource bank-contacts
 	BankBranchCode string        `json:"bank_branch_code"`
 	Contacts       []contactBody `json:"contacts"`
+
+	// resource registers (เงิน/อัตราเป็นสตริงทศนิยม — ตัวเลข JSON ถูกปฏิเสธเป็น invalid payload)
+	ChequeType     *int   `json:"cheque_type"`
+	DocNo          string `json:"doc_no"`
+	DocDate        string `json:"doc_date"`
+	DueDate        string `json:"due_date"`
+	PartnerCode    string `json:"partner_code"`
+	ChequeNo       string `json:"cheque_no"`
+	BookCode       string `json:"book_code"`
+	Status         *int   `json:"status"`
+	ExtStatusCode  string `json:"ext_status_code"`
+	CurrencyCode   string `json:"currency_code"`
+	ExchangeRate   string `json:"exchange_rate"`
+	Amount         string `json:"amount"`
+	Description    string `json:"description"`
+	SaleCode       string `json:"sale_code"`
+	DepartmentCode string `json:"department_code"`
+
+	// resource docs (doc_no, doc_date, book_code, description ใช้ร่วมกับด้านบน)
+	Transflag    int            `json:"transflag"`
+	CancelType   *int           `json:"cancel_type"`
+	CancelPassed bool           `json:"cancel_passed"`
+	Lines        []docLineBody  `json:"lines"`
+	Totals       *docTotalsBody `json:"totals"`
+}
+
+type docLineBody struct {
+	ChequeID  string `json:"cheque_id"`
+	FeeAmount string `json:"fee_amount"`
+}
+
+type docTotalsBody struct {
+	Total string `json:"total_amount"`
+	Fee   string `json:"fee_amount"`
+	Net   string `json:"net_amount"`
 }
 
 type contactBody struct {
@@ -260,6 +334,12 @@ func (h *Http) command(request microservice.IContext) error {
 		return h.codesCommand(request, body)
 	case "bank-contacts":
 		return h.bankContactsCommand(request, body)
+	case "registers":
+		return h.registersCommand(request, body)
+	case "docs":
+		return h.docsCommand(request, body)
+	case "recalculate":
+		return h.recalculateCommand(request, body)
 	}
 	return fail(request, http.StatusBadRequest, "cheque_err_resource_invalid", "resource", body.Resource)
 }

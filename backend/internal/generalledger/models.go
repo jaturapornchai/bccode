@@ -219,6 +219,7 @@ func (m Master) CollectionName() string { return MasterCollections[m.Kind] }
 
 type MappingRule struct {
 	AccountCode string `json:"accountcode" bson:"accountcode"`
+	AccountFrom string `json:"accountfrom,omitempty" bson:"accountfrom,omitempty"` // "" = บัญชีที่ระบุ, "bank_book" = บัญชี GL ของสมุดเงินฝากในเอกสารเช็ค (accountcode = บัญชีสำรอง)
 	Side        string `json:"side" bson:"side"`
 	Source      string `json:"source" bson:"source"`
 }

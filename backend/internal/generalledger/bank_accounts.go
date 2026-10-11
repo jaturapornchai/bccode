@@ -54,7 +54,7 @@ var bankBookErrorCodes = []string{
 	"bank_book_payload_required", "bank_book_name_required", "bank_book_name_too_long", "bank_book_number_required", "bank_book_number_too_long",
 	"bank_book_bank_required", "bank_book_currency_not_supported", "bank_book_gl_account_invalid", "bank_book_ref_not_found", "bank_book_ref_inactive",
 	"bank_book_branch_bank_mismatch", "bank_book_duplicate", "bank_book_account_number_duplicate", "bank_book_number_use_change",
-	"bank_book_number_unchanged", "bank_book_gl_account_locked", "bank_book_in_use", "bank_book_balance_not_zero",
+	"bank_book_number_unchanged", "bank_book_in_use", "bank_book_balance_not_zero",
 }
 
 type bankAccountPlan struct {
@@ -260,9 +260,20 @@ func createBankBook(ctx context.Context, tx *sql.Tx, company string, book Subled
 	return book, nil
 }
 
+// updateBankBook ตาม Champ CASHFrmBankBookNew.cpp: แก้บัญชี GL ได้เสมอแม้สมุดถูกอ้างแล้ว (:164-184,238,247);
+// เลขที่บัญชีแก้ตรงได้เฉพาะสมุดที่ยังไม่ถูกอ้าง (:276-281 ปิดช่องเมื่อ CheckBookNoReference) — ถูกอ้างแล้วต้องใช้ปุ่มเปลี่ยนเลขที่บัญชี
 func updateBankBook(ctx context.Context, tx *sql.Tx, company string, old, book SubledgerBankAccount) (SubledgerBankAccount, error) {
 	if book.AccountNumber != old.AccountNumber {
-		return book, bankBookInvalid("bank_book_number_use_change", "account_number")
+		used, err := bankBookUsed(ctx, tx, company, old.Code)
+		if err != nil {
+			return book, err
+		}
+		if used {
+			return book, bankBookInvalid("bank_book_number_use_change", "account_number")
+		}
+		if err := checkBankBookNumberFree(ctx, tx, company, old.Code, book.AccountNumber, "account_number"); err != nil {
+			return book, err
+		}
 	}
 	if err := checkBankBookReferences(ctx, tx, company, &book, &old); err != nil {
 		return book, err
@@ -270,13 +281,6 @@ func updateBankBook(ctx context.Context, tx *sql.Tx, company string, old, book S
 	if book.GLAccountCode != old.GLAccountCode {
 		if err := checkBankBookGLAccount(ctx, tx, company, book.GLAccountCode); err != nil {
 			return book, err
-		}
-		used, err := bankBookUsed(ctx, tx, company, old.Code)
-		if err != nil {
-			return book, err
-		}
-		if used {
-			return book, bankBookConflict("bank_book_gl_account_locked", "gl_account_code", old.Code)
 		}
 	}
 	book.Version = old.Version
@@ -396,10 +400,10 @@ func checkBankBookNumberFree(ctx context.Context, tx *sql.Tx, company, exceptCod
 	return bankBookConflict("bank_book_account_number_duplicate", field, number, owner)
 }
 
-// bankBookUsed: มีรายการเดินบัญชีหรือใบรายการธนาคารอ้างสมุดนี้แล้วหรือยัง (ทะเบียนเช็คตามมาใน CB-3 ต้องเพิ่มเงื่อนไขที่นี่)
+// bankBookUsed: มีรายการเดินบัญชี ใบรายการธนาคาร ทะเบียนเช็ค หรือเอกสารเปลี่ยนสถานะเช็คอ้างสมุดนี้แล้วหรือยัง
 func bankBookUsed(ctx context.Context, tx *sql.Tx, company, code string) (bool, error) {
 	var used bool
-	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_subledger_bank_lines WHERE company=$1 AND bank_account_code=$2 UNION ALL SELECT 1 FROM gl_subledger_statements WHERE company=$1 AND bank_account_code=$2)`, company, code).Scan(&used)
+	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_subledger_bank_lines WHERE company=$1 AND bank_account_code=$2 UNION ALL SELECT 1 FROM gl_subledger_statements WHERE company=$1 AND bank_account_code=$2 UNION ALL SELECT 1 FROM cheque_registers WHERE company=$1 AND book_code=$2 AND deleted_at IS NULL UNION ALL SELECT 1 FROM cheque_docs WHERE company=$1 AND book_code=$2)`, company, code).Scan(&used)
 	return used, err
 }
 

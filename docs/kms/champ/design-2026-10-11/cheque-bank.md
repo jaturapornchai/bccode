@@ -412,15 +412,17 @@ CREATE TABLE IF NOT EXISTS cheque_registers (
   version          bigint        NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at timestamptz NOT NULL DEFAULT now(), created_by text NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now(), updated_by text NOT NULL,
+  deleted_at timestamptz, deleted_by text,                                      -- ลบเช็ค (เก็บแถว+ประวัติไว้)
   PRIMARY KEY (company, id),
+  CHECK ((deleted_at IS NULL) = (deleted_by IS NULL)),
   CHECK ((cheque_type = 0 AND status BETWEEN 0 AND 6) OR (cheque_type = 1 AND status BETWEEN 0 AND 3)),
   CHECK (cheque_type = 0 OR (book_code IS NOT NULL AND doc_date <= due_date)),   -- เช็คจ่าย: สมุดบังคับ, วันที่จ่าย <= ถึงกำหนด
   CHECK (cheque_type = 1 OR status = 0 OR book_code IS NOT NULL),               -- เช็ครับ: สถานะ <> 0 ต้องมีสมุด
   CHECK (cheque_type = 0 OR sale_code = '')
 );
-CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_in_no   ON cheque_registers (company, cheque_no, bank_code, bank_branch_code) WHERE cheque_type = 0;
-CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_out_no  ON cheque_registers (company, cheque_no, book_code) WHERE cheque_type = 1;
-CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_doc_no  ON cheque_registers (company, cheque_type, doc_no);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_in_no   ON cheque_registers (company, cheque_no, bank_code, bank_branch_code) WHERE cheque_type = 0 AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_out_no  ON cheque_registers (company, cheque_no, book_code) WHERE cheque_type = 1 AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cheque_doc_no  ON cheque_registers (company, cheque_type, doc_no) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS ix_cheque_select ON cheque_registers (company, cheque_type, status, due_date);
 CREATE INDEX IF NOT EXISTS ix_cheque_partner ON cheque_registers (company, cheque_type, partner_code);
 
@@ -429,7 +431,7 @@ CREATE TABLE IF NOT EXISTS cheque_events (
   company       text        NOT NULL,
   id            bigserial,
   cheque_id     uuid        NOT NULL,
-  event_kind    text        NOT NULL CHECK (event_kind IN ('create','update','status_doc','print','ext_status')),
+  event_kind    text        NOT NULL CHECK (event_kind IN ('create','update','edit','manual_status','status_doc','print','ext_status','delete')),
   doc_flag      integer,                                   -- transflag ของเอกสารสถานะ 419..426
   doc_no        varchar(30),
   event_date    date        NOT NULL,
@@ -610,13 +612,13 @@ CREATE TABLE IF NOT EXISTS gl_journal_cheques (
 | transflag | เลือกเช็คได้ (ชนิด, สถานะ) | เงื่อนไขวันที่ | สถานะใหม่ | สมุดเงินฝาก | ลงบัญชี |
 |---|---|---|---|---|---|
 | 419 นำฝาก | รับ, {0} | วันที่รับ ≤ วันที่เอกสาร | 1 | บังคับ | `not_required` |
-| 420 รับผ่าน | รับ, {0,1} | ถึงกำหนด ≤ วันที่เอกสาร | 2 | บังคับ | mapping |
-| 421 รับคืน | รับ, {2,6} | วันที่รับ ≤ วันที่เอกสาร | 3 | ไม่บังคับ | mapping |
+| 420 รับผ่าน | รับ, {0,1} + สมุดของเช็คตรงกับสมุดของเอกสาร (`cqfrmcheqinpass.cpp:739-748`) | ถึงกำหนด ≤ วันที่เอกสาร | 2 | บังคับ (`:379-383`) | mapping |
+| 421 รับคืน | รับ, {2,6} + สมุดของเช็คตรงกับสมุดของเอกสาร (`cqfrmcheqinreturn.cpp:698-711`) | วันที่รับ ≤ วันที่เอกสาร | 3 | บังคับ (`:301-305`; ชุดซ้ำ `:356-364` ถูก comment) | mapping |
 | 422 นำเข้าใหม่ | รับ, {3} + สมุดของเช็คตรงกับสมุดของเอกสาร | วันที่รับ ≤ วันที่เอกสาร (`cqfrmcheqindeposit2.cpp:721,724`) | 6 | บังคับ (`:711-714`) | mapping |
 | 423 ยกเลิกรับ | รับ, {0 \| 2 \| 1 \| 6} ตาม cancel_type 0/1/2/3 + สมุดตรงกันเมื่อ cancel_type ≠ 0 | วันที่รับ ≤ วันที่เอกสาร ทุกชนิด (`cqfrmcheqincancel.cpp:757-789`) | 4 | บังคับเมื่อ cancel_type ∈ {1,2,3}; ชนิด 0 ไม่ใช้สมุด | mapping |
-| 424 ขายลด | รับ, {0,1} | วันที่รับ ≤ วันที่เอกสาร | 5 | บังคับ | mapping |
-| 425 จ่ายผ่าน | จ่าย, {0} | ถึงกำหนด ≤ วันที่เอกสาร | 1 | กรองได้ (ถ้าระบุต้องตรงสมุดของเช็ค) | mapping |
-| 426 ยกเลิกจ่าย | จ่าย, {0} หรือ {1} เมื่อ cancel_passed | — | 2 | บังคับเมื่อ cancel_passed | mapping |
+| 424 ขายลด | รับ, {0,1} + ถ้าระบุสมุด ต้องตรงสมุดของเช็ค (`cqfrmcheqinsale.cpp:676-681`) | วันที่รับ ≤ วันที่เอกสาร | 5 | ไม่บังคับ (การบังคับ `:374-382` ถูก comment) | mapping |
+| 425 จ่ายผ่าน | จ่าย, {0} + สมุดของเช็คตรงกับสมุดของเอกสาร (`cqfrmcheqoutpass.cpp:664-679`) | ถึงกำหนด ≤ วันที่เอกสาร | 1 | บังคับ (`:362-366`) | mapping |
+| 426 ยกเลิกจ่าย | จ่าย, {0} หรือ {1} เมื่อ cancel_passed + สมุดของเช็คตรงกับสมุดของเอกสาร (`cqfrmcheqoutcancel.cpp:666-687`) | — | 2 | บังคับทั้งสองแบบ (`:359-363`) | mapping |
 
 **กติกาที่ backend บังคับ** (ทุกข้อคืน error key และระบุ field)
 1. **เช็คอยู่ในเอกสารได้ครั้งเดียว** (`cheque_err_duplicate_line`)
@@ -626,7 +628,8 @@ CREATE TABLE IF NOT EXISTS gl_journal_cheques (
    - ค่าใช้จ่ายต่อแถวอยู่ในช่วง 0..amount (`cheque_err_fee_invalid`)
    - ยอดหัวเอกสาร**คำนวณใหม่ที่ backend** ถ้า client ส่งยอดมาแล้วไม่ตรงกัน → `cheque_err_totals_mismatch` (เทียบเท่า MSG_CHQ_FEEAMOUNT_ERR)
 4. **สมุดเงินฝาก:** ใส่ `book_code` ของเอกสารลงทุกเช็ค (เหมือน `BookNo` ของ Champ)
-   - เมื่อสถานะกลับเป็น 0 สำหรับเช็ครับ ให้ล้าง book_code
+   - เมื่อสถานะกลับเป็น 0 สำหรับเช็ครับ (ยกเลิกเอกสารสถานะ) ให้ล้าง book_code (Champ `CQFrmBaseTransStatus.cpp:188-190`)
+   - เช็ครับในมือที่บันทึกใหม่ระบุสมุดหรือไม่ก็ได้ (Champ `cqfrmcheqin.cpp:391-400`, `:488`) ใช้เป็นตัวกรองตอนเลือกเช็คเข้า 420/424
 5. **ลำดับเหตุการณ์ (ตาม Champ — แก้ 2026-10-11 เดิมเขียนผิดว่าเบี่ยง):**
    - ห้ามยกเลิกหรือแก้เอกสารสถานะ ถ้าเช็คในเอกสารมี event ที่ใหม่กว่าและยังไม่ถูกยกเลิก (`cheque_err_newer_event`)
    - ต้องยกเลิกเอกสารที่ใหม่กว่าก่อน
@@ -640,8 +643,9 @@ CREATE TABLE IF NOT EXISTS gl_journal_cheques (
    - บันทึก `cancel_reason`
 7. **ทะเบียนเช็คที่ถูกอ้างแล้ว** (มี event สถานะหรือ source link ที่ยังไม่ void):
    - **ห้ามลบ = ตาม Champ** MSG_REFERANCE (`cqfrmcheqin.cpp:438-443`) → `cheque_err_referenced_delete`; ให้ยกเลิกเอกสารที่อ้างก่อน
+   - **เอกสารสถานะถูกยกเลิกหมดแล้ว → ลบได้ = ตาม Champ** (การยกเลิกลบ Sub ของเอกสาร `CQFrmBaseTransStatus.cpp:323-335` จึงไม่เหลือการอ้าง; ลบเช็ค `cqfrmcheqin.cpp:462-470`): BC ไม่ลบแถวจริง ตั้ง `deleted_at`/`deleted_by` + event `delete` (ประวัติและเอกสารที่ยกเลิกแล้วยังเปิดดูได้); ทะเบียน/การเลือกเช็ค/ยอดคงเหลือ/recalculate/การตรวจรหัสและสมุดที่ถูกใช้ ไม่นับแถวที่ลบ; เลขเช็คเดิมบันทึกใหม่ได้
    - **เช็คที่เกิดจากเอกสารต้นทาง (`source_kind = 'erp'` เทียบ `SaveFrom ≠ 4`) ห้ามลบจากจอทะเบียน = ตาม Champ** MSG_FROM_OTHER (`:444-449`) → `cheque_err_from_source_doc`; ต้องลบ/ยกเลิกที่เอกสารต้นทาง
-   - **แก้ฟิลด์หลัก** cheque_no / bank / branch / book / amount / rate / partner / type: Champ แค่ถามยืนยัน CANNOT_UPDATE_REFERENCE (`:320-327`) / CANNOT_UPDATE_REFERENCE_OTHER (`:328-336`); **D8 ตัดสินแล้ว 2026-10-11 = ทำตาม Champ**: ถามยืนยันแล้วยอมให้แก้; ทุกการแก้บันทึก event `edit` (ค่าเดิม→ค่าใหม่ ผู้แก้ เวลา) และยอดคงเหลือ derive ใหม่ทันที (`balances.go`/recalculate) แทนการล็อก
+   - **แก้ฟิลด์หลัก** cheque_no / bank / branch / book / amount / rate / partner (ประเภทรับ/จ่ายแก้ไม่ได้: Champ แยกตาราง BCChqIn/BCChqOut ไม่มีคอลัมน์ประเภท `SQLSERVER_Script.sql:7482`, `:7536` และแยกจอ `cqfrmcheqin.cpp`/`cqfrmcheqout.cpp`): Champ แค่ถามยืนยัน CANNOT_UPDATE_REFERENCE (`:320-327`) / CANNOT_UPDATE_REFERENCE_OTHER (`:328-336`); **D8 ตัดสินแล้ว 2026-10-11 = ทำตาม Champ**: ถามยืนยันแล้วยอมให้แก้; ทุกการแก้บันทึก event `edit` (ค่าเดิม→ค่าใหม่ ผู้แก้ เวลา) และยอดคงเหลือ derive ใหม่ทันที (`balances.go`/recalculate) แทนการล็อก
    - แก้ได้เสมอ: description, ext_status, sale, department; due_date แก้ได้เฉพาะเมื่อยังไม่มี event สถานะ
    - ทะเบียนไม่ตรวจงวดปิด (Champ ไม่ตรวจ เพราะทะเบียนไม่ลงบัญชี)
 8. **สถานะในจอทะเบียน:**
@@ -678,7 +682,7 @@ type MappingRule struct {
   - อนุญาตเฉพาะ source doc ตระกูล cheque; `accountcode` **ใส่ได้เป็นบัญชีสำรอง** (เทียบบัญชีในแม่แบบที่ Champ ตั้งเป็นค่าเริ่มต้น `:7766`)
   - มีสมุดในหัวเอกสาร → ใช้ `gl_account_code` ของสมุด (`:7802-7804`, `:7818-7819`)
   - **ยกเลิกเช็ครับชนิด 0 (เช็คในมือ ไม่มีสมุด) → ใช้บัญชีสำรองใน rule** (`:7824`); ถ้า rule ไม่มีบัญชีสำรอง → `cheque_err_book_no_gl_account`
-  - กรณีอื่นที่ไม่มีสมุดหรือสมุดไม่มีบัญชี: Champ ตั้งยอดบรรทัดเป็น 0 แล้วข้ามบรรทัด (`:7806-7809`, `:7821-7822`, `:7870`) ซึ่งทำให้ใบสำคัญไม่สมดุล → **BC เบี่ยงโดยตั้งใจ:** ไม่บันทึกและคืน `cheque_err_book_no_gl_account` (กฎ เดบิต = เครดิต 100%); ปกติไม่เกิดเพราะ 420/421/422/424/425 และ 423 ชนิด 1–3 บังคับสมุด
+  - กรณีอื่นที่ไม่มีสมุดหรือสมุดไม่มีบัญชี: Champ ตั้งยอดบรรทัดเป็น 0 แล้วข้ามบรรทัด (`:7806-7809`, `:7821-7822`, `:7870`) ซึ่งทำให้ใบสำคัญไม่สมดุล → **BC เบี่ยงโดยตั้งใจ:** ไม่บันทึกและคืน `cheque_err_book_no_gl_account` (กฎ เดบิต = เครดิต 100%); ปกติไม่เกิดเพราะ 420/421/422/425/426 และ 423 ชนิด 1–3 บังคับสมุด; ขายลด 424 ไม่บังคับสมุด (ตาม Champ) จึงต้องระบุสมุดในเอกสารเมื่อ rule ใช้ `bank_book`
   - บัญชีนั้นต้อง `allowposting` (ใช้การตรวจ `loadLineAccounts` เดิม)
   - เลือกบัญชีจากข้อมูลสมุด/rule เท่านั้น ไม่มีเงื่อนไขตามรหัสบัญชี
 - **ผลต่างปัดเศษ:** ยอดทุกส่วนคำนวณเป็น numeric ทศนิยม 2 ตำแหน่งจากยอดที่ปัดแล้วต่อแถว ผลรวมจึงตรงกันเสมอ ไม่ต้องมีบรรทัดปัดเศษแบบ Champ (`:7916-7958`); ถ้าไม่สมดุล → ไม่บันทึก
@@ -972,7 +976,7 @@ POST /cheque/v1/command
 - คำนวณสถานะใหม่ตอนยกเลิกเอกสาร (event ล่าสุดที่ยังไม่ void), `cheque_err_newer_event`, ล้าง book_code เมื่อกลับเป็น 0
 - ตัวกรอง 422/423 ตาม Champ (เพิ่ม 2026-10-11): 422 ไม่มีสมุด → `cheque_err_book_required`; วันที่รับ > วันที่เอกสาร → `cheque_err_received_after_doc` (ทั้ง 422 และ 423 ทุกชนิด); 423 ชนิด 2 ไม่มีสมุด → `cheque_err_book_required`; 423 ชนิด 0 ไม่ต้องมีสมุด
 - 419: ส่ง fee_amount ≠ 0 → `cheque_err_fee_invalid` (และ CHECK ในตารางกันซ้ำ)
-- ทะเบียน: ลบเช็คที่ถูกอ้าง → `cheque_err_referenced_delete`; ลบเช็คที่ `source_kind='erp'` → `cheque_err_from_source_doc`; currency ≠ THB หรือ rate ≠ 1 → `cheque_err_currency_not_supported`
+- ทะเบียน: ลบเช็คที่ถูกอ้าง → `cheque_err_referenced_delete`; ลบเช็คที่ `source_kind='erp'` → `cheque_err_from_source_doc`; ลบเช็คที่เอกสารสถานะถูกยกเลิกหมดแล้ว → สำเร็จ (`deleted_at` + event `delete`); currency ≠ THB หรือ rate ≠ 1 → `cheque_err_currency_not_supported`
 - `references[]` ของ GET ทะเบียน: เรียงตามวันที่ ไม่รวม event/link ที่ void
 - mapping:
   - `accountfrom: bank_book` + มีสมุด → ใช้บัญชีสมุดแม้ rule มีบัญชีสำรอง

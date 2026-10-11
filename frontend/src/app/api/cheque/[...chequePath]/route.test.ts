@@ -49,6 +49,68 @@ describe("cheque BFF", () => {
     expect((await get("bank-contacts?bank_code=BBL&bank_branch_code=0123")).status).toBe(200);
   });
 
+  it.each([
+    ["registers?type=0&status=1&book=SCB-01&partner=AR-0012&due_from=2026-10-01&due_to=2026-10-31&q=1023&page=2&limit=50&company=99",
+      "registers?type=0&status=1&book=SCB-01&partner=AR-0012&due_from=2026-10-01&due_to=2026-10-31&q=1023&page=2&limit=50"],
+    ["registers/selectable?transflag=423&cancel_type=3&book=SCB-01&doc_date=2026-10-25", "registers/selectable?transflag=423&cancel_type=3&book=SCB-01&doc_date=2026-10-25"],
+    ["registers/0b8e6a52-3c1d-4f0a-9e2b-5d7c8a1f4e30", "registers/0b8e6a52-3c1d-4f0a-9e2b-5d7c8a1f4e30?"],
+    ["docs/420?date_from=2026-10-01&date_to=2026-10-31&q=CQIP&holdingcode=OTHER", "docs/420?date_from=2026-10-01&date_to=2026-10-31&q=CQIP"],
+    ["docs/419/CQDP6910-0001", "docs/419/CQDP6910-0001?"],
+    ["docs/426/CQOC6910-0002/events", "docs/426/CQOC6910-0002/events?"],
+    ["recalculate", "recalculate?"],
+    ["balances/partners?partner=AR-0012&page=1&limit=100", "balances/partners?partner=AR-0012&page=1&limit=100"],
+    ["balances/books?book=SCB-01&date_from=2026-10-01&date_to=2026-10-31", "balances/books?book=SCB-01&date_from=2026-10-01&date_to=2026-10-31"],
+  ])("forwards GET %s to the cheque register API", async (path, target) => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toBe(`http://localhost:8888/cheque/v1/${target}`);
+      return Response.json({ success: true, data: {} });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await get(path)).status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("encodes a hand-typed Thai document number as one path segment", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toBe(`http://localhost:8888/cheque/v1/docs/421/${encodeURIComponent("รับคืน 69-001")}?`);
+      return Response.json({ success: true, data: {} });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(new Request("http://localhost/api/cheque/docs/421/x", { headers }), {
+      params: Promise.resolve({ chequePath: ["docs", "421", "รับคืน 69-001"] }),
+    });
+
+    expect(response.status).toBe(200);
+  });
+
+  it.each([
+    "registers/not-a-uuid", "registers/selectable/1", "docs", "docs/44", "docs/427", "docs/420/..", `docs/420/${"9".repeat(31)}`,
+    "docs/420/CQIP6910-0001/lines", "docs/420/CQIP6910-0001/events/1", "balances", "balances/accounts", "recalculate/apply",
+  ])("rejects GET %s that the cheque API does not serve", async (path) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await get(path)).status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { resource: "registers", action: "create", cheque_type: 0, requestid: "0b8e6a52-3c1d-4f0a-9e2b-5d7c8a1f4e30" },
+    { resource: "docs", action: "cancel", transflag: 420, doc_no: "CQIP6910-0001", version: 2, reason: "ธนาคารแจ้งยอดผิด" },
+    { resource: "recalculate", action: "apply", reason: "ปรับสถานะเช็คตามประวัติเอกสาร" },
+  ])("forwards a $resource command", async (command) => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).toBe("http://localhost:8888/cheque/v1/command");
+      expect(JSON.parse(String(init?.body))).toEqual(command);
+      return Response.json({ success: true, data: {} });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await post("command", command)).status).toBe(200);
+  });
+
   it.each(["codes/branch", "codes", "codes/bank/extra", "cheques", "command", "codes/..", "bank-contacts/1"])(
     "rejects GET %s without calling the backend",
     async (path) => {
