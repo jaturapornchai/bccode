@@ -29,9 +29,6 @@ describe("menu screen availability", () => {
   // (docs/kms/champ/design-2026-10-11/facade-screens.md). ลบ route ออกจากรายการนี้ใน commit เดียวกับที่สร้างจอจริง
   const CHAMP_PENDING_ROUTES: string[] = [
     "/ar/billing-note-auto",
-    "/banking/bank-service",
-    "/banking/cheque-issued-prepare",
-    "/banking/cheque-movement",
     "/banking/petty-cash-limit",
     "/inventory/product-supplier-update",
     "/inventory/stock-count-handheld",
@@ -73,7 +70,7 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(255);
+    expect(items).toHaveLength(252);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...NO_BACKEND_DOCUMENT_ROUTES, ...retired])].sort();

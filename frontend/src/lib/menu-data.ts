@@ -412,7 +412,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("cheques-issued", "เช็คจ่าย", "Issued Cheques"),
         items: [
           tx("cheque-issued", "บันทึกเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
-          tx("cheque-issued-prepare", "บันทึกเช็คเตรียมจ่าย", "Prepare Cheques for Payment", "/banking/cheque-issued-prepare", "finance", "cheque_issue_prepare"),
           tx("cheque-issued-clear", "บันทึกเช็คจ่ายผ่าน", "Clear Issued Cheques", "/banking/cheques/issued-clear", "finance"),
           tx("cheque-issued-cancel", "บันทึกยกเลิกเช็คจ่าย", "Cancel Issued Cheques", "/banking/cheques/issued-cancel", "finance"),
         ],
@@ -440,7 +439,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "cash-bank-master",
         title: { key: "menu_bank_accounts", th: "สมุดเงินฝากธนาคาร", en: "Bank Accounts" },
         items: [
-          tx("bank-service", "บริการธนาคาร", "Bank Services", "/banking/bank-service", "finance"),
           tx("bank-contact", "บันทึกรายละเอียดผู้ติดต่อธนาคาร", "Bank Contacts", "/banking/contacts", "master"),
           tx("book-bank", "บันทึกสมุดเงินฝากธนาคาร", "Bank Book", "/bookbankscreen", "master", "book_bank"),
         ],
@@ -460,7 +458,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "bank-utilities",
         title: ml("bank-utilities", "ตรวจและประมวลผลเงินฝากและเช็ค", "Bank & Cheque Utilities"),
         items: [
-          tx("cheque-movement", "ข้อมูลการเคลื่อนไหวเช็ค", "Cheque Movement Inquiry", "/banking/cheque-movement", "finance"),
           tx("cheque-recalculate", "คำนวณยอดคงเหลือของเช็คใหม่", "Recalculate Cheque Balances", "/tools/cheque-balances", "finance"),
           tx("bank-recalculate", "คำนวณยอดคงเหลือของสมุดบัญชีใหม่", "Recalculate Bank Book Balances", "/tools/bank-balances", "finance"),
         ],

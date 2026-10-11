@@ -7,9 +7,6 @@ describe("ERP Menu Completeness Audit", () => {
   // เมื่อสร้างจอใดจริง ให้ลบ route นั้นออกจากรายการนี้ (และ CHAMP_PENDING_ROUTES ใน menu-screen-status.test.ts) ใน commit เดียวกัน
   const FACADE_PENDING_ROUTES = [
     "/ar/billing-note-auto",
-    "/banking/bank-service",
-    "/banking/cheque-issued-prepare",
-    "/banking/cheque-movement",
     "/banking/petty-cash-limit",
     "/inventory/product-supplier-update",
     "/inventory/stock-count-handheld",

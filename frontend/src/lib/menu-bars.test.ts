@@ -48,9 +48,6 @@ const CHAMP_LABELS: Record<string, string> = {
   "sale-reservation": "ใบสั่งจองสินค้า",
   "sale-dispatch": "ใบสั่งจ่ายสินค้า",
   "ap-payment-prepare": "บันทึกเตรียมจ่ายชำระหนี้",
-  "cheque-issued-prepare": "บันทึกเช็คเตรียมจ่าย",
-  "cheque-movement": "ข้อมูลการเคลื่อนไหวเช็ค",
-  "bank-service": "บริการธนาคาร",
   "product-supplier-update": "ปรับปรุง ข้อมูล Supplier ตามสินค้า",
   "stock-issue-request-cancel": "ยกเลิกใบขอเบิกใช้สินค้า,วัตถุดิบ",
   "stock-transfer-request-cancel": "ยกเลิกใบขอโอนสินค้า",
@@ -205,8 +202,8 @@ describe("Champ-style menu bar layout", () => {
     ]);
     order("bill", ["sale-reservation", "sale-order", "sale-order-approve", "sale-order-cancel", "sale-dispatch", "receive-deposit"]);
     order("ap", ["ap-billing-receipt", "ap-payment-prepare", "pay"]);
-    order("cheque", ["cheque-received", "cheque-issued", "credit-card-receipts", "cheque-issued-prepare", "cheque-movement", "cheque-deposit"]);
-    order("bank-cash", ["expense-record", "bank-service", "bank-contact"]);
+    order("cheque", ["cheque-received", "cheque-issued", "credit-card-receipts", "cheque-deposit"]);
+    order("bank-cash", ["expense-record", "bank-contact"]);
     order("ic", [
       "product-price-adjust", "product-supplier-update", "goods-inspection",
       "stock-issue-request", "stock-issue-request-cancel", "stock-pickup", "stock-return",
@@ -219,7 +216,7 @@ describe("Champ-style menu bar layout", () => {
       const found = MENU_BARS.find((bar) => bar.id === barId)?.nodes.find((node) => node.kind === "submenu" && node.id === submenuId);
       return found?.kind === "submenu" ? found.nodes.map((node) => (node.kind === "item" ? node.item.id : node.kind)) : [];
     };
-    expect(submenuNodes("cheque", "cheque-registers")).toEqual(["cheque-received", "cheque-issued", "credit-card-receipts", "divider", "cheque-issued-prepare"]);
+    expect(submenuNodes("cheque", "cheque-registers")).toEqual(["cheque-received", "cheque-issued", "credit-card-receipts"]);
     expect(submenuNodes("ic", "ic-counting")).toEqual(["stock-count-sheet", "stock-count", "stock-adjust", "divider", "stock-count-handheld"]);
     // Champ puts the three cheque/card reports under "รายงานข้อมูลหลัก"; the other daily reports are not built yet
     expect(MENU_BARS.find((bar) => bar.id === "cheque")?.nodes.flatMap((node) => (node.kind === "submenu" ? [node.id] : []))).toEqual(["cheque-registers", "cheque-reports-master"]);

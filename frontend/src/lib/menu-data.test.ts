@@ -90,7 +90,8 @@ describe("menu language labels", () => {
     // +5 จอกำหนดรหัสธนาคาร/สาขา/บริการ/ประเภทบัญชี/สถานะเช็คเพิ่มเติม ใต้ "กำหนดรหัสต่างๆ" (CB-1, 2026-10-11)
     // +8 รายงาน Champ ที่เปิดจอรายงานกลาง: ข้อมูลหลัก 5 + รายงานรายวันแบบสรุป + งบทดลอง 2 + รายละเอียดงบประมาณ (2026-10-11)
     // +4 รายงานทะเบียนมิติการจัดสรร/งาน/หน่วยงาน/ฝ่าย (2026-10-11)
-    expect(items).toHaveLength(255);
+    // -3 ตัดเมนูที่ตกค้างและไม่มีใน Champ (cheque-issued-prepare, cheque-movement, bank-service) ตาม ADR champ parity
+    expect(items).toHaveLength(252);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust", "withholding-tax-deduction": "/report/whtdeduction" };
     for (const previous of baseline) {
@@ -106,7 +107,7 @@ describe("menu language labels", () => {
       "cheque-redeposit", "cheque-received-cancel", "cheque-discount",
     ]);
     expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
-      "cheque-issued", "cheque-issued-prepare", "cheque-issued-clear", "cheque-issued-cancel",
+      "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
     ]);
     expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
   });

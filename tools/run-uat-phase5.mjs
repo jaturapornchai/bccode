@@ -84,14 +84,8 @@ async function runPhase5Uat() {
     await page.screenshot({ path: path.join(SHOTS_DIR, '04-petty-cash-limit.png') });
     console.log('   ✅ เปิดหน้าจอ Petty Cash Limit สำเร็จ บันทึกภาพ 04-petty-cash-limit.png');
 
-    // 8. ทดสอบเปิด Cheque Issued Prepare
-    console.log('👉 [7/8] UAT ทดสอบหน้าจอบันทึกเช็คเตรียมจ่าย (Cheque Issued Prepare)...');
-    await searchAndOpenMenu('เช็คเตรียมจ่าย', 'บันทึกเช็คเตรียมจ่าย');
-    await page.screenshot({ path: path.join(SHOTS_DIR, '05-cheque-issued-prepare.png') });
-    console.log('   ✅ เปิดหน้าจอ Cheque Issued Prepare สำเร็จ บันทึกภาพ 05-cheque-issued-prepare.png');
-
-    // 9. ทดสอบเปิด Deposit Receipt
-    console.log('👉 [8/8] UAT ทดสอบหน้าจอบันทึกใบรับเงินมัดจำ (Deposit Receipt)...');
+    // 8. ทดสอบเปิด Deposit Receipt
+    console.log('👉 [7/7] UAT ทดสอบหน้าจอบันทึกใบรับเงินมัดจำ (Deposit Receipt)...');
     await searchAndOpenMenu('รับเงินมัดจำ', 'บันทึกใบรับเงินมัดจำ');
     await page.screenshot({ path: path.join(SHOTS_DIR, '06-deposit-receipt.png') });
     console.log('   ✅ เปิดหน้าจอ Deposit Receipt สำเร็จ บันทึกภาพ 06-deposit-receipt.png');

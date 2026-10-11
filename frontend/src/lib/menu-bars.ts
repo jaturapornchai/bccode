@@ -178,10 +178,7 @@ export const MENU_BARS: MenuBar[] = [
     submenu(
       "cheque-registers", "menu_sub_cheque_registers", "ทะเบียนหลักต่างๆ", "Master Registers",
       ...items("cheque-received", "cheque-issued", "credit-card-receipts"),
-      DIVIDER,
-      ...items("cheque-issued-prepare"),
     ),
-    items("cheque-movement"),
     DIVIDER,
     items("cheque-deposit", "cheque-received-clear", "cheque-received-return", "cheque-redeposit", "cheque-received-cancel", "cheque-discount"),
     DIVIDER,
@@ -200,7 +197,7 @@ export const MENU_BARS: MenuBar[] = [
     label("menu_bar_bank_cash", "ธนาคาร/เงินสด", "Bank & Cash"),
     items("other-income-receipt", "employee-advance", "expense-record"),
     DIVIDER,
-    items("bank-service", "bank-contact", "book-bank", "petty-cash-limit", "cash-deposit", "cash-withdraw", "bank-charges", "bank-income", "account-transfer"),
+    items("bank-contact", "book-bank", "petty-cash-limit", "cash-deposit", "cash-withdraw", "bank-charges", "bank-income", "account-transfer"),
     DIVIDER,
     items("bank-recalculate"),
     submenu(

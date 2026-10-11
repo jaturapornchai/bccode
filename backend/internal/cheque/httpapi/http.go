@@ -75,8 +75,8 @@ var codeScreens = map[string]string{
 
 // codeLookupScreens คือจอที่ต้องดึงรหัสไปใส่คอมโบ จึงอ่านรายการรหัสได้ (อ่านอย่างเดียว) นอกเหนือจากจอกำหนดรหัสเอง
 var codeLookupScreens = []string{
-	bookBankScreen, bankContactScreen, "bank-service",
-	"cheque-received", "cheque-issued", "cheque-issued-prepare", "cheque-movement", "cheque-recalculate",
+	bookBankScreen, bankContactScreen,
+	"cheque-received", "cheque-issued", "cheque-recalculate",
 	"cheque-deposit", "cheque-received-clear", "cheque-received-return", "cheque-redeposit",
 	"cheque-received-cancel", "cheque-discount", "cheque-issued-clear", "cheque-issued-cancel",
 	"cheque-received-report", "cheque-issued-report",
