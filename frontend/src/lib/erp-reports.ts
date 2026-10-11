@@ -852,6 +852,7 @@ const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
   "ap_aging",
   "product_status_report",
   "product_price_setting_report",
+  "petty_cash_movement_report",
 ]);
 
 export function isErpReportApiReady(code: string): boolean {
@@ -1228,7 +1229,27 @@ const ROW_MAPPERS: Record<string, RowMapper> = {
   ap_aging: mapApAging,
   product_status_report: mapProductStatusReport,
   product_price_setting_report: mapProductPriceSettingReport,
+  petty_cash_movement_report: mapPettyCashMovement,
 };
+
+function mapPettyCashMovement(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  if (source.doc_date !== undefined) row.docdate = toText(source.doc_date);
+  if (source.doc_no !== undefined) row.docno = toText(source.doc_no);
+  if (source.petty_cash_code !== undefined) row.pettycashcode = toText(source.petty_cash_code);
+  if (source.description !== undefined) row.description = toText(source.description);
+  const transType = Number(source.trans_type);
+  const amt = toAmountText(source.amount) ?? "0.00";
+  if (transType === 1) {
+    row.receipt = amt;
+    row.payment = "-";
+  } else {
+    row.receipt = "-";
+    row.payment = amt;
+  }
+  if (source.balance !== undefined) row.balance = toAmountText(source.balance);
+  return row;
+}
 
 function extractRows(
   payload: unknown,
@@ -1356,6 +1377,23 @@ export async function fetchErpReportData(params: {
 
     if (code === "stock_movement_cost" || code === "stock_movement_simple") {
       const url = `/api/goapi/api/reports/stock-movement?holdingcode=${encodeURIComponent(holdingcode)}&from=${encodeURIComponent(fromdate)}&to=${encodeURIComponent(todate)}`;
+      const res = await apiFetch(url);
+      if (!res.ok) {
+        return {
+          rows: [],
+          error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+        };
+      }
+      payload = await res.json();
+      const rawRows = extractRows(payload, "items");
+      if (rawRows === null) {
+        return { rows: [], error: "load_failed" };
+      }
+      return { rows: rawRows.map(mapper) };
+    }
+
+    if (code === "petty_cash_movement_report") {
+      const url = `/api/cheque/petty-cash/trans?from_date=${encodeURIComponent(fromdate)}&to_date=${encodeURIComponent(todate)}`;
       const res = await apiFetch(url);
       if (!res.ok) {
         return {

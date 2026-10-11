@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-11 @ commit b1d33a15 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-11 @ commit 82fbbff5 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 32
 
@@ -604,6 +604,45 @@ Files indexed: 32
 | 1450 | const-arrow | `renderDragOverlay` |
 | 1502 | const-arrow | `renderTreeNodes` |
 
+## frontend/src/lib/erp-reports.ts (1736 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 71 | function | `isAgingReport` |
+| 824 | function | `isErpReportRoute` |
+| 829 | function | `getErpReportConfig` |
+| 858 | function | `isErpReportApiReady` |
+| 862 | function | `isRecord` |
+| 866 | function | `toNumber` |
+| 877 | function | `toText` |
+| 884 | function | `toAmountText` |
+| 890 | function | `mapSalesByDocument` |
+| 906 | function | `mapGrossProfitDocument` |
+| 924 | function | `mapStockBalanceItem` |
+| 941 | function | `mapStockBalanceWarehouse` |
+| 958 | function | `mapStockMovementCost` |
+| 979 | function | `mapStockMovementSimple` |
+| 996 | function | `mapProductStatusReport` |
+| 1013 | function | `mapProductPriceSettingReport` |
+| 1034 | function | `mapApMovement` |
+| 1055 | function | `mapApStatus` |
+| 1074 | function | `mapApOutstanding` |
+| 1093 | function | `mapApDailyPayment` |
+| 1110 | function | `mapArMovement` |
+| 1131 | function | `mapArStatus` |
+| 1150 | function | `mapArOutstanding` |
+| 1169 | function | `mapArCreditLimit` |
+| 1185 | function | `mapAgingAmounts` |
+| 1195 | function | `mapArAging` |
+| 1204 | function | `mapApAging` |
+| 1235 | function | `mapPettyCashMovement` |
+| 1254 | function | `extractRows` |
+| 1274 | function | `debtReportError` |
+| 1284 | function | `fetchErpReportData` |
+| 1693 | function | `reportText` |
+| 1702 | function | `reportColumnLabel` |
+| 1718 | function | `agingColumnLabel` |
+
 ## frontend/src/lib/system-setting-screens.ts (1731 lines)
 
 | Line | Kind | Name |
@@ -644,44 +683,6 @@ Files indexed: 32
 | 1689 | function | `datePartsForLanguage` |
 | 1702 | function | `datePart` |
 | 1715 | function | `localeOf` |
-
-## frontend/src/lib/erp-reports.ts (1698 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 71 | function | `isAgingReport` |
-| 824 | function | `isErpReportRoute` |
-| 829 | function | `getErpReportConfig` |
-| 857 | function | `isErpReportApiReady` |
-| 861 | function | `isRecord` |
-| 865 | function | `toNumber` |
-| 876 | function | `toText` |
-| 883 | function | `toAmountText` |
-| 889 | function | `mapSalesByDocument` |
-| 905 | function | `mapGrossProfitDocument` |
-| 923 | function | `mapStockBalanceItem` |
-| 940 | function | `mapStockBalanceWarehouse` |
-| 957 | function | `mapStockMovementCost` |
-| 978 | function | `mapStockMovementSimple` |
-| 995 | function | `mapProductStatusReport` |
-| 1012 | function | `mapProductPriceSettingReport` |
-| 1033 | function | `mapApMovement` |
-| 1054 | function | `mapApStatus` |
-| 1073 | function | `mapApOutstanding` |
-| 1092 | function | `mapApDailyPayment` |
-| 1109 | function | `mapArMovement` |
-| 1130 | function | `mapArStatus` |
-| 1149 | function | `mapArOutstanding` |
-| 1168 | function | `mapArCreditLimit` |
-| 1184 | function | `mapAgingAmounts` |
-| 1194 | function | `mapArAging` |
-| 1203 | function | `mapApAging` |
-| 1233 | function | `extractRows` |
-| 1253 | function | `debtReportError` |
-| 1263 | function | `fetchErpReportData` |
-| 1655 | function | `reportText` |
-| 1664 | function | `reportColumnLabel` |
-| 1680 | function | `agingColumnLabel` |
 
 ## frontend/src/app/system-settings/product-group-tree-view.tsx (1689 lines)
 

@@ -47,11 +47,15 @@ describe("runErpTool", () => {
 
   const scope = { holdingcode: "H01", businesscode: "C01", year: 2026 };
 
-  it("marks cheque_balances and bank_balances as ready and others as not ready", () => {
+  it("marks AR, AP, cheque, and bank tools as ready and others as not ready", () => {
+    expect(isErpToolApiReady("ar_recalculate")).toBe(true);
+    expect(isErpToolApiReady("ar_bill_balances")).toBe(true);
+    expect(isErpToolApiReady("ap_recalculate")).toBe(true);
+    expect(isErpToolApiReady("ap_bill_balances")).toBe(true);
     expect(isErpToolApiReady("cheque_balances")).toBe(true);
     expect(isErpToolApiReady("bank_balances")).toBe(true);
 
-    const pendingCodes = ["ar_recalculate", "ar_bill_balances", "ap_recalculate", "ap_bill_balances", "rebuild_stock", "inventory_daily_sequence"];
+    const pendingCodes = ["rebuild_stock", "inventory_daily_sequence"];
     for (const code of pendingCodes) {
       expect(isErpToolApiReady(code), code).toBe(false);
     }
@@ -61,10 +65,58 @@ describe("runErpTool", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runErpTool({ code: "ar_recalculate", ...scope });
+    const result = await runErpTool({ code: "rebuild_stock", ...scope });
 
     expect(result).toEqual({ success: false, messageKey: "tool_not_available" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("calls /api/gl/command for ar_recalculate", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runErpTool({ code: "ar_recalculate", ...scope });
+
+    expect(result).toEqual({ success: true, messageKey: "process_success" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/gl/command",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          resource: "processes",
+          action: "recalculate",
+          reason: "คำนวณยอดลูกหนี้ใหม่ (Champ 5110)",
+        }),
+      }),
+    );
+  });
+
+  it("calls /api/gl/command for ap_recalculate", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runErpTool({ code: "ap_recalculate", ...scope });
+
+    expect(result).toEqual({ success: true, messageKey: "process_success" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/gl/command",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          resource: "processes",
+          action: "recalculate",
+          reason: "คำนวณยอดเจ้าหนี้ใหม่ (Champ 5035)",
+        }),
+      }),
+    );
   });
 
   it("calls /api/cheque/command for cheque_balances recalculation", async () => {

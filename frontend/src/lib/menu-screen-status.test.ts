@@ -142,10 +142,12 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/report/apaging")).toBe(false);
     expect(isMenuDataPending("/report/xbrl")).toBe(true);
 
-    // เครื่องมือ: cheque_balances และ bank_balances ต่อ API จริงแล้ว, เครื่องมืออื่นยังเป็น pending
+    // เครื่องมือ: AR, AP, cheque, bank ต่อ API จริงแล้ว, สต็อกยังเป็น pending
     expect(isMenuDataPending("/tools/cheque-balances")).toBe(false);
     expect(isMenuDataPending("/tools/bank-balances")).toBe(false);
-    expect(isMenuDataPending("/tools/ar-recalculate")).toBe(true);
+    expect(isMenuDataPending("/tools/ar-recalculate")).toBe(false);
+    expect(isMenuDataPending("/tools/ap-recalculate")).toBe(false);
+    expect(isMenuDataPending("/rebuildstockscreen")).toBe(true);
     expect(isMenuDataPending("/gl/reprocess")).toBe(false);
 
     // งานอนุมัติ: 11 จอ Tier A ต่อ API บน PostgreSQL แล้ว (isApprovalApiReady = true)

@@ -33,4 +33,11 @@ describe("petty-cash-limit-screen", () => {
     expect(pettyCashScreen).toContain("maxLength={20}");
     expect(pettyCashScreen).toContain("maxLength={100}");
   });
+
+  it("supports recording and viewing petty cash replenishment and expenses (Champ 5178/5179)", () => {
+    expect(pettyCashScreen).toContain("createPettyCashTrans");
+    expect(pettyCashScreen).toContain("listPettyCashTrans");
+    expect(pettyCashScreen).toContain("deletePettyCashTrans");
+    expect(pettyCashScreen).toContain("handleOpenTransModal");
+  });
 });

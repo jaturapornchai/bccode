@@ -251,6 +251,27 @@ CREATE TABLE IF NOT EXISTS bc_petty_cash (
 	PRIMARY KEY (company, code)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_bc_petty_cash_upper ON bc_petty_cash (company, upper(code));
+
+-- รายการความเคลื่อนไหวเงินสดย่อย (รับ/เบิกชดเชย และจ่ายเงินสดย่อย; Champ 5178 CASHFrmOtherIncome / 5179 CASHFrmOtherExpense)
+CREATE TABLE IF NOT EXISTS bc_petty_cash_trans (
+	company          text           NOT NULL,
+	id               uuid           NOT NULL DEFAULT gen_random_uuid(),
+	doc_no           varchar(30)    NOT NULL CHECK (btrim(doc_no) <> ''),
+	doc_date         date           NOT NULL,
+	petty_cash_code  varchar(20)    NOT NULL,
+	trans_type       smallint       NOT NULL CHECK (trans_type IN (1, 2)), -- 1=รับ/เบิกชดเชย, 2=จ่าย
+	amount           numeric(18,2)  NOT NULL CHECK (amount > 0),
+	description      varchar(255)   NOT NULL DEFAULT '',
+	payee_payer      varchar(100)   NOT NULL DEFAULT '',
+	created_at       timestamptz    NOT NULL DEFAULT now(),
+	created_by       text           NOT NULL,
+	updated_at       timestamptz    NOT NULL DEFAULT now(),
+	updated_by       text           NOT NULL,
+	PRIMARY KEY (company, id),
+	FOREIGN KEY (company, petty_cash_code) REFERENCES bc_petty_cash (company, code) ON DELETE RESTRICT
+);
+CREATE INDEX IF NOT EXISTS ix_bc_petty_cash_trans_code_date ON bc_petty_cash_trans (company, petty_cash_code, doc_date DESC, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_bc_petty_cash_trans_doc ON bc_petty_cash_trans (company, doc_no);
 `
 
 var (

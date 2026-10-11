@@ -46,6 +46,7 @@ func (h *Http) RegisterHttp() {
 	h.ms.GET("/cheque/v1/docs/:transflag/:doc_no/events", h.listDocEvents)
 	h.ms.GET("/cheque/v1/recalculate", h.checkRecalculate)
 	h.ms.GET("/cheque/v1/petty-cash", h.listPettyCash)
+	h.ms.GET("/cheque/v1/petty-cash/trans", h.listPettyCashTrans)
 	h.ms.GET("/cheque/v1/balances/partners", h.partnerBalances)
 	h.ms.GET("/cheque/v1/balances/books", h.bookMovements)
 	h.ms.POST("/cheque/v1/command", h.command)
@@ -306,6 +307,11 @@ type commandBody struct {
 
 	// resource petty-cash
 	PettyCashItems []pettyCashRowBody `json:"petty_cash_items"`
+
+	// resource petty-cash-trans (doc_no, doc_date, amount, description ใช้ร่วมกับด้านบน)
+	PettyCashCode string `json:"petty_cash_code"`
+	TransType     int    `json:"trans_type"`
+	PayeePayer    string `json:"payee_payer"`
 }
 
 type pettyCashRowBody struct {
@@ -355,6 +361,8 @@ func (h *Http) command(request microservice.IContext) error {
 		return h.recalculateCommand(request, body)
 	case "petty-cash":
 		return h.pettyCashCommand(request, body)
+	case "petty-cash-trans":
+		return h.pettyCashTransCommand(request, body)
 	case "bank-recalculate":
 		return h.bankRecalculateCommand(request, body)
 	}
@@ -470,5 +478,65 @@ func (h *Http) bankRecalculateCommand(request microservice.IContext, body comman
 		return failure(request, err)
 	}
 	return respond(request, map[string]any{"data": result})
+}
+
+func (h *Http) listPettyCashTrans(request microservice.IContext) error {
+	a := h.authorize(request, false, func(s glhttp.SessionAccess) bool {
+		return s.Allows(pettyCashScreen, actionRead) ||
+			s.Allows("petty-cash-movement-report", actionRead) ||
+			s.Allows("other-income-receipt", actionRead) ||
+			s.Allows("expense-record", actionRead)
+	})
+	if a == nil {
+		return nil
+	}
+	pettyCashCode := request.QueryParam("petty_cash_code")
+	fromDate := request.QueryParam("from_date")
+	toDate := request.QueryParam("to_date")
+	limit := intParam(request, "limit")
+	items, err := cheque.ListPettyCashTrans(a.ctx, a.db, a.scope.Company, pettyCashCode, fromDate, toDate, limit)
+	if err != nil {
+		return failure(request, err)
+	}
+	return respond(request, map[string]any{"items": items, "total": len(items)})
+}
+
+func (h *Http) pettyCashTransCommand(request microservice.IContext, body commandBody) error {
+	action := strings.TrimSpace(body.Action)
+	if action != actionCreate && action != actionDelete {
+		return fail(request, http.StatusBadRequest, "cheque_err_action_invalid", "action", body.Action)
+	}
+	a := h.authorize(request, true, func(s glhttp.SessionAccess) bool {
+		return s.Allows(pettyCashScreen, action) ||
+			s.Allows("other-income-receipt", action) ||
+			s.Allows("expense-record", action)
+	})
+	if a == nil {
+		return nil
+	}
+	if action == actionCreate {
+		input := cheque.PettyCashTransInput{
+			DocNo:         body.DocNo,
+			DocDate:       body.DocDate,
+			PettyCashCode: body.PettyCashCode,
+			TransType:     body.TransType,
+			Amount:        body.Amount,
+			Description:   body.Description,
+			PayeePayer:    body.PayeePayer,
+		}
+		saved, err := cheque.CreatePettyCashTrans(a.ctx, a.db, a.scope, input)
+		if err != nil {
+			return failure(request, err)
+		}
+		return respond(request, map[string]any{"data": saved})
+	}
+	// actionDelete
+	if strings.TrimSpace(body.ID) == "" {
+		return fail(request, http.StatusBadRequest, "cheque_err_required_field", "id")
+	}
+	if err := cheque.DeletePettyCashTrans(a.ctx, a.db, a.scope, body.ID); err != nil {
+		return failure(request, err)
+	}
+	return respond(request, map[string]any{"success": true})
 }
 

@@ -458,3 +458,60 @@ export async function savePettyCash(items: PettyCashItem[], language: LanguageCo
   return result.items ?? [];
 }
 
+export type PettyCashTransItem = {
+  id: string;
+  doc_no: string;
+  doc_date: string;
+  petty_cash_code: string;
+  petty_cash_name?: string;
+  trans_type: number; // 1 = replenish/receipt, 2 = expense/payment
+  amount: string;
+  description: string;
+  payee_payer: string;
+  created_at: string;
+  created_by: string;
+};
+
+export type PettyCashTransInput = {
+  doc_no: string;
+  doc_date: string;
+  petty_cash_code: string;
+  trans_type: number;
+  amount: string;
+  description?: string;
+  payee_payer?: string;
+};
+
+export async function listPettyCashTrans(params: {
+  petty_cash_code?: string;
+  from_date?: string;
+  to_date?: string;
+  limit?: number;
+}, language: LanguageCode): Promise<PettyCashTransItem[]> {
+  const query = new URLSearchParams();
+  if (params.petty_cash_code) query.set("petty_cash_code", params.petty_cash_code);
+  if (params.from_date) query.set("from_date", params.from_date);
+  if (params.to_date) query.set("to_date", params.to_date);
+  if (params.limit) query.set("limit", String(params.limit));
+  const queryString = query.toString();
+  const url = `/api/cheque/petty-cash/trans${queryString ? `?${queryString}` : ""}`;
+  const result = await request<{ items: PettyCashTransItem[] }>(url, language);
+  return result.items ?? [];
+}
+
+export async function createPettyCashTrans(input: PettyCashTransInput, language: LanguageCode): Promise<PettyCashTransItem> {
+  const result = await request<{ data: PettyCashTransItem }>("/api/cheque/command", language, {
+    method: "POST",
+    body: JSON.stringify({ resource: "petty-cash-trans", action: "create", ...input }),
+  });
+  return result.data;
+}
+
+export async function deletePettyCashTrans(id: string, language: LanguageCode): Promise<void> {
+  await request<{ success: boolean }>("/api/cheque/command", language, {
+    method: "POST",
+    body: JSON.stringify({ resource: "petty-cash-trans", action: "delete", id }),
+  });
+}
+
+

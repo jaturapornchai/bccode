@@ -19,6 +19,9 @@ import {
   saveBankContacts,
   updateBankBook,
   updateBankCode,
+  listPettyCashTrans,
+  createPettyCashTrans,
+  deletePettyCashTrans,
 } from "./cheque-api";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -193,5 +196,46 @@ describe("bank book (GL resource bank-accounts)", () => {
       { code: "11140", name: "ออมทรัพย์" },
     ]);
     expect(apiFetch.mock.calls[0][0]).toBe("/api/gl/accounts?limit=1000");
+  });
+});
+
+describe("petty cash transactions API", () => {
+  it("lists petty cash transactions with query parameters", async () => {
+    apiFetch.mockResolvedValue(json({ success: true, items: [{ id: "t1", doc_no: "PC01", amount: "500.00" }] }));
+    const result = await listPettyCashTrans({ petty_cash_code: "PC-01", from_date: "2026-10-01", to_date: "2026-10-31" }, "th");
+    expect(result).toHaveLength(1);
+    expect(apiFetch.mock.calls[0][0]).toContain("/api/cheque/petty-cash/trans?petty_cash_code=PC-01&from_date=2026-10-01&to_date=2026-10-31");
+  });
+
+  it("creates a petty cash transaction through command endpoint", async () => {
+    apiFetch.mockResolvedValue(json({ success: true, data: { id: "t2", doc_no: "PC02", trans_type: 1, amount: "1000.00" } }));
+    const input = {
+      doc_no: "PC02",
+      doc_date: "2026-10-11",
+      petty_cash_code: "PC-01",
+      trans_type: 1,
+      amount: "1000.00",
+      description: "เบิกชดเชย",
+    };
+    const created = await createPettyCashTrans(input, "th");
+    expect(created.id).toBe("t2");
+    expect(apiFetch.mock.calls[0][0]).toBe("/api/cheque/command");
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      resource: "petty-cash-trans",
+      action: "create",
+      doc_no: "PC02",
+      amount: "1000.00",
+    });
+  });
+
+  it("deletes a petty cash transaction through command endpoint", async () => {
+    apiFetch.mockResolvedValue(json({ success: true }));
+    await deletePettyCashTrans("t2", "th");
+    expect(apiFetch.mock.calls[0][0]).toBe("/api/cheque/command");
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      resource: "petty-cash-trans",
+      action: "delete",
+      id: "t2",
+    });
   });
 });

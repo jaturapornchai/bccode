@@ -144,6 +144,10 @@ export interface ErpToolRunResult {
 
 // เครื่องมือที่มี API จริงรองรับแล้วเท่านั้น (ตัวอื่นยังไม่มี endpoint ห้ามแสร้งว่าทำงานสำเร็จ)
 const TOOL_ENDPOINTS: Record<string, string> = {
+  ar_recalculate: "/api/gl/command",
+  ar_bill_balances: "/api/gl/command",
+  ap_recalculate: "/api/gl/command",
+  ap_bill_balances: "/api/gl/command",
   cheque_balances: "/api/cheque/command",
   bank_balances: "/api/cheque/command",
 };
@@ -178,6 +182,30 @@ export async function runErpTool(params: {
     body = {
       resource: "bank-recalculate",
       action: "apply",
+    };
+  } else if (code === "ar_recalculate") {
+    body = {
+      resource: "processes",
+      action: "recalculate",
+      reason: "คำนวณยอดลูกหนี้ใหม่ (Champ 5110)",
+    };
+  } else if (code === "ar_bill_balances") {
+    body = {
+      resource: "processes",
+      action: "recalculate",
+      reason: "คำนวณยอดคงเหลือของบิลใหม่ (ลูกหนี้) (Champ 5113)",
+    };
+  } else if (code === "ap_recalculate") {
+    body = {
+      resource: "processes",
+      action: "recalculate",
+      reason: "คำนวณยอดเจ้าหนี้ใหม่ (Champ 5035)",
+    };
+  } else if (code === "ap_bill_balances") {
+    body = {
+      resource: "processes",
+      action: "recalculate",
+      reason: "คำนวณยอดคงเหลือของบิลใหม่ (เจ้าหนี้) (Champ 5036)",
     };
   } else {
     body = { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` };
